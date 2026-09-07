@@ -3742,3 +3742,21 @@ your commit (6db8790 swept one; its wave's later commit completed it).
   live-change wait before the mez lines folded. The test now waits for the
   two expected holds before asserting the subscription projection, using
   the original timeout and unchanged projection assertions.
+
+## Sky achievement counts during startup (2026-09-07)
+
+- `sky-achievements.e2e` · filter bar visible but counts absent · one sighting
+  in the parallel quest-journal regression run. **RESOLVED a65586c**: `useProgress`
+  starts with empty quests until `getProgress()` resolves; the filter bar renders
+  before that read, while `CountsLine` renders only after it. `openSky` now waits
+  for a parsed count inside its original 60-second opening deadline. All 32
+  achievement assertions passed after the fix; no assertions or timeouts widened.
+
+## Archived resolved combat fixture clock precondition
+
+- `engined/tests/combat.rs` live-meter current-kind · expected `current`,
+  got closed `fight` after process startup consumed the fixed 18 s freshness
+  margin · 1 sighting (2026-08-30, JOS-531 CI; green standalone and full
+  combat suite locally) · **RESOLVED in the JOS-531 CI follow-up** — start
+  the engine before stamping the live fixture, so startup is outside the
+  world-time precondition.
