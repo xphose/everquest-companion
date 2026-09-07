@@ -258,7 +258,7 @@ test('the overlay-kind list is the SAME set the app uses (the duplication cannot
 function unreleasedViews(src: string): string[] | null {
   const spread = /UNRELEASED \? \(\[([^\]]*)\]/.exec(src)?.[1]
   if (spread === undefined) return null
-  return [...spread.matchAll(/'([a-z]+)'/g)].map((m) => m[1])
+  return [...spread.matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1])
 }
 
 /**
@@ -271,7 +271,7 @@ function unreleasedViews(src: string): string[] | null {
 function knownViews(src: string): string[] | null {
   const block = /const KNOWN_VIEWS: View\[\] = \[([\s\S]*?)\n\]/.exec(src)?.[1]
   if (block === undefined) return null
-  return [...new Set([...block.matchAll(/'([a-z]+)'/g)].map((m) => m[1]))]
+  return [...new Set([...block.matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1]))]
 }
 
 test('the view list is the SAME set the app can render', () => {
@@ -280,7 +280,7 @@ test('the view list is the SAME set the app can render', () => {
   const src = readFileSync(join(ROOT, 'src', 'renderer', 'src', 'appViews.ts'), 'utf8')
   const union = /export type View =([\s\S]*?)export const VIEW_KEY/.exec(src)?.[1] ?? ''
   // Deduped: the union's own doc comment quotes 'triage' while explaining why it stays in.
-  const declared = [...new Set([...union.matchAll(/'([a-z]+)'/g)].map((m) => m[1] as string))]
+  const declared = [...new Set([...union.matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1] as string))]
   assert.ok(declared.length > 5, 'failed to read the View union out of appViews.ts')
 
   // ...MINUS the UNRELEASED views, which report NOTHING on purpose (JOS-45). A new enum value is
@@ -331,7 +331,16 @@ test('the view list is the SAME set the app can render', () => {
   const known = knownViews(src)
   assert.ok(known !== null && known.length > 5, 'failed to read KNOWN_VIEWS out of appViews.ts')
   const drills = declared.filter((v) => !known.includes(v) && !unreleased.includes(v))
-  const reportable = declared.filter((v) => !unreleased.includes(v) && !drills.includes(v))
+  // The fork's journal is usable but has no upstream telemetry contract. dwellView already
+  // returns null for it. Keep this one explicit exception out of transmitted batches without
+  // exempting other new tabs or changing the independently deployed server's enum.
+  const localOnly = ['questJournal']
+  for (const view of localOnly) {
+    assert.ok(declared.includes(view) && known.includes(view), `${view} must remain a restorable view`)
+    assert.ok(!(TELEMETRY_VIEWS as readonly string[]).includes(view), `${view} must stay local`)
+    invalid({ t: 'viewDwell', view, ms: 1000 }, 'view')
+  }
+  const reportable = declared.filter((v) => !unreleased.includes(v) && !drills.includes(v) && !localOnly.includes(v))
   assert.deepEqual(reportable.sort(), [...TELEMETRY_VIEWS].sort())
 
   // The mirror of the UNRELEASED rule below: a drill must not ALSO be in the schema. If one is
