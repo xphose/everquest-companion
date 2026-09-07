@@ -11,6 +11,7 @@ import { VIEW_LABELS, type View } from './appViews'
 import { afterBack, afterLink, originTop, type NavOrigin } from './navOrigin'
 import type { CombatFocus } from './features/combat/combatFocus'
 import type { MobTarget } from './features/mobs/mobTarget'
+import type { MapFocus } from './features/maps/mapFocus'
 
 /**
  * THE ONE BACK CONTRACT (JOS-43). Every cross-view drill receiver takes this same object — never
@@ -104,6 +105,10 @@ function useNavSeam(view: View, setView: (v: View) => void): NavSeam {
  * when you next return to that tab.
  */
 export interface AppRouting {
+  mapFocus: MapFocus | null
+  mapNonce: number
+  openMap: (focus: MapFocus) => void
+  clearMapFocus: () => void
   /**
    * MANUAL navigation. Everything that is a user choosing a tab — the nav drawer, the title
    * bar's Preferences, a bare `view` deep link — goes through here rather than through the raw
@@ -235,6 +240,7 @@ export function useAppRouting(view: View, setView: (v: View) => void): AppRoutin
   const loot = useFocusSlot<string>('loot', linkTo)
   const quest = useFocusSlot<string>('posky', linkTo)
   const level = useFocusSlot<number>('leveling', linkTo)
+  const map = useFocusSlot<MapFocus>('maps', linkTo)
   // The spell opener is load-bearing twice over: it is also the value `SpellLinkProvider` publishes
   // to every spell name in the window, so a fresh identity per render would re-render every list
   // that draws one.
@@ -246,6 +252,10 @@ export function useAppRouting(view: View, setView: (v: View) => void): AppRoutin
     () => ({
       selectView,
       nav,
+      mapFocus: map.value,
+      mapNonce: map.nonce,
+      openMap: map.open,
+      clearMapFocus: map.clear,
       spellName: spell.value,
       spellNonce: spell.nonce,
       openSpell: spell.open,
@@ -271,7 +281,7 @@ export function useAppRouting(view: View, setView: (v: View) => void): AppRoutin
       openLoot: loot.open,
       clearLootFocus: loot.clear
     }),
-    [selectView, nav, spell, mob, quest, level, combat, loot]
+    [selectView, nav, spell, mob, quest, level, combat, loot, map]
   )
 }
 
