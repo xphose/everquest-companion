@@ -45,10 +45,11 @@ export interface RecoveryDraft {
   warnings: string[]
   imageDataUrl?: string
   scannedText?: string
+  unassignedObjectives?: RecoveryObjective[]
 }
 export interface RecoveryScanRequest { characterId: string; source: RecoveryInput }
 export type RecoveryScanResult = { ok: true; draft: RecoveryDraft } | { ok: false; error: string; cancelled?: boolean }
 export type RecoveryCommitRequest =
-  | { action: 'apply'; characterId: string; draftId: string; candidateIds: string[]; confirmedCharacter: boolean }
+  | { action: 'apply'; characterId: string; draftId: string; candidateIds: string[]; confirmedCharacter: boolean; objectiveCandidateId?: string }
   | { action: 'forget'; characterId: string; questId?: string }
 export type RecoveryCommitResult = { ok: true; applied: number } | { ok: false; error: string }
