@@ -321,4 +321,9 @@ test('column-grouped OCR lines preserve task titles and separate objective ratio
   const result = screenCandidates([entry], { text: lines.map((row) => row.text).join('\n'), lines: split })
   assert.equal(result.candidates[0].name, entry.name)
   assert.deepEqual(result.unassignedObjectives, [{ text: 'Collect casks', current: 2, required: 3, complete: false }])
+  // The real Windows OCR smoke omitted a visible 2/3 cell entirely. Preserve the label, not a guessed ratio.
+  const missingStatus = split.filter((row) => row.text !== '2/3')
+  const unknown = screenCandidates([entry], { text: missingStatus.map((row) => row.text).join('\n'), lines: missingStatus })
+  assert.deepEqual(unknown.unassignedObjectives, [{ text: 'Collect casks' }])
+  assert.ok(unknown.warnings.some((warning) => warning.includes('progress unknown')))
 })
