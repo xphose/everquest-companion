@@ -26,6 +26,7 @@ import type {
   PerfBudgetsResult,
   PerfSnapshotResult,
   PerfTimelineResult,
+  RecoveryOcrResult,
   ResistLevelsResult,
   ResistSpellResult,
   RespawnConfirmAck,
@@ -115,6 +116,7 @@ interface ResultRegistry {
   // until somebody says what it answers with.
   'logs.setDir': DefineAck
   'logs.list': LogsListResult
+  'recovery.ocr': RecoveryOcrResult
 }
 
 /** Every client message that carries a request id — i.e. everything except the handshake. */
@@ -141,7 +143,8 @@ export const OPS_ARE_EXHAUSTIVE: OpsAreExhaustive = true
  * read a field that is not there.
  */
 export const RESULT_GUARDS: Record<RequestOp, (result: ReplyResult) => boolean> = {
-  echo: (r) => 'text' in r,
+  echo: (r) => 'text' in r && !('lines' in r),
+  'recovery.ocr': (r) => 'text' in r && 'lines' in r,
   // `accepted` ALONE STOPPED BEING A DISCRIMINATOR when `sessionMarks.add` arrived (JOS-487) — the
   // same thing that happened to `status` when `perf.snapshot` did, and caught the same way, by the
   // matrix in `tests/dataServerOps.test.mts` rather than by a caller reading a field that was not

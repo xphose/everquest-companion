@@ -8,7 +8,7 @@
 // schema edit that lands without regenerating turns tests/protocolSchema.test.mts red on the
 // TypeScript side and the protocol-codegen staleness test red on the Rust side.
 //
-// schema-digest: sha256:d02184bb8cfcfc641683a27d6cc3c5d0202f34ea5ffebe5e12abeeb51c85f2c8
+// schema-digest: sha256:bde1f213747e24cf2a6399b3e4ded987019ddd6a719bb270caffdaa75cfb4180
 
 /**
  * Anything that can travel the wire, in either direction. The transport adapters are generic over exactly this: a transport moves ProtocolMessages and knows nothing else about the protocol.
@@ -48,6 +48,7 @@ export type ClientMessage =
   | SpellsSearchRequest
   | LogsSetDirRequest
   | LogsListRequest
+  | RecoveryOcrRequest
 /**
  * The per-launch shared secret. Minted by Electron main at spawn, handed to the engine out of band, presented once at hello. It is never persisted and never reused across launches. Compare it in CONSTANT TIME (src/main/dataServer/token.ts, engine/crates/protocol/src/token.rs) - a byte-at-a-time compare over a loopback socket is a timing oracle. The shape rules are environment-neutral and live in src/shared/dataServer/token.ts.
  */
@@ -136,6 +137,7 @@ export type ReplyResult =
   | ResistSpellResult
   | SpellsSearchResult
   | LogsListResult
+  | RecoveryOcrResult
 /**
  * The world's generation. Monotonic within one engine process. A client that sees an epoch it did not expect DROPS ALL STATE and waits for the reset — it never reconciles across a bump.
  */
@@ -715,6 +717,20 @@ export interface LogsListRequest {
   params: NoParams
 }
 /**
+ * Recognize one PNG with the local Windows English OCR engine. Available without an attached log; does not control the game or modify files. Concurrent OCR is refused as unavailable.
+ */
+export interface RecoveryOcrRequest {
+  id: RequestId
+  op: 'recovery.ocr'
+  params: RecoveryOcrParams
+}
+export interface RecoveryOcrParams {
+  /**
+   * Standard base64 PNG image, at most 5 MiB decoded and 20 million pixels; each dimension must also fit the Windows OCR limit.
+   */
+  pngBase64: string
+}
+/**
  * The handshake answer. `ok: false` is a courtesy sent immediately before the engine closes the connection — a client must treat a closed connection with no reply as the same outcome.
  */
 export interface HelloReply {
@@ -1256,6 +1272,24 @@ export interface LogCharacter {
    * The file's last-modified time in epoch milliseconds, TRUNCATED to an integer, which is the sort key the picker orders by. ABSENT MEANS THE ENGINE COULD NOT STATE IT - a file that vanished between the readdir and the stat, or a filesystem with no modification time - and never zero, which would draw a real date in 1970 beside a real character name. It is the same fact and the same rule `HealthResult.logMtimeMs` carries for the attached log, and it stays a served PROCESS fact rather than fold state (ruling 18): no module holds it, and no replay can produce it.
    */
   lastPlayed?: number
+}
+/**
+ * Recognized text and word rectangles in decoded PNG pixel coordinates, with no quest-state interpretation.
+ */
+export interface RecoveryOcrResult {
+  text: string
+  lines: RecoveryOcrLine[]
+}
+export interface RecoveryOcrLine {
+  text: string
+  words: RecoveryOcrWord[]
+}
+export interface RecoveryOcrWord {
+  text: string
+  x: number
+  y: number
+  width: number
+  height: number
 }
 /**
  * A refused request. An error is always a reply to a request id — a failure with no request behind it closes the connection instead.
