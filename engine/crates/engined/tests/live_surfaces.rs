@@ -554,21 +554,34 @@ fn a_timer_subscription_serves_the_rows_the_two_windows_draw() {
     conn.client.send(&attach(1, &staged.path()));
     conn.wait_for_live(2);
 
-    // The landing beat announces every module, so it must be drained before the dirty bit means
-    // anything in particular: waiting on an un-cleared list would match that first beat instantly.
-    conn.wait_until("the first beat", |c| !c.changed.is_empty());
-    conn.changed.clear();
-
     // Two mezzes: one row proves a cell and two prove the order, which is what this view exists to
     // have already decided. Appended live, the only way a running timer exists at all.
     staged.append(&a_mez(20, "a lava guardian"));
     staged.append(&a_mez(10, "a fire giant warlord"));
 
-    // Wait for the dirty bit before subscribing: `buffTimers` announcing a new cursor is the engine
-    // saying it folded those lines, so the reset that follows is cut off a fold that has them.
-    conn.wait_until("the buffTimers dirty bit", |c| {
-        c.changed.iter().any(|m| m.module == "buffTimers")
-    });
+    // A queued hydration dirty bit says nothing about the appended lines. Establish the exact
+    // source state before subscribing; the assertions below still test the served projection.
+    let ready_deadline = Instant::now() + PATIENCE;
+    let mut read_id = 10_000;
+    loop {
+        let snapshot = conn.state(read_id, "buffTimers");
+        let mut targets: Vec<&str> = snapshot["holds"]
+            .as_array()
+            .expect("the holds array")
+            .iter()
+            .filter_map(|hold| hold["target"].as_str())
+            .collect();
+        targets.sort_unstable();
+        if targets == ["a fire giant warlord", "a lava guardian"] {
+            break;
+        }
+        assert!(
+            Instant::now() < ready_deadline,
+            "the live holds never arrived: {snapshot}"
+        );
+        read_id += 1;
+        std::thread::sleep(Duration::from_millis(20));
+    }
 
     conn.client.send(&subscribe(10, "timers.rows"));
     conn.reply(10);
@@ -714,7 +727,7 @@ fn a_live_append_makes_the_modules_say_they_moved() {
 #[test]
 fn a_melee_round_leaves_the_modules_it_has_nothing_to_do_with_silent() {
     /// Every migrated module but the one that answers to the log's clock.
-    const SILENT: [&str; 14] = [
+    const SILENT: [&str; 15] = [
         "alerts",
         "buffs",
         "classUnlocks",
@@ -728,6 +741,7 @@ fn a_melee_round_leaves_the_modules_it_has_nothing_to_do_with_silent() {
         "outputFiles",
         "roster",
         "spellSets",
+        "tasks",
         "turnins",
     ];
 

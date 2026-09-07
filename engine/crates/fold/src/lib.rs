@@ -261,33 +261,7 @@ pub trait Defines {
     fn define(&mut self, payload: &Value);
 }
 
-/// Registration order is bus delivery order — `src/main/modules/wiring.ts` `ordered`, verbatim.
-///
-/// Spelled in full rather than as "the ones we have ported", so an unimplemented module is a fact
-/// the code states. The parity harness reads `missing()` off it and names every absent module,
-/// rather than comparing a subset and reporting green.
-pub const WIRING_ORDER: &[&str] = &[
-    "combo",
-    "roster",
-    "loot",
-    "turnins",
-    "classUnlocks",
-    "kills",
-    "respawn",
-    "progression",
-    "leveling",
-    "character",
-    "outputFiles",
-    "spellSets",
-    "itemTiers",
-    "observedSpellRanks",
-    "alerts",
-    "buffs",
-    "buffTimers",
-    "consider",
-    "resist",
-    "eventFeed",
-];
+pub use modules::WIRING_ORDER;
 
 /// The registered modules, in delivery order, and the dispatch loop over them.
 #[derive(Default)]
@@ -876,6 +850,7 @@ pub fn registered(deps: ClusterDeps) -> Registry {
     )));
     r.register(Box::new(modules::loot::LootModule::new()));
     r.register(Box::new(modules::turnins::TurnInsModule::new()));
+    r.register(Box::new(modules::tasks::TasksModule::new()));
     r.register(Box::new(modules::class_unlocks::ClassUnlocksModule::new()));
     r.register(Box::new(modules::kills::KillsModule::new()));
     // Beside `kills` because it folds the same death line, and after it, so anything reading both

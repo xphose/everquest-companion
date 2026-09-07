@@ -11,6 +11,14 @@ const CAMP_START_LINE: &str = "It will take you about 30 seconds to prepare your
 const CAMP_ABORT_LINE: &str = "You abandon your preparations to camp.";
 const OUTPUT_FILE_PREFIX: &str = "Outputfile Complete: ";
 
+/// Session and task statements retain their order within the parser's wider cascade.
+pub fn classify(c: &Ctx, out: &mut Ev) -> bool {
+    classify_session_start(c, out)
+        || classify_camp(c, out)
+        || classify_output_file(c, out)
+        || super::tasks::classify_task_activity(c, out)
+}
+
 /// Gated on the leading `W` before the string compare, so the hot path pays one character test.
 pub fn classify_session_start(c: &Ctx, out: &mut Ev) -> bool {
     if c.text.as_bytes().first() != Some(&b'W') || c.text != WELCOME_LINE {
