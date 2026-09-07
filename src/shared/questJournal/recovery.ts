@@ -46,6 +46,7 @@ export interface RecoveryDraft {
   imageDataUrl?: string
   scannedText?: string
   unassignedObjectives?: RecoveryObjective[]
+  objectiveCandidates?: { id: string; name: string }[]
 }
 export interface RecoveryScanRequest { characterId: string; source: RecoveryInput }
 export type RecoveryScanResult = { ok: true; draft: RecoveryDraft } | { ok: false; error: string; cancelled?: boolean }
