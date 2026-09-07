@@ -181,7 +181,7 @@ function evidenceFor(input: JournalModelInput, entry: QuestJournalCatalogEntry |
 function handInEvidence(input: JournalModelInput, entry: QuestJournalCatalogEntry): string[] {
   const trade = finalTrade(entry, input.turnins)
   if (!trade) return []
-  const date = new Date(trade.ts).toISOString()
+  const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(trade.ts)
   if (!currentHandIn(input, entry)) return [`Previous hand-in recorded at ${date}. It does not complete the current run’s steps.`]
   return [`The log records the exact final items handed to the named NPC at ${date}. A closed trade alone does not confirm the quest reward or success.`]
 }

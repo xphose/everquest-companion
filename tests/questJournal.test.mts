@@ -130,7 +130,7 @@ test('a new task assignment does not reuse a completed prior run’s hand-in', (
   assert.equal(result.steps[1].complete, false)
   assert.equal(result.steps[2].complete, false)
   assert.equal(result.nextStep, 'Collect three tokens')
-  assert.ok(result.evidence.some((line) => /Previous hand-in.*1970-01-01T00:00:00.100Z/u.test(line)))
+  assert.ok(result.evidence.some((line) => line.startsWith('Previous hand-in recorded at ') && line.includes('does not complete the current run')))
   data.turnins.push({ ts: 250, npc: npc.name, items: ['Token', 'Token', 'Token'] })
   assert.equal(detailJournal(data, entry.id).steps[2].source, 'log')
 })
