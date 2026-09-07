@@ -6,7 +6,9 @@ import { effectiveEqRoot } from '../log/config'
 import { getProgress, setProgress } from '../store'
 import { getQuestJournalCatalog } from '../questJournal/catalog'
 import { journalFiles } from '../questJournal/files'
-import { createQuestJournalService, type JournalWorld } from '../questJournal/service'
+import { createQuestJournalService, type JournalWorld, type JournalServiceDeps } from '../questJournal/service'
+import { createRecoveryService } from '../questJournal/recovery/service'
+import { registerQuestRecoveryIpc } from './questRecovery'
 import { record, safeId } from '../questJournal/validate'
 import { journalSnapshots } from '../questJournal/snapshotCache'
 import type { ItemDbFile } from '../itemsDb'
@@ -21,7 +23,7 @@ function world(): JournalWorld {
   }
 }
 
-const journal = createQuestJournalService({
+const journalDeps: JournalServiceDeps = {
   world, catalog: getQuestJournalCatalog, now: Date.now, getProgress, setProgress,
   files: (character) => journalFiles(effectiveEqRoot(), character, itemsJson as unknown as ItemDbFile),
   snapshot: (module) => journalSnapshots.read(module, engineWorldToken(), async () => {
@@ -29,9 +31,12 @@ const journal = createQuestJournalService({
     if (result.module !== module) throw new Error('The engine answered for a different module.')
     return result.state
   }, engineWorldToken)
-})
+}
+const journal = createQuestJournalService(journalDeps)
+const recovery = createRecoveryService({ ...journalDeps, root: effectiveEqRoot })
 
 export function registerQuestJournalIpc(): void {
+  registerQuestRecoveryIpc(journalDeps, recovery)
   ipcMain.handle(IPC.questJournalQuery, (_event, query: unknown) => journal.query(query))
   ipcMain.handle(IPC.questJournalDetail, (_event, request: unknown) => {
     const value = record(request)
