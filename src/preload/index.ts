@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
 import { windowsApi } from './windows'
 import { plannerApi } from './planner'
+import { questJournalBridge } from './questJournal'
 import { rosterApi } from './roster'
 import { soundsBridge } from './sounds'
 // "What IS this" — the spell/item/mob lookups, split out at the 400-line ceiling (preload/knowledge.ts).
@@ -358,7 +359,6 @@ const api = {
     ipcRenderer.on(IPC.onEqConfigChanged, listener)
     return () => ipcRenderer.removeListener(IPC.onEqConfigChanged, listener)
   },
-  getProgress: (): Promise<ProgressState> => ipcRenderer.invoke(IPC.getProgress),
   reloadInventory: (): Promise<ReloadInventoryResult> => ipcRenderer.invoke(IPC.reloadInventory),
   /**
    * Every `/outputfile` kind the app knows, joined to the active character's file on disk
@@ -452,6 +452,7 @@ const api = {
   // 400-code-line ceiling, and phase 4 (JOS-285) needed one more method than it had room for.
   // (The item/mob lookups live in knowledge.ts beside the spell lookups — JOS-293's split.)
   ...plannerApi,
+  ...questJournalBridge,
 
   // ---- character sheet (JOS-45) ----
   /** The armory grid, the gear sum and the carry-all ledger for the active character, from their
@@ -558,11 +559,6 @@ const api = {
   clearComboCorrection: (range: ComboRange): Promise<ComboWriteResult> =>
     ipcRenderer.invoke(IPC.comboClearCorrection, range),
 
-  onProgress: (cb: (p: ProgressState) => void): (() => void) => {
-    const listener = (_e: unknown, p: ProgressState): void => cb(p)
-    ipcRenderer.on(IPC.onProgress, listener)
-    return () => ipcRenderer.removeListener(IPC.onProgress, listener)
-  },
   onInventoryReload: (cb: (e: InventoryReloadEvent) => void): (() => void) => {
     const listener = (_e: unknown, ev: InventoryReloadEvent): void => cb(ev)
     ipcRenderer.on(IPC.onInventoryReload, listener)
