@@ -372,6 +372,8 @@ export interface TurnInEvent {
   ts: number
   npc: string
   items: string[]
+  /** Explicit offered quantities; older snapshots contain only item names. */
+  itemCounts?: Record<string, number>
 }
 
 /** A level-up ("You have gained a level! Welcome to level N!"). */

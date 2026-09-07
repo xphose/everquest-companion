@@ -11,6 +11,8 @@ pub mod combat;
 pub mod data;
 pub mod group;
 pub mod session;
+pub mod tasks;
+pub mod turnins;
 pub mod who;
 pub mod world;
 
@@ -134,9 +136,7 @@ impl Parser {
             || world::classify_death(&self.world, c, out)
             || world::classify_zone(&self.world, c, out)
             || world::classify_instance_create(&self.world, c, out)
-            || session::classify_session_start(c, out)
-            || session::classify_camp(c, out)
-            || session::classify_output_file(c, out)
+            || session::classify(c, out)
             || group::classify_group(&self.group, c, out)
             || world::classify_loot(&self.world, c, out)
             || world::classify_item_merge(&self.world, c, out)

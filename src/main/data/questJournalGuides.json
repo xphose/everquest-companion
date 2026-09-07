@@ -76,7 +76,7 @@
       {
         "id": "return-casks",
         "kind": "turn-in",
-        "text": "Return the three Blackburrow Casks to Larsk Juton for the Cloak of Jaggedpine. Confirm the hand-in after it succeeds.",
+        "text": "Return the three Blackburrow Casks to Larsk Juton for the Cloak of Jaggedpine.",
         "manualOnly": true,
         "items": [
           {

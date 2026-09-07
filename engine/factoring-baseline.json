@@ -133,21 +133,9 @@
     },
     {
       "file": "crates/eqlog/src/event.rs",
-      "metric": "complexity",
-      "name": "Kind::as_str",
-      "value": 66
-    },
-    {
-      "file": "crates/eqlog/src/event.rs",
-      "metric": "complexity",
-      "name": "Kind::parse",
-      "value": 65
-    },
-    {
-      "file": "crates/eqlog/src/event.rs",
       "metric": "file-lines",
       "name": "",
-      "value": 1170
+      "value": 896
     },
     {
       "file": "crates/eqlog/src/names.rs",
@@ -177,13 +165,13 @@
       "file": "crates/eqlog/src/parse/mod.rs",
       "metric": "complexity",
       "name": "Parser::classify",
-      "value": 44
+      "value": 42
     },
     {
       "file": "crates/eqlog/src/parse/world.rs",
       "metric": "file-lines",
       "name": "",
-      "value": 445
+      "value": 426
     },
     {
       "file": "crates/eqlog/src/spelldb/overlay.rs",
@@ -315,7 +303,7 @@
       "file": "crates/fold/src/lib.rs",
       "metric": "file-lines",
       "name": "",
-      "value": 1512
+      "value": 1492
     },
     {
       "file": "crates/fold/src/message_overlay.rs",

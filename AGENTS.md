@@ -29,7 +29,7 @@ archive. Layout: `src/main` (Node), `src/preload`, `src/renderer`,
 `src/shared`, `tests/`, `scripts/`. Per-surface detail:
 docs/agents-archive.md.
 
-- Repo: `C:\Users\jmoye\everquest-companion` (public: github.com/jmoyers/everquest-companion).
+- Repo: `C:\Users\<user>\everquest-companion` (public: github.com/jmoyers/everquest-companion).
 - Game log: `C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest
   Legends\Logs\eqlog_<Char>_<server>.txt` — but the path is auto-discovered +
   Settings-overridable now; NEVER hardcode, route through
@@ -118,6 +118,7 @@ docs/agents-archive.md.
     (`tests/e2e/viewRemount.mts` holds the precondition); a SECOND distinct
     cause with the guard holding · 1 sighting 2026-08-13 · watch. Both rows
     at full length: docs/agents-archive.md.
+  - `live_surfaces.rs` timer hydration ×1; **RESOLVED 9dbf7ab**. Details: docs/agents-archive.md.
   - `engined tests/perf_snapshot.rs` · `perf.snapshot was refused: Unavailable
     "the fold did not answer within 5000 ms"` from the `until` poll while the
     engine is still loading its spell catalog on a starved CI runner · 1
