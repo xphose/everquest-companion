@@ -8,6 +8,7 @@ import { getQuestJournalCatalog } from '../questJournal/catalog'
 import { journalFiles } from '../questJournal/files'
 import { createQuestJournalService, type JournalWorld, type JournalServiceDeps } from '../questJournal/service'
 import { createRecoveryService } from '../questJournal/recovery/service'
+import { installJournalImageReader } from '../questJournal/recovery/ocr'
 import { registerQuestRecoveryIpc } from './questRecovery'
 import { record, safeId } from '../questJournal/validate'
 import { journalSnapshots } from '../questJournal/snapshotCache'
@@ -36,6 +37,7 @@ const journal = createQuestJournalService(journalDeps)
 const recovery = createRecoveryService({ ...journalDeps, root: effectiveEqRoot })
 
 export function registerQuestJournalIpc(): void {
+  installJournalImageReader((pngBase64) => engineRequest('recovery.ocr', { pngBase64 }))
   registerQuestRecoveryIpc(journalDeps, recovery)
   ipcMain.handle(IPC.questJournalQuery, (_event, query: unknown) => journal.query(query))
   ipcMain.handle(IPC.questJournalDetail, (_event, request: unknown) => {
