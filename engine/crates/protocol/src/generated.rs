@@ -8,7 +8,7 @@
 //! and a schema edit that lands without regenerating turns the protocol-codegen staleness
 //! test red on this side and tests/protocolSchema.test.mts red on the other.
 //!
-//! schema-digest: sha256:d02184bb8cfcfc641683a27d6cc3c5d0202f34ea5ffebe5e12abeeb51c85f2c8
+//! schema-digest: sha256:bde1f213747e24cf2a6399b3e4ded987019ddd6a719bb270caffdaa75cfb4180
 #![allow(missing_docs, clippy::all, clippy::pedantic)]
 
 /// Error types.
@@ -680,6 +680,9 @@ impl ::std::convert::TryFrom<::std::string::String> for ClassAbbr {
 ///    },
 ///    {
 ///      "$ref": "#/$defs/LogsListRequest"
+///    },
+///    {
+///      "$ref": "#/$defs/RecoveryOcrRequest"
 ///    }
 ///  ]
 ///}
@@ -718,6 +721,7 @@ pub enum ClientMessage {
     SpellsSearchRequest(SpellsSearchRequest),
     LogsSetDirRequest(LogsSetDirRequest),
     LogsListRequest(LogsListRequest),
+    RecoveryOcrRequest(RecoveryOcrRequest),
 }
 impl ::std::convert::From<Hello> for ClientMessage {
     fn from(value: Hello) -> Self {
@@ -867,6 +871,11 @@ impl ::std::convert::From<LogsSetDirRequest> for ClientMessage {
 impl ::std::convert::From<LogsListRequest> for ClientMessage {
     fn from(value: LogsListRequest) -> Self {
         Self::LogsListRequest(value)
+    }
+}
+impl ::std::convert::From<RecoveryOcrRequest> for ClientMessage {
+    fn from(value: RecoveryOcrRequest) -> Self {
+        Self::RecoveryOcrRequest(value)
     }
 }
 ///One row of `spells_us.txt` as the app's own `SpellResistInfo` describes it, field for field. THE OPTIONALS ARE ABSENT-MEANS-NOTHING and each absence was measured rather than chosen: a zero recast is the file saying there is no re-use timer, a zero `aeMaxTargets` is what 71,864 of ~74k rows read, and a zero mana is what every bard song says. Storing those zeros would cost a field on most of the table to state what the absence already states.
@@ -6938,6 +6947,327 @@ impl ::std::convert::From<EngineMessage> for ProtocolMessage {
         Self::EngineMessage(value)
     }
 }
+///`RecoveryOcrLine`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "title": "RecoveryOcrLine",
+///  "type": "object",
+///  "required": [
+///    "text",
+///    "words"
+///  ],
+///  "properties": {
+///    "text": {
+///      "type": "string"
+///    },
+///    "words": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/$defs/RecoveryOcrWord"
+///      }
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryOcrLine {
+    pub text: ::std::string::String,
+    pub words: ::std::vec::Vec<RecoveryOcrWord>,
+}
+///`RecoveryOcrParams`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "title": "RecoveryOcrParams",
+///  "type": "object",
+///  "required": [
+///    "pngBase64"
+///  ],
+///  "properties": {
+///    "pngBase64": {
+///      "description": "Standard base64 PNG image, at most 5 MiB decoded and 20 million pixels; each dimension must also fit the Windows OCR limit.",
+///      "type": "string",
+///      "maxLength": 6990508,
+///      "minLength": 1
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryOcrParams {
+    ///Standard base64 PNG image, at most 5 MiB decoded and 20 million pixels; each dimension must also fit the Windows OCR limit.
+    #[serde(rename = "pngBase64")]
+    pub png_base64: RecoveryOcrParamsPngBase64,
+}
+///Standard base64 PNG image, at most 5 MiB decoded and 20 million pixels; each dimension must also fit the Windows OCR limit.
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "description": "Standard base64 PNG image, at most 5 MiB decoded and 20 million pixels; each dimension must also fit the Windows OCR limit.",
+///  "type": "string",
+///  "maxLength": 6990508,
+///  "minLength": 1
+///}
+/// ```
+/// </details>
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct RecoveryOcrParamsPngBase64(::std::string::String);
+impl ::std::ops::Deref for RecoveryOcrParamsPngBase64 {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<RecoveryOcrParamsPngBase64> for ::std::string::String {
+    fn from(value: RecoveryOcrParamsPngBase64) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for RecoveryOcrParamsPngBase64 {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 6990508usize {
+            return Err("longer than 6990508 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for RecoveryOcrParamsPngBase64 {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for RecoveryOcrParamsPngBase64 {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for RecoveryOcrParamsPngBase64 {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for RecoveryOcrParamsPngBase64 {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+///Recognize one PNG with the local Windows English OCR engine. Available without an attached log; does not control the game or modify files. Concurrent OCR is refused as unavailable.
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "title": "RecoveryOcrRequest",
+///  "description": "Recognize one PNG with the local Windows English OCR engine. Available without an attached log; does not control the game or modify files. Concurrent OCR is refused as unavailable.",
+///  "type": "object",
+///  "required": [
+///    "id",
+///    "op",
+///    "params"
+///  ],
+///  "properties": {
+///    "id": {
+///      "$ref": "#/$defs/RequestId"
+///    },
+///    "op": {
+///      "type": "string",
+///      "enum": [
+///        "recovery.ocr"
+///      ]
+///    },
+///    "params": {
+///      "$ref": "#/$defs/RecoveryOcrParams"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryOcrRequest {
+    pub id: RequestId,
+    pub op: RecoveryOcrRequestOp,
+    pub params: RecoveryOcrParams,
+}
+///`RecoveryOcrRequestOp`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "enum": [
+///    "recovery.ocr"
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(
+    ::serde::Deserialize,
+    ::serde::Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum RecoveryOcrRequestOp {
+    #[serde(rename = "recovery.ocr")]
+    RecoveryOcr,
+}
+impl ::std::fmt::Display for RecoveryOcrRequestOp {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::RecoveryOcr => f.write_str("recovery.ocr"),
+        }
+    }
+}
+impl ::std::str::FromStr for RecoveryOcrRequestOp {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "recovery.ocr" => Ok(Self::RecoveryOcr),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for RecoveryOcrRequestOp {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for RecoveryOcrRequestOp {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for RecoveryOcrRequestOp {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+///Recognized text and word rectangles in decoded PNG pixel coordinates, with no quest-state interpretation.
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "title": "RecoveryOcrResult",
+///  "description": "Recognized text and word rectangles in decoded PNG pixel coordinates, with no quest-state interpretation.",
+///  "type": "object",
+///  "required": [
+///    "lines",
+///    "text"
+///  ],
+///  "properties": {
+///    "lines": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/$defs/RecoveryOcrLine"
+///      }
+///    },
+///    "text": {
+///      "type": "string"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryOcrResult {
+    pub lines: ::std::vec::Vec<RecoveryOcrLine>,
+    pub text: ::std::string::String,
+}
+///`RecoveryOcrWord`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "title": "RecoveryOcrWord",
+///  "type": "object",
+///  "required": [
+///    "height",
+///    "text",
+///    "width",
+///    "x",
+///    "y"
+///  ],
+///  "properties": {
+///    "height": {
+///      "type": "number"
+///    },
+///    "text": {
+///      "type": "string"
+///    },
+///    "width": {
+///      "type": "number"
+///    },
+///    "x": {
+///      "type": "number"
+///    },
+///    "y": {
+///      "type": "number"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct RecoveryOcrWord {
+    pub height: f64,
+    pub text: ::std::string::String,
+    pub width: f64,
+    pub x: f64,
+    pub y: f64,
+}
 ///A successful answer to one request.
 ///
 /// <details><summary>JSON schema</summary>
@@ -7117,6 +7447,9 @@ impl ::std::convert::TryFrom<::std::string::String> for ReplyKind {
 ///    },
 ///    {
 ///      "$ref": "#/$defs/LogsListResult"
+///    },
+///    {
+///      "$ref": "#/$defs/RecoveryOcrResult"
 ///    }
 ///  ]
 ///}
@@ -7144,6 +7477,7 @@ pub enum ReplyResult {
     ResistSpellResult(ResistSpellResult),
     SpellsSearchResult(SpellsSearchResult),
     LogsListResult(LogsListResult),
+    RecoveryOcrResult(RecoveryOcrResult),
 }
 impl ::std::convert::From<EchoResult> for ReplyResult {
     fn from(value: EchoResult) -> Self {
@@ -7238,6 +7572,11 @@ impl ::std::convert::From<SpellsSearchResult> for ReplyResult {
 impl ::std::convert::From<LogsListResult> for ReplyResult {
     fn from(value: LogsListResult) -> Self {
         Self::LogsListResult(value)
+    }
+}
+impl ::std::convert::From<RecoveryOcrResult> for ReplyResult {
+    fn from(value: RecoveryOcrResult) -> Self {
+        Self::RecoveryOcrResult(value)
     }
 }
 ///Client-chosen correlation id. A reply carries the id of its request; every stream message carries the id of the subscribe request that opened it.

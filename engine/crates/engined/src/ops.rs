@@ -26,7 +26,10 @@ use protocol::generated::{
     ResistSpellRequestOp, ResistSpellResult, SpellCatalogueRow, SpellCategoryFacet,
     SpellClassLevel, SpellSort, SpellTableState, SpellsSearchRequestOp, SpellsSearchResult,
 };
-use protocol::generated::{LogsListRequestOp, LogsListResult, LogsSetDirRequestOp};
+use protocol::generated::{LogsListRequestOp, LogsSetDirRequestOp, RecoveryOcrRequestOp};
+
+mod logs;
+mod recovery;
 
 use crate::clock::zone_hint;
 use crate::ingest::CombatOpts;
@@ -221,6 +224,8 @@ impl Session {
             ClientMessage::SessionHealthRequest(request) => {
                 reply(request.id, ReplyResult::HealthResult(world.health()))
             }
+
+            ClientMessage::RecoveryOcrRequest(request) => recovery::recognize(request),
 
             // Attach bumps the generation, announces it, and starts an ingest over the named log:
             // scan at full speed, then tail live.
@@ -748,17 +753,7 @@ impl Session {
             // No refusal path, for the `*.define` reason. A directory that does not exist is not a
             // refusal either: that produces a `logs.list` answering `missing`, which is a separate
             // question on purpose.
-            ClientMessage::LogsSetDirRequest(request) => {
-                world.set_log_dir(&request.params.dir);
-                reply(
-                    request.id,
-                    ReplyResult::DefineAck(DefineAck {
-                        applied: true,
-                        // Not a list: one directory, so the ack carries no `count`.
-                        count: None,
-                    }),
-                )
-            }
+            ClientMessage::LogsSetDirRequest(request) => logs::set_dir(world, request),
 
             // The scan itself is `crate::logs`; this arm is the envelope and the one refusal.
             //
@@ -769,17 +764,7 @@ impl Session {
             //
             // Every other outcome is an answer: a missing folder, an unreadable one and an empty
             // one all carry `readable` and the directory they are about.
-            ClientMessage::LogsListRequest(request) => match world.list_logs() {
-                Err(why) => error(request.id, ErrorCode::Unavailable, why),
-                Ok((dir, found)) => reply(
-                    request.id,
-                    ReplyResult::LogsListResult(LogsListResult {
-                        dir,
-                        readable: found.readable,
-                        characters: found.characters,
-                    }),
-                ),
-            },
+            ClientMessage::LogsListRequest(request) => logs::list(world, request),
         }
     }
 }
@@ -1085,6 +1070,7 @@ fn is_known_op(op: &str) -> bool {
         SpellsSearchRequestOp::SpellsSearch.to_string(),
         LogsSetDirRequestOp::LogsSetDir.to_string(),
         LogsListRequestOp::LogsList.to_string(),
+        RecoveryOcrRequestOp::RecoveryOcr.to_string(),
     ]
     .iter()
     .any(|known| known == op)

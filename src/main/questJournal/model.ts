@@ -8,6 +8,7 @@ import type { TurnInEvent } from '../../shared/types'
 import { achievementCompletion, finalTrade, matchObserved, nameKey, observedTaskId, readyForTurnIn, stepProgress } from './progress'
 import { allowsClass, compareRewards, recommend, type JournalWornItem } from './recommend'
 import { normalizedClass, sanitizeManual, sanitizeQuery } from './validate'
+import { recoveredLabel, recoveredState, usesRecovery } from './recovery/state'
 
 export interface JournalModelInput {
   catalog: readonly QuestJournalCatalogEntry[]
@@ -31,13 +32,15 @@ function catalogRow(input: JournalModelInput, entry: QuestJournalCatalogEntry): 
   const steps = stepProgress(entry, manual, input.inventory)
   const completed = isCompleted(input, entry)
   const ready = !completed && readyForTurnIn(entry, steps, input.inventory)
-  const active = manual.status === 'active' || taskState(observed) === 'active'
+  const recovery = input.progress.recovery?.[entry.id]
+  const active = recoveredState(manual, observed, recovery) === 'active'
   const handedIn = currentHandIn(input, entry) !== undefined
   return {
     id: entry.id, name: entry.name,
     state: completed ? 'completed' : ready ? 'ready' : active ? 'active' : 'unknown',
     stateLabel: completed ? 'Completed' : ready ? 'Ready based on inventory evidence' :
-      manual.status === 'active' ? 'Active · marked by you' : handedIn ? 'Turn-in recorded · outcome unknown' : taskLabel(observed),
+      manual.status === 'active' ? 'Active · marked by you' : handedIn ? 'Turn-in recorded · outcome unknown' :
+        usesRecovery(observed, recovery) ? recoveredLabel(recovery) : taskLabel(observed),
     tracked: manual.tracked === true, minLevel: entry.minLevel, startZone: entry.startZone,
     recommendation: recommend(entry, input.context), rewardNames: entry.rewards.map((reward) => reward.name),
     hasGuide: Boolean(entry.guide)
@@ -50,6 +53,8 @@ function currentHandIn(input: JournalModelInput, entry: QuestJournalCatalogEntry
   const assignedAt = matchObserved(entry, input.observed)?.assignedAt
   const trade = finalTrade(entry, input.turnins)
   if (trade && assignedAt !== undefined && trade.ts < assignedAt) return undefined
+  const recovered = input.progress.recovery?.[entry.id]
+  if (trade && recovered?.state === 'active' && trade.ts < recovered.recoveredAt) return undefined
   return trade
 }
 
@@ -57,17 +62,10 @@ function isCompleted(input: JournalModelInput, entry: QuestJournalCatalogEntry):
   const status = manualFor(input, entry.id).status
   if (status !== undefined) return status === 'completed'
   const task = matchObserved(entry, input.observed)
-  if (task) return taskState(task) === 'completed'
+  const recovery = input.progress.recovery?.[entry.id]
+  if (task || recovery) return recoveredState(manualFor(input, entry.id), task, recovery) === 'completed'
   return achievementCompletion(entry, input.claims) ||
     input.completedSky.has(entry.id)
-}
-
-function taskState(task: QuestJournalObservedTask | undefined): QuestJournalRow['state'] {
-  if (!task) return 'unknown'
-  const status = task.cycleStatus ?? task.lastChange
-  if (status === 'completed') return 'completed'
-  if (status === 'removed' || status === 'failed') return 'unknown'
-  return 'active'
 }
 
 function taskLabel(task: QuestJournalObservedTask | undefined): string {
@@ -82,9 +80,11 @@ function taskLabel(task: QuestJournalObservedTask | undefined): string {
 function taskRow(input: JournalModelInput, task: QuestJournalObservedTask): QuestJournalRow {
   const id = observedTaskId(task.name)
   const manual = manualFor(input, id)
+  const recovery = input.progress.recovery?.[id]
   return {
-    id, name: task.name, state: manual.status ?? taskState(task),
-    stateLabel: manual.status ? `${manual.status === 'completed' ? 'Completed' : 'Active'} · marked by you` : taskLabel(task),
+    id, name: task.name, state: recoveredState(manual, task, recovery),
+    stateLabel: manual.status ? `${manual.status === 'completed' ? 'Completed' : 'Active'} · marked by you` :
+      usesRecovery(task, recovery) ? recoveredLabel(recovery) : taskLabel(task),
     tracked: manual.tracked === true,
     recommendation: { fit: 'unknown', reasons: ['No matching quest guide is available for this observed task.'] },
     rewardNames: [], hasGuide: false
@@ -92,6 +92,20 @@ function taskRow(input: JournalModelInput, task: QuestJournalObservedTask): Ques
 }
 
 interface Candidate { row: QuestJournalRow; entry?: QuestJournalCatalogEntry }
+
+function retainedTaskRow(input: JournalModelInput, id: string): QuestJournalRow {
+  const recovery = input.progress.recovery?.[id]
+  const manual = manualFor(input, id)
+  const row = taskRow(input, { name: recovery?.name ?? id.slice(5) })
+  if (recovery) {
+    row.state = manual.status ?? recovery.state
+    row.stateLabel = manual.status ? row.stateLabel : recoveredLabel(recovery)
+  } else if (manual.status === undefined) {
+    row.state = 'unknown'
+    row.stateLabel = 'Progress unknown'
+  }
+  return row
+}
 
 function candidates(input: JournalModelInput): Candidate[] {
   const names = new Set(input.catalog.map((entry) => nameKey(entry.name)))
@@ -101,14 +115,9 @@ function candidates(input: JournalModelInput): Candidate[] {
   }
   // Keep user statements for observed-only tasks even when the log is replaced or truncated.
   const ids = new Set(rows.map((candidate) => candidate.row.id))
-  for (const id of Object.keys(input.progress.quests)) {
+  for (const id of new Set([...Object.keys(input.progress.quests), ...Object.keys(input.progress.recovery ?? {})])) {
     if (!id.startsWith('task:') || ids.has(id)) continue
-    const row = taskRow(input, { name: id.slice(5) })
-    if (manualFor(input, id).status === undefined) {
-      row.state = 'unknown'
-      row.stateLabel = 'Progress unknown'
-    }
-    rows.push({ row })
+    rows.push({ row: retainedTaskRow(input, id) })
   }
   return rows
 }
@@ -170,6 +179,11 @@ function evidenceFor(input: JournalModelInput, entry: QuestJournalCatalogEntry |
   const manual = manualFor(input, id)
   const evidence: string[] = []
   if (manual.status) evidence.push(`You marked this quest ${manual.status}.`)
+  const recovery = input.progress.recovery?.[id]
+  if (recovery) {
+    const when = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(recovery.recoveredAt)
+    evidence.push(`Recovered from ${recovery.source} on ${when}; this is the import time, not a quest event date.`, ...recovery.evidence)
+  }
   if (entry && achievementCompletion(entry, input.claims)) evidence.push('The character’s achievements export records an earned quest reward; bypass class grants are excluded.')
   if (entry) evidence.push(...handInEvidence(input, entry))
   if (input.completedSky.has(id)) evidence.push('Completion was recorded in this character’s Plane of Sky journal.')
@@ -191,7 +205,7 @@ export function detailJournal(input: JournalModelInput, id: string): QuestJourna
   const observed = entry ? matchObserved(entry, input.observed) : input.observed.find((task) => observedTaskId(task.name) === id)
   const manual = manualFor(input, id)
   const row = entry ? catalogRow(input, entry) : candidates(input).find((candidate) => candidate.row.id === id)?.row ?? null
-  return { context: input.context, row, entry, observed, manual,
+  return { context: input.context, row, entry, observed, manual, recovered: input.progress.recovery?.[id],
     steps: entry ? detailSteps(input, entry, manual) : [],
     evidence: evidenceFor(input, entry, id), comparisons: entry ? compareRewards(entry, input.worn, input.context) : [],
     nextStep: nextStep(input, entry, row), inventoryRefreshSuggested: input.context.inventory.state !== 'available' || input.context.inventory.refreshSuggested === true }
@@ -209,11 +223,24 @@ function detailSteps(input: JournalModelInput, entry: QuestJournalCatalogEntry, 
 
 function nextStep(input: JournalModelInput, entry: QuestJournalCatalogEntry | undefined, row: QuestJournalRow | null): string | undefined {
   if (row?.state === 'completed') return 'Completion recorded. You can keep this quest tracked for a repeat run.'
+  const objective = recoveredNextStep(input, row)
+  if (objective) return objective
   if (!entry) return undefined
   const steps = entry.guide?.steps
   if (!steps) return entry.giver ? `Speak to ${entry.giver} and consult the linked quest source.` : undefined
   if (row?.state === 'ready') return steps[steps.length - 1]?.text
   return guidedNextStep(input, entry, row)
+}
+
+function recoveredNextStep(input: JournalModelInput, row: QuestJournalRow | null): string | undefined {
+  if (row?.state !== 'active') return undefined
+  const recovery = input.progress.recovery?.[row.id]
+  const observed = input.observed.find((task) => nameKey(task.name) === nameKey(row.name))
+  if (!usesRecovery(observed, recovery) || recovery.state !== 'active') return undefined
+  const objective = recovery.objectives?.find((item) => item.complete === false)
+  if (!objective) return undefined
+  const count = objective.current !== undefined && objective.required !== undefined ? ` (${objective.current}/${objective.required})` : ''
+  return `From recovered objectives: ${objective.text}${count}`
 }
 
 function guidedNextStep(input: JournalModelInput, entry: QuestJournalCatalogEntry, row: QuestJournalRow | null): string | undefined {

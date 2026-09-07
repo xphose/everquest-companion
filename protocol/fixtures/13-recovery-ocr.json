@@ -1,0 +1,33 @@
+{
+  "moment": "local screenshot recognition before a character attaches",
+  "note": "Synthetic protocol examples: a blank tiny PNG returns no words; malformed image bytes are refused. Native text recognition uses tests/fixtures/ocr-quest-table.png separately.",
+  "messages": [
+    {
+      "dir": "client",
+      "message": {
+        "id": 1,
+        "op": "recovery.ocr",
+        "params": { "pngBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aS1cAAAAASUVORK5CYII=" }
+      }
+    },
+    {
+      "dir": "engine",
+      "message": { "kind": "reply", "id": 1, "ok": true, "result": { "text": "", "lines": [] } }
+    },
+    {
+      "dir": "client",
+      "message": { "id": 2, "op": "recovery.ocr", "params": { "pngBase64": "%%%" } }
+    },
+    {
+      "dir": "engine",
+      "message": { "kind": "error", "id": 2, "ok": false, "error": { "code": "badParams", "message": "OCR image is not valid standard base64" } }
+    },
+    {
+      "dir": "engine",
+      "message": {
+        "kind": "reply", "id": 3, "ok": true,
+        "result": { "text": "Quest Title", "lines": [{ "text": "Quest Title", "words": [{ "text": "Quest", "x": 20.5, "y": 24.5, "width": 58.5, "height": 21.5 }] }] }
+      }
+    }
+  ]
+}

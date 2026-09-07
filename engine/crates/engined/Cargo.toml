@@ -34,3 +34,8 @@ fold = { path = "../fold" }
 # verdict 5's "the mutual dependency dissolves in-process", literally. It depends on `fold` and not
 # the reverse, which is why `parity` links none of the 12 MB.
 knowledge = { path = "../knowledge" }
+
+base64 = "0.22"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = ["Globalization", "Graphics_Imaging", "Media_Ocr", "Storage_Streams"] }
