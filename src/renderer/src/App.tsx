@@ -25,6 +25,7 @@ import { useAppRouting, usePrefsRouting, type AppRouting, type PrefsRouting } fr
 // The mouse's Back button (JOS-201): the app-level answer, behind whatever drill is on screen.
 import { useBackFallback } from './appBack'
 import PoskyView from './features/posky/PoskyView'
+import QuestJournalView from './features/questJournal/QuestJournalView'
 import LootView from './features/loot/LootView'
 import LevelingView from './features/leveling/LevelingView'
 import PlannerView from './features/planner/PlannerView'
@@ -117,7 +118,8 @@ function PlainView({
       )}
       {/* Maps remounts per character rebuild like the rest: the zone it auto-opens comes from
           the character module, which re-hydrates under the new character anyway. */}
-      {view === 'maps' && <MapsView key={viewKey} />}
+      {view === 'maps' && <MapsView key={viewKey} focus={routing.mapFocus} focusNonce={routing.mapNonce}
+        onFocusConsumed={routing.clearMapFocus} nav={routing.nav} />}
       {/* Leveling stays MOUNTED across a deep link like Loot and Mobs: the level a toast asked
           for arrives through the nonce, not through a remount. */}
       {view === 'leveling' && (
@@ -167,6 +169,11 @@ function PlainView({
   )
 }
 
+/** Catalog reference destinations remain useful without a character log. */
+function needsCharacterLog(view: View, hasCharacters: boolean): boolean {
+  return !hasCharacters && !['maps', 'mobs', 'loot', 'spell'].includes(view)
+}
+
 /** Which feature view is on screen. Preferences renders even with zero characters — it's how
  *  a user fixes the install path, so the fresh-machine empty state must never hide it. */
 function ViewContent({
@@ -208,7 +215,13 @@ function ViewContent({
   // no-characters gate on purpose: the triage tab reads the cloud backlog, not the game log, so
   // a machine with no EverQuest install must still reach it.
   if (OWNER_TOOLS && view === 'triage') return <DevTriageView />
-  if (!hasCharacters) return <NoLogsEmptyState onOpenPreferences={onOpenPreferences} />
+  // The offline quest directory remains useful before a player selects their first character log.
+  if (view === 'questJournal') return <SpellLinkProvider open={routing.openSpell}>
+    <QuestJournalView key={viewKey} navigation={routing} />
+  </SpellLinkProvider>
+  // Reference pages have useful catalog/map data even before a character log exists. Keeping
+  // them reachable also preserves the journal's native item/NPC/map Back journeys offline.
+  if (needsCharacterLog(view, hasCharacters)) return <NoLogsEmptyState onOpenPreferences={onOpenPreferences} />
   // EVERY SPELL NAME BELOW THIS LINE IS A LINK (JOS-508) — one provider rather than a prop threaded
   // through AlertsView, BuffsView and LevelingView to the five places a name is drawn.
   // `lib/spellLink.tsx`'s header carries the argument; the short form is that whether a spell name
