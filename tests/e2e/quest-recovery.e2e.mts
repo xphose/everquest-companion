@@ -1,5 +1,6 @@
 /** Recovery through real Electron IPC, saved exports and native Windows OCR. The generated PNG
- * is explicitly synthetic; only the OS file picker is stubbed, never OCR or recovery results. */
+ * is explicitly synthetic. The OS picker and one transient source-list miss are staged;
+ * OCR and recovery results are never mocked. */
 import type { ElectronApplication, Page } from 'playwright-core'
 import type { EqApi } from '../../src/preload/index'
 import { ARTIFACTS, buildIfStale, check, dumpArtifacts, failures, reportRun, settle, settleGone } from './appHarness.mjs'
@@ -8,6 +9,7 @@ import { launchOnFixture, stageFixture, type FixtureLog } from './logFixture.mjs
 import { chooseRecoveryPicture, holdRecoveryPicker, recoveryPicture, releaseRecoveryPicker } from './quest-recovery-images.mjs'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { checkRetriedGameCapture } from './quest-recovery-window.mjs'
 
 type Bridge = Pick<EqApi, 'questJournalQuery' | 'questJournalDetail' | 'questJournalRecoverScan' | 'questJournalRecoverCommit' | 'setCharacter'>
 const DIALOG = '[data-testid="quest-recovery-dialog"]'
@@ -168,6 +170,7 @@ async function runSession(log: FixtureLog, userData: string): Promise<void> {
     const history = await recoveryPicture(launched.app, log.installDir, 'history')
     const unrelated = await recoveryPicture(launched.app, log.installDir, 'source-page')
     await savedFiles(page, id)
+    await checkRetriedGameCapture(launched.app, page, active)
     await imageRecovery(launched.app, page, { path: active, quest: ACTIVE, characterId: id, state: 'active' })
     await imageRecovery(launched.app, page, { path: history, quest: HISTORY, characterId: id, state: 'completed' })
     await unrelatedImage(launched.app, page, unrelated)

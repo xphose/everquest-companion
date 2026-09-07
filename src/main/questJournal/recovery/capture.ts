@@ -2,17 +2,15 @@ import { clipboard, desktopCapturer, dialog, nativeImage, type NativeImage } fro
 import { readFile, stat } from 'node:fs/promises'
 import type { RecoveryCapture, RecoveryInput } from '../../../shared/questJournal/recovery'
 import { recognizeJournalImage } from './ocr'
-
-export function isEverQuestWindow(name: string): boolean {
-  return /^(?:EverQuest(?: Legends)?)(?:$|\s*[-–:]\s*.+$)/i.test(name.trim()) && !/companion/i.test(name)
-}
+import { acquireGameWindow } from './gameWindow'
 
 async function gameImage(): Promise<NativeImage> {
-  const sources = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 3840, height: 2160 }, fetchWindowIcons: false })
-  const matches = sources.filter((source) => isEverQuestWindow(source.name))
-  if (matches.length > 1) throw new Error('More than one EverQuest window is open. Use a screenshot of the intended character’s journal.')
-  if (!matches.length) throw new Error('No EverQuest window was found. Open the game and its quest journal, or choose a screenshot.')
-  return matches[0].thumbnail
+  return acquireGameWindow({
+    // Match the OCR side limit instead of enlarging a 1440p game into a bulky 4K preview.
+    readSources: () => desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 2600, height: 2600 }, fetchWindowIcons: false }),
+    isEmpty: (picture) => picture.isEmpty(),
+    wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  })
 }
 
 async function fileImage(): Promise<NativeImage | null> {
