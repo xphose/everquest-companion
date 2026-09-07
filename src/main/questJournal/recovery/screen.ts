@@ -44,6 +44,7 @@ function rowIdentity(catalog: readonly QuestJournalCatalogEntry[], row: { name: 
 
 function associateObjectives(result: ScreenResult, lines: string[], objectives: RecoveryObjective[]): void {
   if (!objectives.length) return
+  if (objectives.some((objective) => objective.complete === undefined)) result.warnings.push('Some objective status cells were not recognized. Their instruction text is retained with progress unknown.')
   // A title repeated directly under the progression heading identifies the selected task. A list
   // containing several tasks does not tell us which task the objective pane currently describes.
   const selected = result.candidates.filter((candidate) => nameKey(candidate.name) === nameKey(lines[0] ?? ''))
