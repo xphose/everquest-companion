@@ -32,10 +32,11 @@ async function sourceImage(source: Exclude<RecoveryInput, 'files'>): Promise<Nat
 
 export async function captureJournal(source: Exclude<RecoveryInput, 'files'>): Promise<RecoveryCapture | null> {
   const picture = await sourceImage(source)
+  const capturedAt = Date.now()
   if (!picture) return null
   if (picture.isEmpty()) throw new Error('No image was available. Copy a journal screenshot or restore the game window, then retry.')
   const size = picture.getSize()
   if (size.width * size.height > 20000000) throw new Error('The image is too large. Capture just the quest journal.')
   const result = await recognizeJournalImage(picture.toPNG())
-  return { ...result, imageDataUrl: picture.toDataURL() }
+  return { ...result, imageDataUrl: picture.toDataURL(), capturedAt }
 }

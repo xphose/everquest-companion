@@ -3,7 +3,7 @@ export type RecoverySource = 'task-window' | 'history-window' | 'achievement' | 
 export type RecoveryInput = 'files' | 'game-window' | 'clipboard' | 'image-file'
 export interface RecoveryOcrWord { text: string; x: number; y: number; width: number; height: number }
 export interface RecoveryOcrLine { text: string; words: RecoveryOcrWord[] }
-export interface RecoveryCapture { text: string; lines?: RecoveryOcrLine[]; imageDataUrl?: string }
+export interface RecoveryCapture { text: string; lines?: RecoveryOcrLine[]; imageDataUrl?: string; capturedAt?: number }
 export interface RecoveryObjective {
   text: string
   current?: number
