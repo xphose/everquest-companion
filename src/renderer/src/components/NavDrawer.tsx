@@ -2,6 +2,7 @@ import type { JSX } from 'react'
 import { Box, Chip, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material'
 import SettingsIcon from '@mui/icons-material/Settings'
 import ShieldMoonIcon from '@mui/icons-material/ShieldMoon'
+import MenuBookIcon from '@mui/icons-material/MenuBook'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
@@ -99,6 +100,7 @@ const ROWS: NavRow[] = [
   { view: 'maps', icon: <MapIcon /> },
   { view: 'bosses', icon: <EmojiEventsIcon /> },
   { view: 'posky', icon: <ShieldMoonIcon /> },
+  { view: 'questJournal', icon: <MenuBookIcon /> },
   { view: 'alerts', icon: <NotificationsActiveIcon /> },
   { view: 'leveling', icon: <TrendingUpIcon /> },
   { view: 'buffs', icon: <AutoFixHighIcon /> },

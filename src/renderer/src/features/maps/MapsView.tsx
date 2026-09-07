@@ -68,6 +68,7 @@ import {
   type ZoneSelection
 } from './zoneFollow'
 import { Tooltip } from '../../lib/Tooltip'
+import { MapFocusArrival, useMapFocusArrival, type MapFocusProps } from './MapFocusArrival'
 
 /** A stand-in extent for the frames where no map is loaded. Never drawn; keeps the hook honest. */
 const EMPTY_BOUNDS: MapBounds = { minX: -1, maxX: 1, minY: -1, maxY: 1, minZ: 0, maxZ: 0 }
@@ -355,7 +356,7 @@ function useMapOpenTracking(data: MapData | null): void {
   }, [loaded])
 }
 
-export default function MapsView(): JSX.Element {
+export default function MapsView(props: MapFocusProps): JSX.Element {
   // WHERE YOU ARE. The character module owns the raw display zone off the `zone` log event; it
   // is undefined until the log prints one, and that absence is a state this view renders.
   const raw = useModule<CharacterSnap>('character')?.zone
@@ -385,6 +386,7 @@ export default function MapsView(): JSX.Element {
   const hostRef = useRef<HTMLDivElement>(null)
   const vp = useMapViewport({ bounds: data?.bounds ?? EMPTY_BOUNDS, id: data?.zone ?? '', hostRef })
   const { marker, onJump } = useSearchJump({ vp, zone: data?.zone, pick })
+  const focus = useMapFocusArrival(props, onJump)
   // THE POSITION YOU TOLD IT (JOS-98). Keyed on the zone actually DRAWN, never the one being
   // fetched: a marker attributed to a map that has not loaded would be drawn against the previous
   // zone's bounds for a frame — a dot in the wrong place, which is the one thing this must not do.
@@ -397,6 +399,7 @@ export default function MapsView(): JSX.Element {
 
   return (
     <Stack spacing={1.5} sx={{ height: '100%' }}>
+      <MapFocusArrival nav={props.nav} focus={focus} zone={zone} />
       <MapsHeader title={headerTitle(zone, raw)} zone={zone} data={data} />
       {/* ALWAYS RENDERED, because the Zone selector inside it is how you leave the map you are
           on. Everything else in the bar is gated on `hasMap`. */}
