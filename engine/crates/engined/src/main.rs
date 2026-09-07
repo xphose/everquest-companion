@@ -41,6 +41,7 @@ mod ingest;
 /// one piece of this process that reads a log file's NAME rather than its bytes.
 mod logs;
 mod ops;
+mod recovery_ocr;
 mod search;
 mod spawn;
 /// Searching that table by type — the filter/sort/window behind the in-game Actions window's

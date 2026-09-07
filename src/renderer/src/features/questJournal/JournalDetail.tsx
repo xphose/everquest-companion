@@ -8,6 +8,7 @@ import { JournalLocations } from './JournalLocations'
 import { JournalGuide, ProgressCorrection } from './JournalGuides'
 import { JournalRewards } from './JournalRewards'
 import { JournalReference } from './JournalReference'
+import { RecoveredProgress } from './RecoveredProgress'
 import type { JournalAction } from './useQuestJournal'
 import type { JournalNavigation } from './navigation'
 
@@ -59,6 +60,7 @@ export function JournalDetail({ detail, selectedId, navigation, mutate }: {
         </Stack>
       </Stack>
       {detail.nextStep && <Alert severity="info" icon={false} data-testid="quest-journal-next-step"><Typography variant="subtitle2">Next action</Typography>{detail.nextStep}</Alert>}
+      <RecoveredProgress record={detail.recovered} />
       <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
         <Chip size="small" variant="outlined" label={FIT_LABELS[row.recommendation.fit]} />
         {detail.entry?.minLevel !== undefined && <Typography variant="caption" color="text.secondary">Source minimum: level {detail.entry.minLevel}</Typography>}

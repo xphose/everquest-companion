@@ -63,19 +63,19 @@
       "file": "crates/engined/src/ops.rs",
       "metric": "complexity",
       "name": "Session::dispatch",
-      "value": 63
+      "value": 62
     },
     {
       "file": "crates/engined/src/ops.rs",
       "metric": "file-lines",
       "name": "",
-      "value": 1645
+      "value": 1630
     },
     {
       "file": "crates/engined/src/ops.rs",
       "metric": "function-lines",
       "name": "Session::dispatch",
-      "value": 391
+      "value": 373
     },
     {
       "file": "crates/engined/src/search.rs",

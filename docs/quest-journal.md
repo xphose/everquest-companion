@@ -27,11 +27,46 @@ Level and classes come from the character log when available. **Character detail
 and profile correction** supplies an optional fallback; **Use detected profile**
 returns to automatic detection. Filters change what you browse, not your character.
 
+## Recover existing quests
+
+Select your character, then choose **Recover character**. Matching character exports
+are scanned automatically; **Scan saved files** refreshes them. Supported earned quest achievements can confirm completed
+quests. An item found in inventory is only a clue: owning a reward does not prove a
+quest was completed. Unsupported saved journal formats are reported in the source list.
+
+To read the game journal, open EverQuest's active task or completed history page and
+choose **Read game journal**. You can also use **Clipboard image** or **Choose
+screenshot**. Text recognition uses local Windows English OCR support and reads only
+the visible page; it does not operate the game. Scan active tasks and completed history separately,
+applying each reviewed page before scanning the next one.
+Use a fresh screenshot for current tasks; an image file or clipboard image does not
+prove when it was captured. History pages may be older.
+
+The review shows source availability, warnings, quest names, proposed states and
+evidence. Expand **Review image and recognized text** to compare a scan with its source.
+Confirmed entries start selected. Likely matches stay off until you choose them;
+**Select confirmed** and **Clear selection** help review a large result. **Select all
+suggestions too** is an explicit bulk confirmation of those proposed names and states.
+Confirm that the selected entries belong to the named character and server and that
+current-task entries still apply, then **Apply selected**.
+When an image shows objectives without identifying their task, **These visible
+objectives belong to** lets you associate them with one selected active task. It starts
+at **Leave unassigned**; assigning objectives is optional and never guessed.
+Cancel discards the current review. Switching characters also closes the review so a
+pending scan cannot be applied to someone else.
+
+Recovered quests appear in the regular journal, with any recovered objectives and
+their evidence in the detail pane. **Forget recovered data…** requires an inline
+confirmation and clears only recovered entries; log observations, tracking and
+manual corrections remain.
+
 ## Understand progress
 
-- **Active** comes from observed task activity or an explicit correction.
+- **Active** comes from observed task activity, reviewed recovered Current Tasks
+  evidence, or an explicit correction.
 - **Completed** requires a recorded task completion, a supported earned Sky quest
-  achievement, existing Sky completion history, or an explicit correction.
+  achievement, existing Sky completion history, reviewed recovered quest history,
+  or an explicit correction.
 - **Ready to turn in** means the available item evidence satisfies a structured
   guide's distinguishable requirements. Check the guide's faction and other conditions.
 - **Progress unknown** means there is insufficient evidence. It does not mean you
@@ -58,9 +93,10 @@ merge tiers, effects, or stat caps.
 
 Task assignment/update parsing is covered by recorded game logs. Completion, removal,
 and failure parsing matches the installed Legends client's exact string templates;
-live emission of those terminal messages still needs verification. Tasks missing
-from a log and unsupported historical completions cannot be recovered from these
-inputs. The game client does not list an active-task `/outputfile` export.
+live emission of those terminal messages still needs verification. Saved exports
+do not cover every active task or historical completion. Recovery can read visible
+journal pages, while unavailable or ambiguous evidence remains unconfirmed. The game
+client does not list an active-task `/outputfile` export.
 
 This feature is implemented on the fork's development branch. It has not been
 published as an upstream release.

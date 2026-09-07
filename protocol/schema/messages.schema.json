@@ -98,6 +98,9 @@
         },
         {
           "$ref": "#/$defs/LogsListRequest"
+        },
+        {
+          "$ref": "#/$defs/RecoveryOcrRequest"
         }
       ]
     },
@@ -401,6 +404,9 @@
         },
         {
           "$ref": "#/$defs/LogsListResult"
+        },
+        {
+          "$ref": "#/$defs/RecoveryOcrResult"
         }
       ]
     },
@@ -1349,7 +1355,6 @@
       ],
       "additionalProperties": false
     },
-
     "RespawnConfirmSightingParams": {
       "title": "RespawnConfirmSightingParams",
       "description": "THE ROW, AND NOTHING ELSE — the whole of what the ipc handler takes (`IPC.respawnConfirmSighting`). ONE IDENTIFIER, NO SECOND ADDRESSING SCHEME: `rowId` is the id the surfaces draw and the id the fold keys its history by, so a zone and a mob key spelled separately here would be a second way to name a row and a second thing to keep in step with `RespawnRow.id`. NO INSTANT RIDES THIS COMMAND, which is the one place it differs from `SessionMarkAddParams` and is not an oversight: the instant the clock re-bases onto is the row's OWN `seenTs`, a LOG timestamp the fold already holds, so a caller's clock has nothing to say about it — and handing one over would let the app move an engine clock to a moment the engine's log never stated (ruling 18 law 1, from the other direction).",
@@ -1365,7 +1370,6 @@
       ],
       "additionalProperties": false
     },
-
     "RespawnConfirmAck": {
       "title": "RespawnConfirmAck",
       "description": "RE-BASED, OR A NO-OP — and `confirmed: false` IS NOT AN ERROR. It is `respawnModule.confirmSighting`'s own `false` on the wire: the id names no row this fold has, or the row is not currently seen, which is what a click that lost a race with a death looks like. The caller is the app's IPC handler, which has already answered the person from its OWN module's `false`; this ack is a dev-log line and a test's grip, never a branch (`serveCommands.ts`'s fire-and-forget law). IT CARRIES ONE FIELD AND THE NAME IS THE DISCRIMINATOR. `applied` would have made this the seventh member of the `DefineAck` family and unseparable from six other ops by shape — the collision `accepted` walked into when `sessionMarks.add` met `AttachResult`, and `status` walked into twice, taught the guard matrix (`src/shared/dataServer/ops.ts`) that a field two arms carry cannot tell them apart. `confirmed` is this shape's own word: no other result carries it, and it is what the act is called everywhere else in the feature. IT DELIBERATELY DOES NOT SAY WHICH OF THE TWO REFUSALS HAPPENED. The app-side seam answers one boolean for both, and an engine that answered a finer question would be a second opinion about a seam whose whole job is to match — the honest report of what the fold now holds is the module's own state, which the next `module.snapshot` states in full.",
@@ -1381,7 +1385,6 @@
       ],
       "additionalProperties": false
     },
-
     "ComboDefineRequest": {
       "title": "ComboDefineRequest",
       "description": "THE USER'S CLASS-COMBO CORRECTIONS — the one input to the loadout model that the log cannot state. Character-scoped app-side; the engine holds whatever the app last pushed for the character it is folding.",
@@ -1714,16 +1717,21 @@
         },
         "op": {
           "type": "string",
-          "enum": ["sessionMarks.add"]
+          "enum": [
+            "sessionMarks.add"
+          ]
         },
         "params": {
           "$ref": "#/$defs/SessionMarkAddParams"
         }
       },
-      "required": ["id", "op", "params"],
+      "required": [
+        "id",
+        "op",
+        "params"
+      ],
       "additionalProperties": false
     },
-
     "SessionMarkAddParams": {
       "title": "SessionMarkAddParams",
       "type": "object",
@@ -1733,10 +1741,11 @@
           "type": "integer"
         }
       },
-      "required": ["at"],
+      "required": [
+        "at"
+      ],
       "additionalProperties": false
     },
-
     "SessionMarkAck": {
       "title": "SessionMarkAck",
       "description": "TAKEN, OR NOT TAKEN, AND WHAT THE WORLD WAS DOING. `accepted: false` IS NOT AN ERROR — it is the census's own semantics (boundary verdict 6) and it mirrors `combat/engine.ts sessionMark`, which returns false while the historical fold is still running. A mark cannot enter a replaying fold at all, which is what makes the JOS-208 replay-versus-live divergence class structurally impossible here rather than carefully avoided. THE CALLER MUST TREAT A REFUSAL AS `NEITHER HALF` (`pressNewSession`'s own law): a mark the engine never took is a boundary only half the app has, so the app records nothing either and leaves its loading state up. `status` is here rather than left to a follow-up `session.health` because the two would RACE — a fold that went live between the refusal and the question would explain the refusal with a state that no longer holds — and because a refusal that cannot say what it was refusing under is a bug report with a hole in it. WHETHER THE MARK MINTED A RECORD IS A DIFFERENT QUESTION and this ack deliberately does not answer it: an empty stay mints nothing, which is also what makes a double press harmless, and the honest answer to `did anything change` is the history itself.",
@@ -1749,13 +1758,21 @@
         "status": {
           "description": "What the engine's ingest was doing at the moment it decided, in `HealthResult.status`'s own words. `live` accompanies every acceptance; anything else accompanies a refusal.",
           "type": "string",
-          "enum": ["starting", "attaching", "folding", "live", "idle"]
+          "enum": [
+            "starting",
+            "attaching",
+            "folding",
+            "live",
+            "idle"
+          ]
         }
       },
-      "required": ["accepted", "status"],
+      "required": [
+        "accepted",
+        "status"
+      ],
       "additionalProperties": false
     },
-
     "NoParams": {
       "title": "NoParams",
       "description": "An op that takes nothing still sends `params: {}`. The envelope keeps one shape, so adding a parameter later is a schema edit rather than an envelope change.",
@@ -2672,6 +2689,117 @@
         "name",
         "server",
         "logPath"
+      ],
+      "additionalProperties": false
+    },
+    "RecoveryOcrRequest": {
+      "title": "RecoveryOcrRequest",
+      "description": "Recognize one PNG with the local Windows English OCR engine. Available without an attached log; does not control the game or modify files. Concurrent OCR is refused as unavailable.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/RequestId"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "recovery.ocr"
+          ]
+        },
+        "params": {
+          "$ref": "#/$defs/RecoveryOcrParams"
+        }
+      },
+      "required": [
+        "id",
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "RecoveryOcrParams": {
+      "title": "RecoveryOcrParams",
+      "type": "object",
+      "properties": {
+        "pngBase64": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 6990508,
+          "description": "Standard base64 PNG image, at most 5 MiB decoded and 20 million pixels; each dimension must also fit the Windows OCR limit."
+        }
+      },
+      "required": [
+        "pngBase64"
+      ],
+      "additionalProperties": false
+    },
+    "RecoveryOcrResult": {
+      "title": "RecoveryOcrResult",
+      "description": "Recognized text and word rectangles in decoded PNG pixel coordinates, with no quest-state interpretation.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecoveryOcrLine"
+          }
+        }
+      },
+      "required": [
+        "text",
+        "lines"
+      ],
+      "additionalProperties": false
+    },
+    "RecoveryOcrLine": {
+      "title": "RecoveryOcrLine",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "words": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecoveryOcrWord"
+          }
+        }
+      },
+      "required": [
+        "text",
+        "words"
+      ],
+      "additionalProperties": false
+    },
+    "RecoveryOcrWord": {
+      "title": "RecoveryOcrWord",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "text",
+        "x",
+        "y",
+        "width",
+        "height"
       ],
       "additionalProperties": false
     }

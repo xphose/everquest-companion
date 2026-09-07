@@ -30,6 +30,21 @@ async function sourceImage(source: Exclude<RecoveryInput, 'files'>): Promise<Nat
   return fileImage()
 }
 
+/** Whole-image enlargement preserves layout and makes small isolated fractions legible.
+ * 2600 is the validated Windows OCR side limit; the native engine enforces its own limit too. */
+async function recognizePicture(picture: NativeImage): Promise<RecoveryCapture> {
+  const original = picture.getSize()
+  const scale = Math.min(2, 2600 / Math.max(original.width, original.height))
+  const width = Math.max(1, Math.round(original.width * scale))
+  const height = Math.max(1, Math.round(original.height * scale))
+  const prepared = picture.resize({ width, height, quality: 'best' })
+  const result = await recognizeJournalImage(prepared.toPNG())
+  const xScale = original.width / width; const yScale = original.height / height
+  return { ...result, lines: result.lines?.map((line) => ({ ...line, words: line.words.map((word) => ({
+    ...word, x: word.x * xScale, y: word.y * yScale, width: word.width * xScale, height: word.height * yScale
+  })) })) }
+}
+
 export async function captureJournal(source: Exclude<RecoveryInput, 'files'>): Promise<RecoveryCapture | null> {
   const picture = await sourceImage(source)
   const capturedAt = Date.now()
@@ -37,6 +52,6 @@ export async function captureJournal(source: Exclude<RecoveryInput, 'files'>): P
   if (picture.isEmpty()) throw new Error('No image was available. Copy a journal screenshot or restore the game window, then retry.')
   const size = picture.getSize()
   if (size.width * size.height > 20000000) throw new Error('The image is too large. Capture just the quest journal.')
-  const result = await recognizeJournalImage(picture.toPNG())
+  const result = await recognizePicture(picture)
   return { ...result, imageDataUrl: picture.toDataURL(), capturedAt }
 }

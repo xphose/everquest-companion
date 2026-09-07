@@ -4,6 +4,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import type { QuestJournalContext } from '@shared/questJournal/journal'
 import { formatDateTime } from '../../lib/formatDate'
 import type { JournalAction } from './useQuestJournal'
+import { QuestRecovery } from './QuestRecovery'
 
 function ProfileCorrection({ context, mutate }: { context: QuestJournalContext; mutate: (action: JournalAction) => Promise<void> }): JSX.Element {
   const [level, setLevel] = useState(context.level?.toString() ?? '')
@@ -49,6 +50,7 @@ export function JournalContext({ context, refresh, mutate }: {
         <Chip size="small" label={context.characterName ?? 'Browse quest catalog'} />
         {context.level !== undefined && <Chip size="small" variant="outlined" label={`Level ${context.level}`} />}
         {context.classes.map((name) => <Chip key={name} size="small" variant="outlined" label={name} />)}
+        <QuestRecovery characterId={context.characterId} characterName={context.characterName} characterServer={context.characterServer} refresh={refresh} />
         <Button size="small" onClick={refresh} data-testid="quest-journal-refresh">Refresh</Button>
       </Stack>
       <Typography variant="body2" color="text.secondary">

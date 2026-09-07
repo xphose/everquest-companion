@@ -64,7 +64,8 @@ const EVERY_OP: RequestOp[] = [
   'resist.spell',
   'spells.search',
   'logs.setDir',
-  'logs.list'
+  'logs.list',
+  'recovery.ocr'
 ]
 
 test('the registry names every op, and the compile-time pin agrees', () => {
@@ -206,7 +207,8 @@ test('EVERY GUARD IS DISCRIMINATING — no two ops accept each other’s result'
     // read `characters` for truthiness rather than with `in` would call the correct picker's own
     // reply a wrong shape. The `dir` and `readable` beside it are what make it an ANSWER rather than
     // a silence, and they are deliberately NOT what the guard reads.
-    'logs.list': { dir: 'C:/EverQuest Legends/Logs', readable: 'ok', characters: [] }
+    'logs.list': { dir: 'C:/EverQuest Legends/Logs', readable: 'ok', characters: [] },
+    'recovery.ocr': { text: '', lines: [] }
   }
   for (const op of EVERY_OP) {
     assert.equal(RESULT_GUARDS[op](shapes[op]), true, `${op} refused its own result`)
