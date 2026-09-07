@@ -326,4 +326,10 @@ test('column-grouped OCR lines preserve task titles and separate objective ratio
   const unknown = screenCandidates([entry], { text: missingStatus.map((row) => row.text).join('\n'), lines: missingStatus })
   assert.deepEqual(unknown.unassignedObjectives, [{ text: 'Collect casks' }])
   assert.ok(unknown.warnings.some((warning) => warning.includes('progress unknown')))
+  const overlapping = { text: 'unreadable', words: [{ text: 'unreadable', x: 420, y: 280, width: 300, height: 12 }] }
+  const narrative = [...missingStatus, line('Narrative fragment', 20, 250), line('not a status', 420, 250), line('Blackburrow', 600, 250),
+    line('Chat without zone', 20, 270), line('Overlapping status', 20, 280), overlapping, line('Blackburrow', 600, 280),
+    line('Chat after table', 20, 500), line('Blackburrow', 600, 500)]
+  const bounded = screenCandidates([entry], { text: narrative.map((row) => row.text).join('\n'), lines: narrative })
+  assert.deepEqual(bounded.unassignedObjectives, [{ text: 'Collect casks' }])
 })
