@@ -1,14 +1,12 @@
-import { execFile } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { promisify } from 'node:util'
 import type { RecoveryCapture, RecoveryOcrLine, RecoveryOcrWord } from '../../../shared/questJournal/recovery'
 import { record } from '../validate'
-import { OCR_SCRIPT } from './ocrScript'
 
-const run = promisify(execFile)
-const MAX_IMAGE_BYTES = 20 * 1024 * 1024
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+type NativeReader = (pngBase64: string) => Promise<unknown>
+let reader: NativeReader | null = null
+
+/** Composition supplies the existing engine's native image reader; tests need no Electron process. */
+export function installJournalImageReader(nativeReader: NativeReader): void { reader = nativeReader }
 
 function ocrWord(value: unknown): RecoveryOcrWord | null {
   const word = record(value)
@@ -35,27 +33,10 @@ export function parseOcrResult(text: string): RecoveryCapture {
   return { text: value.text, lines: lines as RecoveryOcrLine[] }
 }
 
-function failureMessage(error: unknown): string {
-  const failure = error as { stderr?: string; killed?: boolean; code?: string }
-  if (failure.killed) return 'The local text reader timed out. Try a smaller screenshot.'
-  if (failure.code === 'ENOENT') return 'Windows PowerShell is unavailable; the local text reader could not start.'
-  if (failure.stderr?.includes('English OCR is unavailable')) return 'Install English language OCR in Windows Settings, then retry.'
-  if (failure.stderr?.includes('image is too large')) return 'The image is too large. Capture a smaller journal window.'
-  return 'Windows could not read this image. Try a clear PNG screenshot with the journal enlarged.'
-}
-
 export async function recognizeJournalImage(png: Buffer): Promise<RecoveryCapture> {
   if (process.platform !== 'win32') throw new Error('Journal screen reading currently requires Windows. Saved-file recovery is still available.')
-  if (!png.length || png.length > MAX_IMAGE_BYTES) throw new Error('Choose a journal image smaller than 20 MB.')
-  const directory = await mkdtemp(join(tmpdir(), 'eq-journal-ocr-'))
-  try {
-    const path = join(directory, 'journal.png')
-    await writeFile(path, png)
-    const executable = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
-    const { stdout } = await run(executable, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(OCR_SCRIPT, 'utf16le').toString('base64')], {
-      windowsHide: true, timeout: 45000, maxBuffer: 2 * 1024 * 1024,
-      env: { ...process.env, EQ_JOURNAL_OCR_FILE: path }, encoding: 'utf8'
-    }).catch((error: unknown) => { throw new Error(failureMessage(error)) })
-    return parseOcrResult(stdout)
-  } finally { await rm(directory, { recursive: true, force: true }) }
+  if (!png.length || png.length > MAX_IMAGE_BYTES) throw new Error('The decoded image exceeds 5 MB. Capture just the quest journal.')
+  if (!reader) throw new Error('The native image reader is unavailable. Restart the companion and retry.')
+  const result = await reader(png.toString('base64'))
+  return parseOcrResult(JSON.stringify(result))
 }
