@@ -48,14 +48,33 @@ function objectiveColumns(capture: RecoveryCapture): { instructions: Box; status
   return { instructions, status, zone }
 }
 
-function objectiveRows(lines: RecoveryOcrWord[][], { instructions, status, zone }: { instructions: Box; status: Box; zone: Box }): RecoveryObjective[] {
+interface ObjectiveColumns { instructions: Box; status: Box; zone: Box }
+
+function objectiveRows(lines: RecoveryOcrWord[][], columns: ObjectiveColumns): RecoveryObjective[] {
   const rows: RecoveryObjective[] = []
+  let lastBottom = columns.instructions.y + columns.instructions.height
   for (const line of lines) {
-    const text = joined(line.filter((word) => word.x >= instructions.x - 3 && word.x + word.width < status.x - 2))
-    const value = joined(line.filter((word) => word.x >= status.x - 3 && word.x + word.width < zone.x - 2))
-    const objective = statusObjective(text, value)
-    if (objective) rows.push(objective)
-    else if (text && text.length <= 500 && line.some((word) => word.x >= zone.x - 3)) rows.push({ text })
+    const height = Math.max(columns.instructions.height, ...line.map((word) => word.height))
+    // A large empty region ends the coherent table; later chat or description panes are not rows.
+    if (line[0].y - lastBottom > height * 6) break
+    const objective = objectiveRow(line, columns)
+    if (objective) {
+      rows.push(objective)
+      lastBottom = Math.max(...line.map((word) => word.y + word.height))
+    }
   }
   return rows.slice(0, 50)
+}
+
+function objectiveRow(line: RecoveryOcrWord[], { instructions, status, zone }: ObjectiveColumns): RecoveryObjective | undefined {
+  const text = joined(line.filter((word) => word.x >= instructions.x - 3 && word.x + word.width < status.x - 2))
+  const value = joined(line.filter((word) => word.x + word.width > status.x - 3 && word.x < zone.x - 2))
+  const objective = statusObjective(text, value)
+  if (objective) return objective
+  // An unreadable status is not an absent cell. Only retain a label when the same row supplies a
+  // bounded zone cell and Windows OCR supplied no Status words at all (the measured missing 2/3).
+  if (value || !text || text.length > 500) return undefined
+  const right = zone.x + Math.max(zone.width * 8, zone.x - status.x)
+  const place = joined(line.filter((word) => word.x >= zone.x - 3 && word.x + word.width <= right))
+  return place && place.length <= 120 ? { text } : undefined
 }
