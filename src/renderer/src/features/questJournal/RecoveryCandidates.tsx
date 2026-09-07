@@ -7,7 +7,7 @@ import type { QuestRecoveryController } from './useQuestRecovery'
 function Candidate({ candidate, checked, toggle, disabled }: {
   candidate: RecoveryCandidate; checked: boolean; toggle: (id: string, checked: boolean) => void; disabled: boolean
 }): JSX.Element {
-  return <Box data-testid="quest-recovery-candidate" data-candidate-id={candidate.id} data-confidence={candidate.confidence}
+  return <Box data-testid="quest-recovery-candidate" data-candidate-id={candidate.id} data-confidence={candidate.confidence} data-source={candidate.source}
     sx={{ p: 1.25, border: 1, borderColor: checked ? 'primary.dark' : 'divider', borderRadius: 1 }}>
     <FormControlLabel sx={{ m: 0, alignItems: 'flex-start', '& .MuiFormControlLabel-label': { minWidth: 0 } }}
       control={<Checkbox size="small" checked={checked} disabled={disabled} onChange={(_, value) => toggle(candidate.id, value)}

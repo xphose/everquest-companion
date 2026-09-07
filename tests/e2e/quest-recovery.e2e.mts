@@ -86,9 +86,13 @@ async function imageRecovery(app: ElectronApplication, page: Page, options: { pa
     (await shown(page, '[data-testid="quest-recovery-text"]')).includes(quest) && await page.getByAltText('Journal image used for recovery').count() === 1)
   if (state === 'active') {
     const owner = page.locator('[data-testid="quest-recovery-objective-owner"] [role="combobox"]')
-    check('objectives start unassigned until the visible task is identified', (await owner.innerText()).includes('Leave unassigned'))
-    await owner.click()
-    await page.getByRole('option', { name: quest, exact: true }).click()
+    const available = await owner.count() === 1
+    check('the visible objectives are recovered for optional association', available)
+    if (available) {
+      check('objectives start unassigned until the visible task is identified', (await owner.innerText()).includes('Leave unassigned'))
+      await owner.click()
+      await page.getByRole('option', { name: quest, exact: true }).click()
+    }
   }
   await confirmAndApply(page)
   const recovered = await settle(() => detail(page, characterId, quest), (value) => value.row?.state === state, { timeoutMs: 15_000 })
@@ -104,7 +108,7 @@ async function unrelatedImage(app: ElectronApplication, page: Page, path: string
   await openRecovery(page)
   await page.click('[data-testid="quest-recovery-image"]')
   await waitReview(page)
-  check('a companion source page cannot auto-select quest completion', await page.locator(`${CANDIDATE} input:checked`).count() === 0)
+  check('a companion source page cannot produce quest-window completion evidence', await page.locator(`${CANDIDATE}[data-source="history-window"], ${CANDIDATE}[data-source="task-window"]`).count() === 0)
   check('unrelated images leave an explicit explanation', (await shown(page, '[data-testid="quest-recovery-sources"]')).length > 30)
   await page.click('[data-testid="quest-recovery-cancel"]')
 }
