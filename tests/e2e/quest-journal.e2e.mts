@@ -3,6 +3,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ElectronApplication, Page } from 'playwright-core'
+import type { EqApi } from '../../src/preload/index'
+import { CURRENT_SCHEMA_VERSION } from '../../src/main/storeMigrations'
 import { ARTIFACTS, buildIfStale, check, dumpArtifacts, failures, reportRun, settle, settleGone } from './appHarness.mjs'
 import { launchApp, mainWindow, makeUserData, removeUserData, type LaunchedApp } from './appWindow.mjs'
 import { stageFixture, type FixtureLog } from './logFixture.mjs'
@@ -199,13 +201,28 @@ async function restart(userData: string, log: FixtureLog): Promise<void> {
 
 async function offline(): Promise<void> {
   const installDir = makeUserData()
+  const userData = makeUserData()
   mkdirSync(join(installDir, 'Logs'))
   stageMap(installDir)
-  const launched = await launchApp({ installDir })
+  // EQ_INSTALL_DIR is an auto-discovery candidate and needs a character log to qualify.
+  // Persist the real manual setting before launch so an empty staged install stays selected
+  // even when another installation on the host has logs. No live store is read or written.
+  writeFileSync(join(userData, 'everquest-companion-progress.json'), JSON.stringify({
+    schemaVersion: CURRENT_SCHEMA_VERSION, eqInstallDir: installDir
+  }), 'utf8')
+  const launched = await launchApp({ installDir, userData })
   let page: Page | undefined
   try {
     page = await mainWindow(launched.app)
     await page.waitForSelector(NAV, { timeout: 30_000 })
+    const isolation = await page.evaluate(async () => {
+      const eq = (window as unknown as { eq: Pick<EqApi, 'getEqConfig' | 'listCharacters' | 'getCharacter'> }).eq
+      const [config, characters, active] = await Promise.all([eq.getEqConfig(), eq.listCharacters(), eq.getCharacter()])
+      return { config, count: characters.length, active }
+    })
+    check('the offline launch uses its saved empty installation', isolation.config.source === 'manual' &&
+      isolation.config.root.toLowerCase() === installDir.toLowerCase() && isolation.config.characterCount === 0)
+    check('the offline character list and active character are empty', isolation.count === 0 && isolation.active === null)
     const notice = page.locator('[data-testid="telemetry-notice-off"]')
     if (await notice.count()) await notice.click()
     await resize(launched.app, page, 1280)
@@ -226,7 +243,7 @@ async function offline(): Promise<void> {
   } catch (cause) {
     if (page) await dumpArtifacts(page, 'journal-offline-failure')
     throw cause
-  } finally { await launched.close(); await removeUserData(installDir) }
+  } finally { await launched.close(); await removeUserData(installDir); await removeUserData(userData) }
 }
 
 async function main(): Promise<void> {
