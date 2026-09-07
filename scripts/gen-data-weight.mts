@@ -33,16 +33,19 @@ if (maybeGc === undefined) {
 const forceGc: () => void = maybeGc
 
 /**
- * WHERE THE CORPORA ARE. `src/main/data` is the whole main-side story except for ONE
- * cross-directory import: `src/main/mobLookupLocal.ts` reaches into the renderer's catalog, which
- * is a 3.2 MB parse charged to main's `dataLoaded` and would be missed by a directory walk.
+ * Main also imports the shared mob catalog and the journal's quest/Sky catalogs from the
+ * renderer data directory. A directory walk of `src/main/data` cannot account for those parses.
  *
  * It is an explicit list rather than an import-graph crawl on purpose: a crawl would be a second
  * thing to keep correct, and the test that guards this ledger checks the DIRECTORY walk against it
  * — so a new corpus dropped into `src/main/data` is caught automatically, and a new cross-import
  * is caught by a human reading a diff, which is the only place that one can be caught anyway.
  */
-const EXTRA_MAIN_FILES = ['src/renderer/src/data/eqlegends/mobs.json']
+const EXTRA_MAIN_FILES = [
+  'src/renderer/src/data/eqlegends/mobs.json',
+  'src/renderer/src/data/eqlegends/posky.json',
+  'src/renderer/src/data/eqlegends/quests.json'
+]
 
 /** …and the corpora over the floor that main does NOT load. Named in the ledger rather than
  *  omitted from it — `DataWeightLedger.rendererOnly` says why. */
