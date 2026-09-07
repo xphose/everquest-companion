@@ -56,6 +56,17 @@ export interface QuestJournalGuide {
   steps: QuestJournalStep[]
 }
 
+/** Readable source prose, distinct from machine-trackable curated steps. */
+export interface QuestJournalWalkthroughSection {
+  heading?: string
+  text: string
+}
+
+export interface QuestJournalWalkthrough {
+  sections: QuestJournalWalkthroughSection[]
+  truncated: boolean
+}
+
 export interface QuestJournalCatalogEntry {
   /** Wiki page identity, or `posky:Class::Name` for individual Sky tests. */
   id: string
@@ -76,4 +87,6 @@ export interface QuestJournalCatalogEntry {
   referencedItems: QuestJournalReferencedItem[]
   rewards: QuestJournalReward[]
   guide?: QuestJournalGuide
+  walkthrough?: QuestJournalWalkthroughSection[]
+  walkthroughTruncated?: boolean
 }

@@ -9,7 +9,7 @@ import skyJson from '../../renderer/src/data/eqlegends/posky.json'
 import type { PoskyData, QuestData, QuestEntry } from '../../shared/types'
 import type { MobData } from '../../shared/mobTypes'
 import type {
-  QuestJournalCatalogEntry, QuestJournalGuide, QuestJournalReward
+  QuestJournalCatalogEntry, QuestJournalGuide, QuestJournalReward, QuestJournalWalkthrough
 } from '../../shared/questJournal/catalog'
 import { renameItemName } from '../../shared/itemRenames'
 import { wikiPageUrl } from '../../shared/wiki'
@@ -25,6 +25,7 @@ export interface QuestJournalCatalogInput {
   levelNotes: Record<string, string>
   guides: Record<string, QuestJournalGuide>
   sky?: PoskyData
+  walkthroughs?: Record<string, QuestJournalWalkthrough>
 }
 
 interface BuildContext {
@@ -42,6 +43,7 @@ function rewardDetails(name: string, items: Map<string, ItemDbEntry>): QuestJour
 function catalogEntry(quest: QuestEntry, context: BuildContext): QuestJournalCatalogEntry {
   const { input, items, locations } = context
   const guide = input.guides[quest.page]
+  const walkthrough = input.walkthroughs?.[quest.page]
   return {
     id: quest.page,
     name: quest.name,
@@ -61,7 +63,8 @@ function catalogEntry(quest: QuestEntry, context: BuildContext): QuestJournalCat
       sources: locations.drops(name, items.get(itemKey(renameItemName(name)))?.dropsFrom ?? [])
     })),
     rewards: (quest.rewards ?? []).map((reward) => rewardDetails(reward.name, items)),
-    ...(guide ? { guide } : {})
+    ...(guide ? { guide } : {}),
+    ...(walkthrough ? { walkthrough: walkthrough.sections, walkthroughTruncated: walkthrough.truncated } : {})
   }
 }
 
@@ -72,7 +75,8 @@ function bundledInput(): QuestJournalCatalogInput {
     items: itemsJson as unknown as ItemDbFile,
     guides: guidesJson as Record<string, QuestJournalGuide>,
     levelNotes: metadataJson.levelNotes,
-    sky: skyJson
+    sky: skyJson,
+    walkthroughs: metadataJson.walkthroughs
   }
 }
 
