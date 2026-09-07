@@ -35,7 +35,10 @@ quests. An item found in inventory is only a clue: owning a reward does not prov
 quest was completed. Unsupported saved journal formats are reported in the source list.
 
 To read the game journal, open EverQuest's active task or completed history page and
-choose **Read game journal**. You can also use **Clipboard image** or **Choose
+choose **Read game journal**. Switch back to EverQuest and keep its window restored
+with the journal visible until the scan finishes. Live capture retries automatically
+when the game is temporarily unavailable; the companion does not switch focus or
+restore the game for you. If capture still fails, use **Clipboard image** or **Choose
 screenshot**. Text recognition uses local Windows English OCR support and reads only
 the visible page; it does not operate the game. Scan active tasks and completed history separately,
 applying each reviewed page before scanning the next one.

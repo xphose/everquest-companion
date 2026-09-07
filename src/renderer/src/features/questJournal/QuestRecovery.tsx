@@ -18,14 +18,23 @@ function ForgetRecovery({ characterLabel, controller }: { characterLabel: string
   </Alert>
 }
 
+function recoveryStatus(controller: QuestRecoveryController): string {
+  if (controller.busy === 'apply') return 'Saving recovered quests…'
+  if (controller.busy === 'forget') return 'Clearing recovered data…'
+  return controller.scanSource === 'game-window'
+    ? 'Reading the game journal… Switch back to EverQuest and keep its journal visible while the scan finishes.'
+    : 'Reading the selected source…'
+}
+
 function RecoveryDialog({ characterLabel, controller }: { characterLabel: string; controller: QuestRecoveryController }): JSX.Element {
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'))
   return <Dialog open={controller.open} onClose={controller.close} fullWidth maxWidth="md" fullScreen={fullScreen} aria-labelledby="quest-recovery-title" data-testid="quest-recovery-dialog">
     <DialogTitle id="quest-recovery-title">Recover character <Typography component="span" color="text.secondary" sx={{ fontSize: 'inherit', overflowWrap: 'anywhere' }}>· {characterLabel}</Typography></DialogTitle>
     <DialogContent dividers><Stack spacing={1.5}>
       <RecoverySourceButtons scan={controller.scan} busy={!!controller.busy} />
+      <Typography variant="caption" color="text.secondary">Keep EverQuest restored and its journal visible. Live capture retries automatically; you can also choose a screenshot or clipboard image.</Typography>
       {controller.busy && <Stack spacing={0.5} role="status" aria-live="polite"><LinearProgress /><Typography variant="body2">
-        {controller.busy === 'scan' ? 'Reading the selected source…' : controller.busy === 'apply' ? 'Saving recovered quests…' : 'Clearing recovered data…'}
+        {recoveryStatus(controller)}
       </Typography></Stack>}
       {controller.error && <Alert severity="error" data-testid="quest-recovery-error">{controller.error}</Alert>}
       {controller.draft && <>

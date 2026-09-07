@@ -8,6 +8,7 @@ const errorMessage = (cause: unknown): string => cause instanceof Error ? cause.
 export function useQuestRecovery(characterId: string | null, refresh: () => void) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<Busy>(null)
+  const [scanSource, setScanSource] = useState<RecoveryInput | null>(null)
   const [draft, setDraft] = useState<RecoveryDraft | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmed, setConfirmed] = useState(false)
@@ -19,7 +20,7 @@ export function useQuestRecovery(characterId: string | null, refresh: () => void
   const invalidate = useCallback(() => { generation.current++ }, [])
   const discard = useCallback(() => {
     invalidate()
-    setOpen(false); setBusy(null); setDraft(null); setSelected(new Set())
+    setOpen(false); setBusy(null); setScanSource(null); setDraft(null); setSelected(new Set())
     setConfirmed(false); setObjectiveCandidateId(''); setForgetConfirmation(false); setError(null)
   }, [invalidate])
   useEffect(() => {
@@ -30,7 +31,7 @@ export function useQuestRecovery(characterId: string | null, refresh: () => void
   const scan = async (source: RecoveryInput): Promise<void> => {
     if (!characterId || busy) return
     const current = ++generation.current
-    setBusy('scan'); setError(null); setDraft(null); setSelected(new Set()); setConfirmed(false); setObjectiveCandidateId(''); setForgetConfirmation(false)
+    setBusy('scan'); setScanSource(source); setError(null); setDraft(null); setSelected(new Set()); setConfirmed(false); setObjectiveCandidateId(''); setForgetConfirmation(false)
     try {
       const response = await window.eq.questJournalRecoverScan({ characterId, source })
       if (generation.current !== current) return
@@ -38,7 +39,7 @@ export function useQuestRecovery(characterId: string | null, refresh: () => void
       if (response.draft.characterId !== characterId) return
       setDraft(response.draft); setSelected(recoverySelection(response.draft.candidates, true))
     } catch (cause) { if (generation.current === current) setError(errorMessage(cause)) }
-    finally { if (generation.current === current) setBusy(null) }
+    finally { if (generation.current === current) { setBusy(null); setScanSource(null) } }
   }
   const begin = (): void => {
     if (!characterId) return
@@ -47,7 +48,7 @@ export function useQuestRecovery(characterId: string | null, refresh: () => void
   }
   const commit = async (request: RecoveryCommitRequest): Promise<void> => {
     const current = ++generation.current
-    setBusy(request.action); setError(null)
+    setBusy(request.action); setScanSource(null); setError(null)
     try {
       const response = await window.eq.questJournalRecoverCommit(request)
       if (generation.current !== current) return
@@ -73,7 +74,7 @@ export function useQuestRecovery(characterId: string | null, refresh: () => void
   const selectAll = (): void => setSelected(allRecoveryCandidates(draft?.candidates ?? []))
   const clear = (): void => setSelected(new Set())
   const objectiveSelectionValid = objectiveCandidateId === '' || selected.has(objectiveCandidateId)
-  return { open, busy, draft, selected, confirmed, setConfirmed, objectiveCandidateId, setObjectiveCandidateId, objectiveSelectionValid, forgetConfirmation, setForgetConfirmation,
+  return { open, busy, scanSource, draft, selected, confirmed, setConfirmed, objectiveCandidateId, setObjectiveCandidateId, objectiveSelectionValid, forgetConfirmation, setForgetConfirmation,
     error, notice, dismissNotice: () => setNotice(null), begin, close, scan, apply, forget, toggle, selectConfirmed, selectAll, clear }
 }
 
