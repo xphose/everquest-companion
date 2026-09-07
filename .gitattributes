@@ -13,3 +13,6 @@
 # change (they were already LF); only the checkout does.
 scripts/sources/cache/** text eol=lf
 src/main/data/spells.json text eol=lf
+
+# The format tests verify the game's original CRLF achievement export bytes.
+tests/fixtures/Primitive_freeport-Achievements.txt text eol=crlf
