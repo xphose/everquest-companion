@@ -43,7 +43,7 @@ export function JournalList({ result, selectedId, select, page }: {
       {result && <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 0.5, borderTop: 1, borderColor: 'divider' }}>
         <Button size="small" data-testid="quest-journal-prev" disabled={result.offset === 0}
           onClick={() => page(Math.max(0, result.offset - JOURNAL_PAGE_SIZE))}>Previous</Button>
-        <Typography variant="caption">{result.total === 0 ? '0' : `${result.offset + 1}–${result.offset + result.rows.length}`}</Typography>
+        <Typography variant="caption">{result.total === 0 ? '0' : `${result.offset + 1} - ${result.offset + result.rows.length}`}</Typography>
         <Button size="small" data-testid="quest-journal-next" disabled={result.offset + result.rows.length >= result.total}
           onClick={() => page(result.offset + JOURNAL_PAGE_SIZE)}>Next</Button>
       </Stack>}
