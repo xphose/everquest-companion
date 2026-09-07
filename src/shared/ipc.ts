@@ -1034,6 +1034,8 @@ export const IPC = {
   questJournalQuery: 'questJournal:query',
   questJournalDetail: 'questJournal:detail',
   questJournalMutate: 'questJournal:mutate',
+  questJournalRecoverScan: 'questJournal:recoverScan',
+  questJournalRecoverCommit: 'questJournal:recoverCommit',
 
   onLine: 'log:line',
   onCharacter: 'log:character',
