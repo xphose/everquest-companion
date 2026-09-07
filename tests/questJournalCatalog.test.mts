@@ -8,6 +8,7 @@ import guidesJson from '../src/main/data/questJournalGuides.json'
 import { buildQuestJournalCatalog, getQuestJournalCatalog, findQuestJournalCatalogEntry } from '../src/main/questJournal/catalog'
 import { buildCatalogLocationIndex } from '../src/main/questJournal/catalogLocations'
 import type { QuestJournalGuide } from '../src/shared/questJournal/catalog'
+import { extractQuestWalkthrough } from '../scripts/gen-quest-journal-text'
 
 const catalog = getQuestJournalCatalog()
 const guide = (id: string): QuestJournalGuide => {
@@ -118,4 +119,24 @@ test('curated source hashes identify the exact cached walkthrough bytes', () => 
     assert.ok(source.snapshotAt)
     assert.ok(source.url.startsWith('https://eqlwiki.com/'))
   }
+})
+
+test('cached narrative preserves source quantities, faction, dialogue and locations as plain text', () => {
+  const sisters = findQuestJournalCatalogEntry('Bandit Sisters')?.walkthrough
+  assert.ok(sisters?.some((section) => section.text.includes('Indifferent')))
+  assert.ok(sisters?.some((section) => section.text.includes('-802, 2682, -2')))
+  const brewers = findQuestJournalCatalogEntry('Blackburrow Brewers')?.walkthrough
+  assert.ok(brewers?.some((section) => section.text.includes('three of these casks')))
+  assert.ok(brewers?.some((section) => section.text.includes('You do not have to complete')))
+  const text = extractQuestWalkthrough('== Walkthrough ==\nBring {{:Test Item}} to [[Keeper|the keeper]].<br>Wait.\n{{Navbox|x={{Nested|secret}}}}\n[[Category:Quests]]')
+  assert.equal(text.sections[0].text, 'Bring Test Item to the keeper.\nWait.')
+  assert.equal(text.truncated, false)
+})
+
+test('long source narratives stay bounded and announce that further text exists', () => {
+  const long = extractQuestWalkthrough('== Walkthrough ==\n' + 'a'.repeat(45_000))
+  assert.equal(long.sections[0].text.length, 40_000)
+  assert.equal(long.truncated, true)
+  const table = extractQuestWalkthrough('== Items ==\n{| class="wikitable"\n| [[Token]] || 4\n|}')
+  assert.match(table.sections[0].text, /Token \| 4/)
 })
