@@ -156,12 +156,19 @@ async function openQuest(page: Page, name: string): Promise<boolean> {
 /** Land, and open the Sky tab on its filter bar. */
 async function openSky(page: Page): Promise<boolean> {
   await page.click(NAV_SKY, { timeout: 30_000 })
+  const deadline = Date.now() + 60_000
   const bar = await page.waitForSelector(SEARCH, { timeout: 60_000 }).then(
     () => true,
     () => false
   )
   if (!check('the Sky tab opens on its filter bar', bar)) return false
-  return check('…with the counts line under it', (await filteredCount(page)) !== null)
+  // useProgress starts with null progress and no quests until getProgress() resolves. The filter
+  // bar already renders in that state, but CountsLine renders its no-data alert instead of counts.
+  // Wait for the counts themselves within the same opening deadline, not for a fixed delay.
+  const count = await settle(() => filteredCount(page), (n) => n !== null, {
+    timeoutMs: Math.max(0, deadline - Date.now())
+  })
+  return check('…with the counts line under it', count !== null, String(count))
 }
 
 /**
