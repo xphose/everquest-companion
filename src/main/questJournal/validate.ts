@@ -1,5 +1,6 @@
 import { isClassAbbr } from '../../shared/classCombo'
 import { classAbbrForDisplayName, classDisplayName } from '../../shared/spellLevels'
+import { sanitizeRecovery } from './recovery/records'
 import type {
   QuestJournalManual, QuestJournalMutation, QuestJournalProfile,
   QuestJournalProgress, QuestJournalQuery
@@ -57,7 +58,7 @@ export function sanitizeProgress(value: unknown): QuestJournalProgress {
   for (const [id, manual] of Object.entries(record(r?.quests) ?? {}).slice(0, 5000)) {
     if (safeId(id)) quests[id] = sanitizeManual(manual)
   }
-  return { version: 1, quests, profile: sanitizeProfile(r?.profile) }
+  return { version: 1, quests, profile: sanitizeProfile(r?.profile), recovery: sanitizeRecovery(r?.recovery) }
 }
 
 const FILTERS = new Set(['all', 'tracked', 'active', 'completed', 'ready', 'unknown'])

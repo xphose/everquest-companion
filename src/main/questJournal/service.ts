@@ -137,7 +137,7 @@ async function readModel(deps: JournalServiceDeps): Promise<{ input: JournalMode
   const stored = world.characterId ? deps.getProgress(world.characterId) : { inventory: {}, completedQuests: [] }
   const files = deps.files(world.character)
   const context: QuestJournalContext = {
-    characterId: world.characterId, characterName: world.character?.name,
+    characterId: world.characterId, characterName: world.character?.name, characterServer: world.character?.server,
     ...profileContext(observed, stored), zone: observed.character?.zone,
     readiness: observed.error ? 'unavailable' : world.readiness,
     message: observed.error ?? readinessMessage(world), inventory: files.inventoryStatus,
@@ -179,7 +179,8 @@ function validateQuestMutation(input: JournalModelInput, mutation: ReturnType<ty
   if (!mutation || mutation.action === 'profile') return null
   const entry = input.catalog.find((candidate) => candidate.id === mutation.id)
   const knownTask = input.observed.some((task) => observedTaskId(task.name) === mutation.id) ||
-    Object.prototype.hasOwnProperty.call(input.progress.quests, mutation.id)
+    Object.prototype.hasOwnProperty.call(input.progress.quests, mutation.id) ||
+    Object.prototype.hasOwnProperty.call(input.progress.recovery ?? {}, mutation.id)
   if (!entry && !knownTask) return 'Unknown quest.'
   if (mutation.action === 'step' && !entry?.guide?.steps.some((step) => step.id === mutation.stepId)) return 'Unknown quest step.'
   return null
