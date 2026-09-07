@@ -30,6 +30,7 @@ import { registerMapsIpc } from './maps'
 import { registerOutputsIpc } from './outputs'
 import { registerPerfIpc } from './perf'
 import { registerPlannerIpc } from './planner'
+import { registerQuestJournalIpc } from './questJournal'
 import { registerPresenceIpc } from './presence'
 import { registerReleaseNotesIpc } from './releaseNotes'
 import { registerRosterIpc } from './roster'
@@ -89,6 +90,7 @@ export function registerIpc(): void {
   registerSpeechIpc()
   registerKnowledgeIpc()
   registerPlannerIpc()
+  registerQuestJournalIpc()
   registerMapsIpc()
   registerPresenceIpc()
   registerWindowIpc()

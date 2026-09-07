@@ -18,6 +18,7 @@ export interface QuestJournalFileState {
   state: 'available' | 'missing' | 'error'
   updatedAt?: string
   message?: string
+  refreshSuggested?: boolean
 }
 
 export interface QuestJournalContext {
@@ -72,13 +73,14 @@ export interface QuestJournalObservedTask {
   failedAt?: number
   lastChange?: 'assigned' | 'updated' | 'completed' | 'removed' | 'failed'
   lastObservedAt?: number
+  cycleStatus?: 'observed' | 'assigned' | 'completed' | 'removed' | 'failed'
 }
 
 export interface QuestJournalStepProgress {
   id: string
   text: string
   complete: boolean
-  source: 'manual' | 'inventory' | 'unknown'
+  source: 'manual' | 'inventory' | 'log' | 'unknown'
   held?: number
   required?: number
 }
@@ -125,7 +127,7 @@ export interface QuestJournalProgress {
 export type QuestJournalMutation = { characterId: string } & (
   | { action: 'track'; id: string; value: boolean }
   | { action: 'status'; id: string; value: 'active' | 'completed' | 'unknown' }
-  | { action: 'step'; id: string; stepId: string; value: boolean }
+  | { action: 'step'; id: string; stepId: string; value: boolean | null }
   | { action: 'profile'; level?: number; classes: string[] }
 )
 

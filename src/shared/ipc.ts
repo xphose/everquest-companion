@@ -1031,6 +1031,10 @@ export const IPC = {
   engineRetry: 'engine:retry',
 
   // ---- misc pushes ----
+  questJournalQuery: 'questJournal:query',
+  questJournalDetail: 'questJournal:detail',
+  questJournalMutate: 'questJournal:mutate',
+
   onLine: 'log:line',
   onCharacter: 'log:character',
   // main -> renderer: the attached log has been silent for minutes while a SIBLING character log

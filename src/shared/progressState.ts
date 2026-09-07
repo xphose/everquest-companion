@@ -59,6 +59,8 @@ export type CountSource = 'log' | 'inventory' | 'both' | 'rebaseline'
 
 /** Persisted user progress (inventory + quest completion). */
 export interface ProgressState {
+  /** Expanded journal user statements, scoped to this character; observations stay derived. */
+  questJournal?: import('./questJournal/journal').QuestJournalProgress
   /** counts from the last inventory dump, keyed lowercased name */
   inventory: HeldCounts
   /**
