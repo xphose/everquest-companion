@@ -1,0 +1,663 @@
+{
+  "Blackburrow Brewers": {
+    "source": {
+      "url": "https://eqlwiki.com/Blackburrow_Brewers",
+      "snapshotAt": "2026-08-22T19:51:37.602Z",
+      "cachePageId": 15318,
+      "cacheSha256": "22666598dbb97dc9270e1025e20b06c44be6cd875f47bbbe4a2544c33cb97dbe"
+    },
+    "notes": [
+      "The source lists minimum level 12; its brewer enemies are level 17–18. The minimum is not a safe solo recommendation.",
+      "The walkthrough explicitly says Gnasher's Head is not required to begin.",
+      "The source describes the Master Brewer beside barrels and water on Blackburrow's third level, under the gnoll sharpshooter ledge.",
+      "Locations and rewards come from a bundled wiki snapshot; the guide does not establish current spawn timing or drop rates."
+    ],
+    "steps": [
+      {
+        "id": "speak-larsk",
+        "kind": "pickup",
+        "text": "Speak to Larsk Juton about assisting in the extermination of the gnoll brewers.",
+        "manualOnly": true,
+        "locations": [
+          {
+            "name": "Larsk Juton",
+            "page": "Larsk Juton",
+            "zone": "Surefall Glade",
+            "loc": [
+              {
+                "ns": 244,
+                "ew": -18
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Larsk_Juton"
+          }
+        ]
+      },
+      {
+        "id": "collect-casks",
+        "kind": "collect",
+        "text": "Collect three Blackburrow Casks from the brewers in Blackburrow.",
+        "manualOnly": false,
+        "items": [
+          {
+            "name": "Blackburrow Cask",
+            "quantity": 3
+          }
+        ],
+        "locations": [
+          {
+            "name": "a gnoll brewer",
+            "page": "A Gnoll Brewer",
+            "zone": "Blackburrow",
+            "level": "17",
+            "loc": [
+              {
+                "ns": 53,
+                "ew": 356
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/A_Gnoll_Brewer"
+          },
+          {
+            "name": "Master Brewer",
+            "page": "Master Brewer",
+            "zone": "Blackburrow",
+            "level": "18",
+            "loc": [
+              {
+                "ns": 53,
+                "ew": 386
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Master_Brewer"
+          }
+        ]
+      },
+      {
+        "id": "return-casks",
+        "kind": "turn-in",
+        "text": "Return the three Blackburrow Casks to Larsk Juton for the Cloak of Jaggedpine. Confirm the hand-in after it succeeds.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Blackburrow Cask",
+            "quantity": 3
+          }
+        ],
+        "locations": [
+          {
+            "name": "Larsk Juton",
+            "page": "Larsk Juton",
+            "zone": "Surefall Glade",
+            "loc": [
+              {
+                "ns": 244,
+                "ew": -18
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Larsk_Juton"
+          }
+        ]
+      }
+    ]
+  },
+  "Clay Bracelet Quest": {
+    "source": {
+      "url": "https://eqlwiki.com/Clay_Bracelet_Quest",
+      "snapshotAt": "2026-08-22T19:51:37.602Z",
+      "cachePageId": 15098,
+      "cacheSha256": "d34ad975080311f305c93b7d06d6e56ce79c4a0bffadb13b8a206ad7502b521f"
+    },
+    "notes": [
+      "Four distinct Rune of Clay pieces share one item name. Verify each piece manually; four generic rune counts do not prove the set is complete.",
+      "The source lists minimum level 25. The named gnomes are level 25 and the goblin headmaster is level 24–26.",
+      "The headmaster's mob page gives /loc -1200, -8594; the quest walkthrough gives nearby /loc -1206, -8576 on island 9. The guide retains the mob-page point and this difference.",
+      "The Clay Bracelet's Eye of Zomm effect lists level 20. This effect requirement is separate from the quest's stated minimum."
+    ],
+    "steps": [
+      {
+        "id": "speak-joyce",
+        "kind": "pickup",
+        "text": "Speak to Joyce about the clay bracelet and say that you are interested in the bracelet.",
+        "manualOnly": true,
+        "locations": [
+          {
+            "name": "Joyce",
+            "page": "Joyce",
+            "zone": "Temple of Solusek Ro",
+            "loc": [
+              {
+                "ns": 433,
+                "ew": 77
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Joyce"
+          }
+        ]
+      },
+      {
+        "id": "collect-top",
+        "kind": "collect",
+        "text": "Defeat Findlegrob near the Lake Rathe entrance and verify the top Rune of Clay piece.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Rune of Clay",
+            "quantity": 1,
+            "variant": "Top — Findlegrob"
+          }
+        ],
+        "locations": [
+          {
+            "name": "Findlegrob",
+            "page": "Findlegrob",
+            "zone": "Rathe Mountains",
+            "level": "25",
+            "loc": [
+              {
+                "ns": 2007,
+                "ew": 740
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Findlegrob"
+          }
+        ]
+      },
+      {
+        "id": "collect-right",
+        "kind": "collect",
+        "text": "Defeat Bindlegrob at the southeastern hut and verify the right Rune of Clay piece.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Rune of Clay",
+            "quantity": 1,
+            "variant": "Right — Bindlegrob"
+          }
+        ],
+        "locations": [
+          {
+            "name": "Bindlegrob",
+            "page": "Bindlegrob",
+            "zone": "Rathe Mountains",
+            "level": "25",
+            "loc": [
+              {
+                "ns": -456,
+                "ew": -2304
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Bindlegrob"
+          }
+        ]
+      },
+      {
+        "id": "collect-left",
+        "kind": "collect",
+        "text": "Defeat Sindlegrob at the same southeastern hut and verify the left Rune of Clay piece.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Rune of Clay",
+            "quantity": 1,
+            "variant": "Left — Sindlegrob"
+          }
+        ],
+        "locations": [
+          {
+            "name": "Sindlegrob",
+            "page": "Sindlegrob",
+            "zone": "Rathe Mountains",
+            "level": "25",
+            "loc": [
+              {
+                "ns": -477,
+                "ew": -2284
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Sindlegrob"
+          }
+        ]
+      },
+      {
+        "id": "collect-bottom",
+        "kind": "collect",
+        "text": "Defeat a goblin headmaster on island 9 in the Ocean of Tears and verify the bottom Rune of Clay piece.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Rune of Clay",
+            "quantity": 1,
+            "variant": "Bottom — a goblin headmaster"
+          }
+        ],
+        "locations": [
+          {
+            "name": "a goblin headmaster",
+            "page": "A Goblin Headmaster",
+            "zone": "Ocean of Tears",
+            "level": "24-26",
+            "loc": [
+              {
+                "ns": -1200,
+                "ew": -8594
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/A_Goblin_Headmaster"
+          }
+        ]
+      },
+      {
+        "id": "return-runes",
+        "kind": "turn-in",
+        "text": "Hand all four different Rune of Clay pieces to Joyce for the Clay Bracelet.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Rune of Clay",
+            "quantity": 1,
+            "variant": "Top — Findlegrob"
+          },
+          {
+            "name": "Rune of Clay",
+            "quantity": 1,
+            "variant": "Right — Bindlegrob"
+          },
+          {
+            "name": "Rune of Clay",
+            "quantity": 1,
+            "variant": "Left — Sindlegrob"
+          },
+          {
+            "name": "Rune of Clay",
+            "quantity": 1,
+            "variant": "Bottom — a goblin headmaster"
+          }
+        ],
+        "locations": [
+          {
+            "name": "Joyce",
+            "page": "Joyce",
+            "zone": "Temple of Solusek Ro",
+            "loc": [
+              {
+                "ns": 433,
+                "ew": 77
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Joyce"
+          }
+        ]
+      }
+    ]
+  },
+  "Bandit Sisters": {
+    "source": {
+      "url": "https://eqlwiki.com/Bandit_Sisters",
+      "snapshotAt": "2026-08-22T19:51:37.602Z",
+      "cachePageId": 15236,
+      "cacheSha256": "fc0b50720f88f969d370d763b4b227d9937190fdecf50d9cd68dec62315b61a5"
+    },
+    "notes": [
+      "The source lists minimum level 12 and minimum faction Indifferent. The four sisters are level 12.",
+      "Tynkale starts the story, but the final recipient is a drunkard (Tandan Nybright) in Kelethin.",
+      "The four Dull Pearl Necklaces have the same visible name. The walkthrough says Identify distinguishes them; verify one from each sister manually.",
+      "The reward section lists possible equipment outcomes; it does not promise all of them.",
+      "The drunkard wanders between Kelethin platforms. The two listed points describe the walkthrough's route, not a fixed spawn."
+    ],
+    "steps": [
+      {
+        "id": "speak-tynkale",
+        "kind": "pickup",
+        "text": "Speak to Tynkale in the Paladin Guild Hall. Offer service to the Clerics of Tunare and say you are new to Felwithe.",
+        "manualOnly": true,
+        "locations": [
+          {
+            "name": "Tynkale",
+            "page": "Tynkale",
+            "zone": "Northern Felwithe",
+            "loc": [
+              {
+                "ns": 11,
+                "ew": -328,
+                "z": 12
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Bandit_Sisters"
+          }
+        ]
+      },
+      {
+        "id": "speak-tandan",
+        "kind": "pickup",
+        "text": "Find a drunkard in Kelethin, greet him as Tandan Nybright, ask about his shocking experience, and offer to hunt the Nybright Sisters.",
+        "manualOnly": true,
+        "locations": [
+          {
+            "name": "a drunkard (Tandan Nybright)",
+            "page": "A Drunkard",
+            "zone": "Greater Faydark",
+            "loc": [
+              {
+                "ns": 577,
+                "ew": 388,
+                "z": 161
+              },
+              {
+                "ns": 429,
+                "ew": 392,
+                "z": 161
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Bandit_Sisters",
+            "note": "Wanders between Kelethin platforms; route points from the quest walkthrough."
+          }
+        ]
+      },
+      {
+        "id": "collect-jayla",
+        "kind": "collect",
+        "text": "Defeat Jayla Nybright at the sisters' camp near Mistmoore and verify her necklace.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Dull Pearl Necklace",
+            "quantity": 1,
+            "variant": "Jayla Nybright"
+          }
+        ],
+        "locations": [
+          {
+            "name": "Jayla Nybright",
+            "page": "Jayla Nybright",
+            "zone": "Lesser Faydark",
+            "level": "12",
+            "loc": [
+              {
+                "ns": -781,
+                "ew": 2704
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Jayla_Nybright"
+          }
+        ]
+      },
+      {
+        "id": "collect-kayla",
+        "kind": "collect",
+        "text": "Defeat Kayla Nybright at the sisters' camp and verify her necklace.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Dull Pearl Necklace",
+            "quantity": 1,
+            "variant": "Kayla Nybright"
+          }
+        ],
+        "locations": [
+          {
+            "name": "Kayla Nybright",
+            "page": "Kayla Nybright",
+            "zone": "Lesser Faydark",
+            "level": "12",
+            "loc": [
+              {
+                "ns": -724,
+                "ew": 2649
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Kayla_Nybright"
+          }
+        ]
+      },
+      {
+        "id": "collect-shayla",
+        "kind": "collect",
+        "text": "Defeat Shayla Nybright at the sisters' camp and verify her necklace.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Dull Pearl Necklace",
+            "quantity": 1,
+            "variant": "Shayla Nybright"
+          }
+        ],
+        "locations": [
+          {
+            "name": "Shayla Nybright",
+            "page": "Shayla Nybright",
+            "zone": "Lesser Faydark",
+            "level": "12",
+            "loc": [
+              {
+                "ns": -808,
+                "ew": 2658
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Shayla_Nybright"
+          }
+        ]
+      },
+      {
+        "id": "collect-tayla",
+        "kind": "collect",
+        "text": "Defeat Tayla Nybright at the sisters' camp and verify her necklace.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Dull Pearl Necklace",
+            "quantity": 1,
+            "variant": "Tayla Nybright"
+          }
+        ],
+        "locations": [
+          {
+            "name": "Tayla Nybright",
+            "page": "Tayla Nybright",
+            "zone": "Lesser Faydark",
+            "level": "12",
+            "loc": [
+              {
+                "ns": -813,
+                "ew": 2714
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Tayla_Nybright"
+          }
+        ]
+      },
+      {
+        "id": "return-necklaces",
+        "kind": "turn-in",
+        "text": "Return to the drunkard in Kelethin and hand him one distinct Dull Pearl Necklace from each sister.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Dull Pearl Necklace",
+            "quantity": 1,
+            "variant": "Jayla Nybright"
+          },
+          {
+            "name": "Dull Pearl Necklace",
+            "quantity": 1,
+            "variant": "Kayla Nybright"
+          },
+          {
+            "name": "Dull Pearl Necklace",
+            "quantity": 1,
+            "variant": "Shayla Nybright"
+          },
+          {
+            "name": "Dull Pearl Necklace",
+            "quantity": 1,
+            "variant": "Tayla Nybright"
+          }
+        ],
+        "locations": [
+          {
+            "name": "a drunkard (Tandan Nybright)",
+            "page": "A Drunkard",
+            "zone": "Greater Faydark",
+            "loc": [
+              {
+                "ns": 577,
+                "ew": 388,
+                "z": 161
+              },
+              {
+                "ns": 429,
+                "ew": 392,
+                "z": 161
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Bandit_Sisters",
+            "note": "Wandering route; check both platforms."
+          }
+        ]
+      }
+    ]
+  },
+  "Aegis of Life Quest": {
+    "source": {
+      "url": "https://eqlwiki.com/Aegis_of_Life_Quest",
+      "snapshotAt": "2026-08-22T19:51:37.602Z",
+      "cachePageId": 15146,
+      "cacheSha256": "1e3561b2bb56f851775df69a682d6f62d1be1e9192a1845cb14958c73ebb1923"
+    },
+    "notes": [
+      "The source lists minimum level 35+. Lord Grimrot's live and undead versions are listed at levels 35 and 29 respectively.",
+      "The walkthrough requires Warmly faction with Camlend Serbold before the turn-in and warns that insufficient faction can lose the items. Verify his quest dialogue before handing them over.",
+      "The walkthrough describes two Pestilence Scythes and specifies the effect-bearing version. A same-name inventory match cannot confirm the correct version.",
+      "Capt Linarius starts the quest; Camlend Serbold receives the items and grants the reward.",
+      "The bundled source is historical reference. This guide does not infer spawn timers, faction standing, or completion from possession alone."
+    ],
+    "steps": [
+      {
+        "id": "speak-linarius",
+        "kind": "pickup",
+        "text": "Speak to Capt Linarius on the bridge in Northern Karana about local dangers and Lord Grimrot.",
+        "manualOnly": true,
+        "locations": [
+          {
+            "name": "Capt Linarius",
+            "page": "Capt Linarius",
+            "zone": "Northern Karana",
+            "loc": [
+              {
+                "ns": -4139,
+                "ew": 1218
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Capt_Linarius"
+          }
+        ]
+      },
+      {
+        "id": "speak-camlend",
+        "kind": "pickup",
+        "text": "Speak to Camlend Serbold in North Qeynos's priest guild about Lord Grimrot and defending life. Verify the faction requirement and his request for the scythe and heart.",
+        "manualOnly": true,
+        "locations": [
+          {
+            "name": "Camlend Serbold",
+            "page": "Camlend Serbold",
+            "zone": "North Qeynos",
+            "loc": [
+              {
+                "ns": -206,
+                "ew": -677
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Camlend_Serbold"
+          }
+        ]
+      },
+      {
+        "id": "collect-scythe",
+        "kind": "collect",
+        "text": "Defeat the live Lord Grimrot at the undead camp south of the bridge. Verify that the Pestilence Scythe is the effect-bearing quest version.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Pestilence Scythe",
+            "quantity": 1,
+            "variant": "Effect-bearing quest version"
+          }
+        ],
+        "locations": [
+          {
+            "name": "Lord Grimrot",
+            "page": "Lord Grimrot",
+            "zone": "Southern Karana",
+            "level": "35",
+            "loc": [
+              {
+                "ns": 1377,
+                "ew": 1172
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Lord_Grimrot"
+          }
+        ]
+      },
+      {
+        "id": "collect-heart",
+        "kind": "collect",
+        "text": "Defeat the undead Lord Grimrot at the same camp and collect a Decaying Heart.",
+        "manualOnly": false,
+        "items": [
+          {
+            "name": "Decaying Heart",
+            "quantity": 1
+          }
+        ],
+        "locations": [
+          {
+            "name": "Lord Grimrot (undead)",
+            "page": "Lord Grimrot (undead)",
+            "zone": "Southern Karana",
+            "level": "29",
+            "loc": [
+              {
+                "ns": 1377,
+                "ew": 1172
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Lord_Grimrot_(undead)"
+          }
+        ]
+      },
+      {
+        "id": "return-heart-scythe",
+        "kind": "turn-in",
+        "text": "After verifying Warmly faction and the accepted quest dialogue, hand the correct Pestilence Scythe and Decaying Heart to Camlend Serbold for Aegis of Life.",
+        "manualOnly": true,
+        "items": [
+          {
+            "name": "Pestilence Scythe",
+            "quantity": 1,
+            "variant": "Effect-bearing quest version"
+          },
+          {
+            "name": "Decaying Heart",
+            "quantity": 1
+          }
+        ],
+        "locations": [
+          {
+            "name": "Camlend Serbold",
+            "page": "Camlend Serbold",
+            "zone": "North Qeynos",
+            "loc": [
+              {
+                "ns": -206,
+                "ew": -677
+              }
+            ],
+            "sourceUrl": "https://eqlwiki.com/Camlend_Serbold"
+          }
+        ]
+      }
+    ]
+  }
+}
