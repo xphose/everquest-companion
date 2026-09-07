@@ -27,8 +27,8 @@ pub struct WorldRes {
     slain_by: Regex,
     player_death: Regex,
     mob_died: Regex,
-    offer: Regex,
-    trade_done: Regex,
+    pub(super) offer: Regex,
+    pub(super) trade_done: Regex,
     level: Regex,
     exp: Regex,
     aa: Regex,
@@ -89,7 +89,7 @@ impl WorldRes {
             slain_by: Regex::new(r"^(.+?) has been slain by (.+?)!$").unwrap(),
             player_death: Regex::new(r"^You have been slain by (.+?)!$").unwrap(),
             mob_died: Regex::new(r"^(.+?) died\.$").unwrap(),
-            offer: Regex::new(r"^You offered [0-9,]+ (.+?) to (.+?)\.$").unwrap(),
+            offer: Regex::new(r"^You offered ([0-9,]+) (.+?) to (.+?)\.$").unwrap(),
             trade_done: Regex::new(r"^You complete the trade with (.+?)\.$").unwrap(),
             level: Regex::new(r"^You have gained a level! Welcome to level ([0-9]+)!$").unwrap(),
             exp: Regex::new(r"^You gain (party )?experience!(?: \(([0-9.]+)%\))?$").unwrap(),
@@ -378,26 +378,7 @@ pub fn classify_item_merge(r: &WorldRes, c: &Ctx, out: &mut Ev) -> bool {
     }
 }
 
-pub fn classify_turn_in(r: &WorldRes, c: &Ctx, out: &mut Ev) -> bool {
-    if c.text.contains("offered") {
-        if let Some(m) = r.offer.captures(c.text) {
-            out.begin(Kind::Offer);
-            out.envelope(c.seq, c.ts, c.raw);
-            out.s(Key::Item, js_trim(&m[1]));
-            out.s(Key::Npc, js_trim(&m[2]));
-            return true;
-        }
-    }
-    if c.text.contains("complete the trade") {
-        if let Some(m) = r.trade_done.captures(c.text) {
-            out.begin(Kind::Trade);
-            out.envelope(c.seq, c.ts, c.raw);
-            out.s(Key::Npc, js_trim(&m[1]));
-            return true;
-        }
-    }
-    false
-}
+pub use super::turnins::classify_turn_in;
 
 pub fn classify_level(r: &WorldRes, c: &Ctx, out: &mut Ev) -> bool {
     if !c.text.contains("gained a level") {

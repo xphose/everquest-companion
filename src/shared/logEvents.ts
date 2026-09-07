@@ -100,6 +100,8 @@ export interface OfferEvent extends LogEventBase {
   kind: 'offer'
   item: string
   npc: string
+  /** Quantity explicitly stated by the client; absent in older event recordings. */
+  count?: number
 }
 
 /** `You complete the trade with <NPC>.` — closes a pending offer group. */
@@ -1435,6 +1437,7 @@ export interface UnknownEvent extends LogEventBase {
 
 /** The canonical discriminated union of everything the parser can emit. */
 export type LogEvent =
+  | import('./taskEvents').TaskActivityEvent
   | ZoneEvent
   | LootEventE
   // The three acquisition families that carry no corpse (JOS-144, ./acquireEvents). They sit

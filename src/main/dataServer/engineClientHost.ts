@@ -57,6 +57,7 @@ import { app } from 'electron'
 import { logInfo } from '../errorLog'
 import { setWorldRebuiltObserver } from '../worldRebuilt'
 import { getActiveCharacter } from '../session'
+import { journalSnapshots } from '../questJournal/snapshotCache'
 import { createEngineClient, EngineError, type EngineClient } from '../../shared/dataServer/client'
 import { createNdjsonTransport, type ByteChannel } from '../../shared/dataServer/ndjson'
 import type {
@@ -201,6 +202,7 @@ let lastFoldLogSize: number | null = null
 /** THE ONE PLACE THE TURN ADVANCES, so nothing that must die with it can be forgotten. */
 function bumpGen(): number {
   gen += 1
+  journalSnapshots.clear()
   engineLiveOn = null
   engineLogMtime = null
   lastFoldLogSize = null
@@ -391,6 +393,7 @@ async function openConnection(mine: number, info: ReadyEngine, client: EngineCli
     // renderers do: a mirror refreshed on anything but the engine's own publication edge would be a
     // cache with a timer, which is the thing ruling 5 forbids.
     noteMirrorChanged(changed.module, changed.seq)
+    journalSnapshots.changed(changed.module, changed.seq)
   })
   // THE WIKI MISSES (JOS-499 item 1, boundary verdict 5) — the engine saying it could not answer a
   // name, answered by the app's own lookup and pushed back as `knowledge.define`.
@@ -854,6 +857,11 @@ export function engineServeReadiness(): Readiness {
   if (ours === null || l.attachedTo !== ours) return { ok: false, why: 'notAttached' }
   if (engineLiveOn !== ours) return { ok: false, why: 'notLive' }
   return SERVABLE
+}
+
+/** A read must not combine replies from different launches, characters or fold epochs. */
+export function engineWorldToken(): string {
+  return `${String(gen)}:${String(live?.client.epoch ?? 'none')}`
 }
 
 /**

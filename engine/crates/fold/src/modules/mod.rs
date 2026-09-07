@@ -51,4 +51,34 @@ pub mod resist;
 pub mod respawn;
 pub mod roster;
 pub mod spell_sets;
+pub mod tasks;
 pub mod turnins;
+
+/// Registration order is bus delivery order — `src/main/modules/wiring.ts` `ordered`, verbatim.
+///
+/// Spelled in full rather than as "the ones we have ported", so an unimplemented module is a fact
+/// the code states. The parity harness reads `missing()` off it and names every absent module,
+/// rather than comparing a subset and reporting green.
+pub const WIRING_ORDER: &[&str] = &[
+    "combo",
+    "roster",
+    "loot",
+    "turnins",
+    "tasks",
+    "classUnlocks",
+    "kills",
+    "respawn",
+    "progression",
+    "leveling",
+    "character",
+    "outputFiles",
+    "spellSets",
+    "itemTiers",
+    "observedSpellRanks",
+    "alerts",
+    "buffs",
+    "buffTimers",
+    "consider",
+    "resist",
+    "eventFeed",
+];

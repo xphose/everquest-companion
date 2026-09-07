@@ -2481,7 +2481,7 @@ failure. Reuses the tier-2 lifecycle via `scripts/sandbox/sandbox-lifecycle.ps1`
 - **Feedback loop (the next big feature)**: fully planned + reviewed in
   `docs/plans/feedback-triage.md` — in-app reports, scrubbed log-window
   uploads, **Terraform** infra (owner decision: HCL, us-east-1, dedicated
-  AWS sub-account, alarms to jmoyers+eqc@gmail.com), agentic triage CLI.
+  AWS sub-account, alarms to maintainer@example.invalid), agentic triage CLI.
   Wave F1 ships dark (no endpoint) and needs no cloud; F2 (deploy) needs
   the owner to create the sub-account. Targeted at the v0.3.0 cycle.
 
@@ -3733,3 +3733,12 @@ your commit (6db8790 swept one; its wave's later commit completed it).
   settling") · 1 sighting (2026-08-13, JOS-294 worker six-spec sweep; green
   standalone and in the next full sweep) · NOT the resolved row's signature —
   unknown mechanism, watch for a second sighting before diagnosing.
+
+## Quest journal integration: timer subscription hydration (2026-09-07)
+
+- `engined/tests/live_surfaces.rs` timer subscription · expected two holds,
+  got an empty reset · 1 sighting (2026-09-07, quest journal workspace run).
+  **RESOLVED 9dbf7ab**: queued hydration announcements could satisfy the
+  live-change wait before the mez lines folded. The test now waits for the
+  two expected holds before asserting the subscription projection, using
+  the original timeout and unchanged projection assertions.

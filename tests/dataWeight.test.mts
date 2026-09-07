@@ -84,12 +84,11 @@ test('EVERY main-side corpus over the floor is in the ledger', () => {
   }
 })
 
-test('the ONE cross-directory import main pays for is counted', () => {
-  // `src/main/mobLookupLocal.ts` reaches into the renderer's catalog, so its 3.2 MB parse is
-  // charged to main's `dataLoaded`. A directory walk of `src/main/data` would miss it entirely,
-  // which is why the generator carries it as an explicit entry and this pins that it stayed.
+test('main-side mob and journal cross-directory imports are counted', () => {
   const listed = new Set(rows.map((r) => r.file))
   assert.ok(listed.has('src/renderer/src/data/eqlegends/mobs.json'))
+  assert.ok(listed.has('src/renderer/src/data/eqlegends/posky.json'))
+  assert.ok(listed.has('src/renderer/src/data/eqlegends/quests.json'))
 })
 
 // ---- 3. the gap is named rather than omitted ---------------------------------------------------
@@ -124,12 +123,12 @@ test('the totals are DERIVED, so a hand-edited row cannot leave a total that dis
 })
 
 test('the startup line names the heavy three, the totals, and the gap', () => {
-  const line = formatDataWeight(foldDataWeight(rows, rendererOnly, 71.3))
+  const line = formatDataWeight(foldDataWeight(rows, ['renderer-example.json'], 71.3))
   assert.match(line, /^data \d+(\.\d)? MB in \d+ files/)
   assert.match(line, /items\.json/)
   assert.match(line, /ref parse \d+(\.\d)?ms \/ retained \d+(\.\d)? MB/)
   assert.match(line, /heap after dataLoaded 71\.3 MB \(this launch\)/)
-  assert.match(line, /renderer-only, not counted: /)
+  assert.match(line, /renderer-only, not counted: renderer-example\.json/)
 })
 
 test('a ledger with nothing to say about the renderer says nothing about it', () => {

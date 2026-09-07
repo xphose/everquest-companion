@@ -8,17 +8,29 @@ use crate::event::Event;
 use crate::EqModule;
 use serde::Serialize;
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TurnInRow {
     ts: i64,
     npc: String,
     items: Vec<String>,
+    item_counts: BTreeMap<String, i64>,
 }
 
 struct PendingOffer {
     npc: String,
     items: Vec<String>,
+    item_counts: BTreeMap<String, i64>,
+}
+
+impl PendingOffer {
+    fn add(&mut self, item: String, count: i64) {
+        let quantity = self.item_counts.entry(item.clone()).or_default();
+        *quantity = quantity.saturating_add(count);
+        self.items.push(item);
+    }
 }
 
 #[derive(Default)]
@@ -63,12 +75,14 @@ impl EqModule for TurnInsModule {
             "offer" => {
                 let npc = ev.str("npc").unwrap_or_default().to_string();
                 let item = ev.str("item").unwrap_or_default().to_string();
+                let count = ev.int("count").unwrap_or(1).max(0);
                 match self.pending_offer.as_mut() {
-                    Some(open) if open.npc == npc => open.items.push(item),
+                    Some(open) if open.npc == npc => open.add(item, count),
                     _ => {
                         self.pending_offer = Some(PendingOffer {
                             npc,
-                            items: vec![item],
+                            items: vec![item.clone()],
+                            item_counts: BTreeMap::from([(item, count)]),
                         })
                     }
                 }
@@ -81,6 +95,7 @@ impl EqModule for TurnInsModule {
                             ts: ev.ts(),
                             npc: open.npc,
                             items: open.items,
+                            item_counts: open.item_counts,
                         });
                         self.announce.changed(self.seq);
                     }
