@@ -113,6 +113,42 @@ test('an exact final trade records the hand-in but never proves quest success', 
   assert.match(detail.nextStep!, /not confirmed/u)
 })
 
+test('hand-in history selects the latest matching trade regardless of input order', () => {
+  const older = { ts: 100, npc: npc.name, items: ['Token', 'Token', 'Token'] }
+  const newer = { ...older, ts: 300 }
+  const unrelated = { ...older, ts: 400, npc: 'Other NPC' }
+  assert.equal(finalTrade(entry, [newer, older, unrelated]), newer)
+})
+
+test('a new task assignment does not reuse a completed prior run’s hand-in', () => {
+  const data = input()
+  data.turnins = [{ ts: 100, npc: npc.name, items: ['Token', 'Token', 'Token'] }]
+  data.observed = [{ name: entry.name, assignedAt: 200, completedAt: 110, cycleStatus: 'assigned' }]
+  const result = detailJournal(data, entry.id)
+  assert.equal(result.row?.state, 'active')
+  assert.equal(result.row?.stateLabel, 'Task activity recorded')
+  assert.equal(result.steps[1].complete, false)
+  assert.equal(result.steps[2].complete, false)
+  assert.equal(result.nextStep, 'Collect three tokens')
+  assert.ok(result.evidence.some((line) => /Previous hand-in.*1970-01-01T00:00:00.100Z/u.test(line)))
+  data.turnins.push({ ts: 250, npc: npc.name, items: ['Token', 'Token', 'Token'] })
+  assert.equal(detailJournal(data, entry.id).steps[2].source, 'log')
+})
+
+test('manual active repeat suppresses old hand-in promotion while current inventory can still make it ready', () => {
+  const data = input()
+  data.turnins = [{ ts: 100, npc: npc.name, items: ['Token', 'Token', 'Token'] }]
+  data.progress.quests[entry.id] = { status: 'active', steps: {} }
+  const result = detailJournal(data, entry.id)
+  assert.equal(result.row?.state, 'active')
+  assert.equal(result.steps[1].complete, false)
+  assert.equal(result.steps[2].complete, false)
+  assert.equal(result.nextStep, 'Collect three tokens')
+  data.inventory = { token: 3 }
+  assert.equal(detailJournal(data, entry.id).row?.state, 'ready')
+  assert.equal(detailJournal(data, entry.id).steps[2].complete, false)
+})
+
 test('inventory supplements only later kept loot and consumes exact trade quantities', () => {
   const inventory = { token: 4 }
   const loot = [

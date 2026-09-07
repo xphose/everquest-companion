@@ -32,7 +32,7 @@ function catalogRow(input: JournalModelInput, entry: QuestJournalCatalogEntry): 
   const completed = isCompleted(input, entry)
   const ready = !completed && readyForTurnIn(entry, steps, input.inventory)
   const active = manual.status === 'active' || taskState(observed) === 'active'
-  const handedIn = finalTrade(entry, input.turnins) !== undefined
+  const handedIn = currentHandIn(input, entry) !== undefined
   return {
     id: entry.id, name: entry.name,
     state: completed ? 'completed' : ready ? 'ready' : active ? 'active' : 'unknown',
@@ -42,6 +42,15 @@ function catalogRow(input: JournalModelInput, entry: QuestJournalCatalogEntry): 
     recommendation: recommend(entry, input.context), rewardNames: entry.rewards.map((reward) => reward.name),
     hasGuide: Boolean(entry.guide)
   }
+}
+
+/** A previous run's hand-in remains history; it cannot check off the current run's steps. */
+function currentHandIn(input: JournalModelInput, entry: QuestJournalCatalogEntry): TurnInEvent | undefined {
+  if (manualFor(input, entry.id).status === 'active') return undefined
+  const assignedAt = matchObserved(entry, input.observed)?.assignedAt
+  const trade = finalTrade(entry, input.turnins)
+  if (trade && assignedAt !== undefined && trade.ts < assignedAt) return undefined
+  return trade
 }
 
 function isCompleted(input: JournalModelInput, entry: QuestJournalCatalogEntry): boolean {
@@ -162,11 +171,19 @@ function evidenceFor(input: JournalModelInput, entry: QuestJournalCatalogEntry |
   const evidence: string[] = []
   if (manual.status) evidence.push(`You marked this quest ${manual.status}.`)
   if (entry && achievementCompletion(entry, input.claims)) evidence.push('The character’s achievements export records an earned quest reward; bypass class grants are excluded.')
-  if (entry && finalTrade(entry, input.turnins)) evidence.push('The log records the exact final items handed to the named NPC. A closed trade alone does not confirm the quest reward or success.')
+  if (entry) evidence.push(...handInEvidence(input, entry))
   if (input.completedSky.has(id)) evidence.push('Completion was recorded in this character’s Plane of Sky journal.')
   evidence.push('Task history includes only events present in this log. Absence of a completion line is not proof a quest is unfinished.')
   evidence.push('Collected items and owned rewards never mark a quest accepted or completed.')
   return evidence
+}
+
+function handInEvidence(input: JournalModelInput, entry: QuestJournalCatalogEntry): string[] {
+  const trade = finalTrade(entry, input.turnins)
+  if (!trade) return []
+  const date = new Date(trade.ts).toISOString()
+  if (!currentHandIn(input, entry)) return [`Previous hand-in recorded at ${date}. It does not complete the current run’s steps.`]
+  return [`The log records the exact final items handed to the named NPC at ${date}. A closed trade alone does not confirm the quest reward or success.`]
 }
 
 export function detailJournal(input: JournalModelInput, id: string): QuestJournalDetailResult {
@@ -182,7 +199,7 @@ export function detailJournal(input: JournalModelInput, id: string): QuestJourna
 
 function detailSteps(input: JournalModelInput, entry: QuestJournalCatalogEntry, manual: QuestJournalManual): QuestJournalDetailResult['steps'] {
   const steps = stepProgress(entry, manual, input.inventory)
-  if (!finalTrade(entry, input.turnins)) return steps
+  if (!currentHandIn(input, entry)) return steps
   return steps.map((step, index) => {
     const kind = entry.guide?.steps[index].kind
     if (kind === 'turn-in' || kind === 'collect') return { ...step, complete: true, source: 'log' }
@@ -200,7 +217,7 @@ function nextStep(input: JournalModelInput, entry: QuestJournalCatalogEntry | un
 }
 
 function guidedNextStep(input: JournalModelInput, entry: QuestJournalCatalogEntry, row: QuestJournalRow | null): string | undefined {
-  if (finalTrade(entry, input.turnins)) return 'Hand-in recorded. Check the NPC response and reward; the outcome is not confirmed by this trade alone.'
+  if (currentHandIn(input, entry)) return 'Hand-in recorded. Check the NPC response and reward; the outcome is not confirmed by this trade alone.'
   const steps = entry.guide?.steps ?? []
   if (row?.state === 'unknown') return steps.find((step) => step.kind === 'pickup')?.text
   const progress = stepProgress(entry, manualFor(input, entry.id), input.inventory)

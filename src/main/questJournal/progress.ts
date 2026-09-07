@@ -91,12 +91,18 @@ export function finalTrade(entry: QuestJournalCatalogEntry, turnins: TurnInEvent
   const steps = entry.guide?.steps ?? []
   const final = steps[steps.length - 1]
   if (final?.kind !== 'turn-in' || !final.items?.length || final.items.some((item) => item.variant)) return undefined
-  return turnins.find((trade) => {
-    if (!final.locations.some((location) => nameKey(location.name) === nameKey(trade.npc))) return false
-    const held = tradeCounts(trade)
-    const counts = itemCounts(final, held)
-    return counts?.complete === true && Object.values(held).reduce((sum, count) => sum + count, 0) === counts.required
-  })
+  let latest: TurnInEvent | undefined
+  for (const trade of turnins) {
+    if (tradeMatchesFinal(final, trade) && (!latest || trade.ts >= latest.ts)) latest = trade
+  }
+  return latest
+}
+
+function tradeMatchesFinal(final: QuestJournalStep, trade: TurnInEvent): boolean {
+  if (!final.locations.some((location) => nameKey(location.name) === nameKey(trade.npc))) return false
+  const held = tradeCounts(trade)
+  const counts = itemCounts(final, held)
+  return counts?.complete === true && Object.values(held).reduce((sum, count) => sum + count, 0) === counts.required
 }
 
 function tradeCounts(trade: TurnInEvent): Record<string, number> {
