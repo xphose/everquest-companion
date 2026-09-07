@@ -1,4 +1,5 @@
 import type { QuestJournalCatalogEntry } from './catalog'
+import type { RecoveryRecord } from './recovery'
 
 export type QuestJournalState = 'active' | 'completed' | 'ready' | 'unknown'
 export type QuestJournalFilter = 'all' | 'tracked' | QuestJournalState
@@ -24,6 +25,7 @@ export interface QuestJournalFileState {
 export interface QuestJournalContext {
   characterId: string | null
   characterName?: string
+  characterServer?: string
   level?: number
   classes: string[]
   profileSource: 'detected' | 'manual' | 'unknown'
@@ -99,6 +101,7 @@ export interface QuestJournalDetailResult {
   entry?: QuestJournalCatalogEntry
   steps: QuestJournalStepProgress[]
   observed?: QuestJournalObservedTask
+  recovered?: RecoveryRecord
   evidence: string[]
   comparisons: QuestJournalRewardComparison[]
   manual: QuestJournalManual
@@ -122,6 +125,7 @@ export interface QuestJournalProgress {
   version: 1
   quests: Record<string, QuestJournalManual>
   profile?: QuestJournalProfile
+  recovery?: Record<string, RecoveryRecord>
 }
 
 export type QuestJournalMutation = { characterId: string } & (
