@@ -118,12 +118,7 @@ docs/agents-archive.md.
     (`tests/e2e/viewRemount.mts` holds the precondition); a SECOND distinct
     cause with the guard holding · 1 sighting 2026-08-13 · watch. Both rows
     at full length: docs/agents-archive.md.
-  - `engined/tests/live_surfaces.rs` timer subscription · expected two holds,
-    got an empty reset · 1 sighting (2026-09-07, quest journal workspace run).
-    **RESOLVED 9dbf7ab**: queued hydration announcements could satisfy the
-    live-change wait before the mez lines folded. The test now waits for the
-    two expected holds before asserting the subscription projection, using
-    the original timeout and unchanged projection assertions.
+  - `live_surfaces.rs` timer hydration ×1; **RESOLVED 9dbf7ab**. Details: docs/agents-archive.md.
   - `engined tests/perf_snapshot.rs` · `perf.snapshot was refused: Unavailable
     "the fold did not answer within 5000 ms"` from the `until` poll while the
     engine is still loading its spell catalog on a starved CI runner · 1
