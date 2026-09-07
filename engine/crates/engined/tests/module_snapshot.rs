@@ -290,6 +290,67 @@ fn every_module_answers_what_a_direct_fold_of_the_same_bytes_publishes() {
 }
 
 #[test]
+fn observed_task_activity_is_served_live_and_isolated_on_character_attach() {
+    let scratch = Scratch::new("tasks");
+    let assigned = include_str!("../../../../tests/fixtures/p1-unbound-pet.log")
+        .lines()
+        .find(|line| line.contains("You have been assigned the task '"))
+        .expect("a verified assignment");
+    let updated = include_str!("../../../../tests/fixtures/e2e-deep-link.log")
+        .lines()
+        .find(|line| line.contains("Your task '"))
+        .expect("a verified task update");
+    let log = scratch.0.join("eqlog_Primitive_freeport.txt");
+    std::fs::write(&log, format!("{assigned}\n")).unwrap();
+    let engine = Engine::start();
+    let mut client = engine.connected();
+    client.send(&attach(1, &log.to_string_lossy()));
+    let mut id = 100;
+    settle_live(&mut client, &mut id);
+    id += 1;
+    let before = snapshot(&mut client, id, "tasks");
+    assert_eq!(before.state["v"], 1);
+    assert_eq!(before.state["tasks"].as_array().unwrap().len(), 1);
+    assert!(before.state["tasks"][0].get("assignedAt").is_some());
+    assert!(before.state["tasks"][0].get("updatedAt").is_none());
+
+    let mut output = std::fs::OpenOptions::new().append(true).open(&log).unwrap();
+    writeln!(output, "{updated}").unwrap();
+    output.flush().unwrap();
+    let deadline = Instant::now() + PATIENCE;
+    loop {
+        assert!(
+            Instant::now() < deadline,
+            "the task update was never announced"
+        );
+        match client.recv() {
+            EngineMessage::ModuleChangedMessage(message)
+                if message.module == "tasks" && message.seq > before.seq + 1 =>
+            {
+                break
+            }
+            other => skip(&other),
+        }
+    }
+    id += 1;
+    let after = snapshot(&mut client, id, "tasks");
+    assert!(after.state["tasks"][0].get("updatedAt").is_some());
+    assert!(after.state["tasks"][0].get("completedAt").is_none());
+
+    let other = scratch.0.join("eqlog_Newbie_freeport.txt");
+    std::fs::write(&other, "").unwrap();
+    id += 1;
+    client.send(&attach(id, &other.to_string_lossy()));
+    settle_live(&mut client, &mut id);
+    id += 1;
+    let empty = snapshot(&mut client, id, "tasks");
+    assert_eq!(
+        empty.state,
+        serde_json::json!({"v":1,"tasks":[],"truncated":false})
+    );
+}
+
+#[test]
 fn a_snapshot_taken_mid_fold_is_a_real_prefix_state() {
     // The claim the whole design exists to make: the fold is never locked and never interrupted
     // mid-event, so an ask answered at a read boundary of the scan comes back as the state after

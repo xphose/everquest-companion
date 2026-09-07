@@ -64,7 +64,7 @@ impl Probe {
 
 /// Every migrated module, so a claim about "nothing else moved" is a claim about a named set rather
 /// than about whatever happened to be registered.
-const MIGRATED: [&str; 15] = [
+const MIGRATED: [&str; 16] = [
     "alerts",
     "buffs",
     "classUnlocks",
@@ -79,6 +79,7 @@ const MIGRATED: [&str; 15] = [
     "progression",
     "roster",
     "spellSets",
+    "tasks",
     "turnins",
 ];
 
