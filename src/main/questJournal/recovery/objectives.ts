@@ -1,5 +1,5 @@
 import type { RecoveryCapture, RecoveryObjective, RecoveryOcrWord } from '../../../shared/questJournal/recovery'
-import { phraseBox, validWord, type Box } from './geometry'
+import { phraseBox, spatialLines, type Box } from './geometry'
 
 function statusObjective(text: string, status: string): RecoveryObjective | undefined {
   if (!text || text.length > 500) return undefined
@@ -35,8 +35,8 @@ function spatialObjectives(capture: RecoveryCapture): RecoveryObjective[] {
   const columns = objectiveColumns(capture)
   if (!columns) return []
   const { instructions } = columns
-  const words = capture.lines?.flatMap((line) => line.words).filter((word) => validWord(word) && word.y > instructions.y + instructions.height) ?? []
-  return objectiveRows(words, columns)
+  const lines = spatialLines(capture).filter((line) => line[0].y > instructions.y + instructions.height)
+  return objectiveRows(lines, columns)
 }
 
 function objectiveColumns(capture: RecoveryCapture): { instructions: Box; status: Box; zone: Box } | undefined {
@@ -48,18 +48,14 @@ function objectiveColumns(capture: RecoveryCapture): { instructions: Box; status
   return { instructions, status, zone }
 }
 
-function objectiveRows(words: RecoveryOcrWord[], { instructions, status, zone }: { instructions: Box; status: Box; zone: Box }): RecoveryObjective[] {
-  const outcomes = words.filter((word) => word.x >= status.x - 3 && word.x + word.width < zone.x - 2)
+function objectiveRows(lines: RecoveryOcrWord[][], { instructions, status, zone }: { instructions: Box; status: Box; zone: Box }): RecoveryObjective[] {
   const rows: RecoveryObjective[] = []
-  const seen = new Set<number>()
-  for (const word of outcomes) {
-    const group = outcomes.filter((candidate) => Math.abs(candidate.y - word.y) < word.height / 2)
-    const y = Math.min(...group.map((candidate) => candidate.y))
-    if (seen.has(y)) continue
-    seen.add(y)
-    const text = joined(words.filter((candidate) => candidate.x >= instructions.x - 3 && candidate.x + candidate.width < status.x - 2 && Math.abs(candidate.y - y) < word.height / 2))
-    const objective = statusObjective(text, joined(group))
+  for (const line of lines) {
+    const text = joined(line.filter((word) => word.x >= instructions.x - 3 && word.x + word.width < status.x - 2))
+    const value = joined(line.filter((word) => word.x >= status.x - 3 && word.x + word.width < zone.x - 2))
+    const objective = statusObjective(text, value)
     if (objective) rows.push(objective)
+    else if (text && text.length <= 500 && line.some((word) => word.x >= zone.x - 3)) rows.push({ text })
   }
   return rows.slice(0, 50)
 }
