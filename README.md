@@ -4,9 +4,9 @@ A Windows desktop companion for **EverQuest Legends**. It reads the log file the
 already writes and turns it into live, useful views — a DPS meter, floating overlays,
 quest and loot tracking, alerts.
 
-**It only reads your log.** Nothing is injected into EverQuest, no game files are
-touched, no memory is read, and nothing is automated or played for you. If you turned
-off logging, the app simply has nothing to show.
+**It reads game logs and character exports.** Nothing is injected into EverQuest,
+no game files are changed, no memory is read, and nothing is played for you.
+Live tracking needs logging; the offline quest directory can be browsed without it.
 
 ## What it does
 
@@ -17,6 +17,10 @@ off logging, the app simply has nothing to show.
   becomes click-through.
 - **Plane of Sky tracker** — every class's Test quests with "have / need" chips per
   item, item stats on hover, and sorting by closest-to-done.
+- **Expanded quest journal** — quest discovery, recorded task history, pickup and
+  monster locations, turn-in guides, and reward comparisons for your character.
+  Progress follows readable game evidence automatically. See the
+  [journal guide](docs/quest-journal.md) for setup and coverage.
 - **Loot + item knowledge** — a running history of what you looted, and what each item
   is actually *for*: which quests use it, what it turns in for, which recipes consume it.
 - **Leveling & AA** — XP and AA progress per character, with history.
