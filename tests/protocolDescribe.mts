@@ -212,6 +212,7 @@ function describeCore(
       return `attach ${message.params.logPath}`
     case 'session.health':
     case 'session.progress':
+    case 'recovery.ocr':
       return `${message.op}#${String(message.id)}`
     case 'module.snapshot':
       return `snapshot#${String(message.id)} of ${message.params.module}`
