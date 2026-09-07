@@ -36,8 +36,8 @@ quest was completed. Unsupported saved journal formats are reported in the sourc
 
 To read the game journal, open EverQuest's active task or completed history page and
 choose **Read game journal**. You can also use **Clipboard image** or **Choose
-screenshot**. Text recognition runs locally on Windows and reads only the visible
-page; it does not operate the game. Scan active tasks and completed history separately,
+screenshot**. Text recognition uses local Windows English OCR support and reads only
+the visible page; it does not operate the game. Scan active tasks and completed history separately,
 applying each reviewed page before scanning the next one.
 Use a fresh screenshot for current tasks; an image file or clipboard image does not
 prove when it was captured. History pages may be older.
