@@ -29,12 +29,13 @@
 // No search UI lives here (that is the sidebar, `MapMobPane.tsx`); `labelPosition` is exported so
 // the jump-to-a-hit path positions its marker with exactly the arithmetic the labels used.
 
-import { useMemo, useState, type JSX } from 'react'
-import type { MapPoint } from '@shared/maps'
+import { useMemo, useState, type JSX, type KeyboardEvent } from 'react'
+import type { MapPoint, ZoneShort } from '@shared/maps'
 import { expandRect, visiblePoints, type LayerMask, type ScreenPos } from './mapGeometry'
 import { LABEL_FONT_PX, layoutLabels, type LabelSlot } from './labelLayout'
 import { inActiveBand, type FloorBand } from './floorSlice'
 import type { MapViewport } from './useMapViewport'
+import { zoneLabelResolver, type ZoneLabelTarget } from './zoneLabelLinks'
 
 export { LABEL_FONT_PX }
 
@@ -89,6 +90,8 @@ export interface MapPointsLayerProps {
   bands?: readonly FloorBand[]
   /** The active floor, or null for "All levels". Out-of-band labels drop to dots. */
   floor?: number | null
+  zone?: ZoneShort
+  zones?: readonly ZoneShort[]
 }
 
 interface GlyphProps {
@@ -96,16 +99,32 @@ interface GlyphProps {
   at: ScreenPos
   onHover: (index: number | null) => void
   index: number
+  target: ZoneLabelTarget | null
+}
+
+/** Pointer activation is delegated to the surface so dragging across a label cannot follow it. */
+function linkProps(target: ZoneLabelTarget | null, raised = false) {
+  return target ? {
+    'data-map-link': target.zone,
+    role: 'button', tabIndex: raised ? -1 : 0, 'aria-label': `Open ${target.name} map`,
+    onKeyDown: (event: KeyboardEvent<HTMLSpanElement>) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      event.preventDefault()
+      event.stopPropagation()
+      if (!event.repeat) event.currentTarget.click()
+    }
+  } : {}
 }
 
 /** The full text. `raised` is the hover state: lifted off its dot and above every other glyph. */
-function Label({ p, at, onHover, index, raised }: GlyphProps & { raised?: boolean }): JSX.Element {
+function Label({ p, at, onHover, index, raised, target }: GlyphProps & { raised?: boolean }): JSX.Element {
   return (
     <span
       data-testid="map-point"
+      {...linkProps(target, raised)}
       // The RAW display text — `label.replace(/_/g,' ')`, computed once by the parser. The
-      // tooltip repeats it verbatim so a label clipped by a neighbour is still readable.
-      title={p.display}
+      // An ordinary tooltip repeats it; a recognized zone link names the destination action.
+      title={target ? `Open ${target.name} map` : p.display}
       onMouseEnter={() => {
         onHover(index)
       }}
@@ -123,7 +142,7 @@ function Label({ p, at, onHover, index, raised }: GlyphProps & { raised?: boolea
         whiteSpace: 'nowrap',
         pointerEvents: 'auto',
         userSelect: 'none',
-        cursor: 'default',
+        cursor: target ? 'pointer' : 'default',
         zIndex: raised === true ? 2 : 1
       }}
     >
@@ -138,11 +157,14 @@ function Label({ p, at, onHover, index, raised }: GlyphProps & { raised?: boolea
  * The POI stays on the map and stays a pointer target — the outer box is `DOT_HIT_PX` so a 5px
  * dot is still comfortably hoverable at any zoom.
  */
-function Dot({ p, at, onHover, index }: GlyphProps): JSX.Element {
+function Dot({ p, at, onHover, index, target }: GlyphProps): JSX.Element {
   return (
     <span
       data-testid="map-point-dot"
-      title={p.display}
+      {...linkProps(target)}
+      title={target ? `Open ${target.name} map` : p.display}
+      onFocus={() => onHover(index)}
+      onBlur={() => onHover(null)}
       onMouseEnter={() => {
         onHover(index)
       }}
@@ -161,7 +183,7 @@ function Dot({ p, at, onHover, index }: GlyphProps): JSX.Element {
         alignItems: 'center',
         justifyContent: 'center',
         pointerEvents: 'auto',
-        cursor: 'default'
+        cursor: target ? 'pointer' : 'default'
       }}
     >
       <span
@@ -196,6 +218,7 @@ function useLabelSlots(props: MapPointsLayerProps): LabelSlot[] {
 
 export function MapPointsLayer(props: MapPointsLayerProps): JSX.Element {
   const slots = useLabelSlots(props)
+  const resolve = useMemo(() => zoneLabelResolver(props.zones ?? [], props.zone ?? ''), [props.zones, props.zone])
   const [hover, setHover] = useState<number | null>(null)
   return (
     <div
@@ -204,9 +227,9 @@ export function MapPointsLayer(props: MapPointsLayerProps): JSX.Element {
     >
       {slots.map((s) =>
         s.shown ? (
-          <Label key={s.index} p={s.point} at={s} index={s.index} onHover={setHover} />
+          <Label key={s.index} p={s.point} at={s} index={s.index} onHover={setHover} target={resolve(s.point.display)} />
         ) : (
-          <Dot key={s.index} p={s.point} at={s} index={s.index} onHover={setHover} />
+          <Dot key={s.index} p={s.point} at={s} index={s.index} onHover={setHover} target={resolve(s.point.display)} />
         )
       )}
       {/* The hovered dot's text, raised above every placed label. Drawn outside the layout so
@@ -214,7 +237,7 @@ export function MapPointsLayer(props: MapPointsLayerProps): JSX.Element {
       {slots
         .filter((s) => s.index === hover && !s.shown)
         .map((s) => (
-          <Label key={`raised-${String(s.index)}`} p={s.point} at={s} index={s.index} onHover={setHover} raised />
+          <Label key={`raised-${String(s.index)}`} p={s.point} at={s} index={s.index} onHover={setHover} target={resolve(s.point.display)} raised />
         ))}
     </div>
   )

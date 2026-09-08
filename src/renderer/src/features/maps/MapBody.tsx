@@ -21,7 +21,7 @@
 // the whole wiki bestiary (crossZone.ts), so "which zone is Ambassador D`Vinn in?" is answerable
 // from the state where nothing is open — which is exactly the state that question gets asked in.
 
-import { useCallback, useEffect, useMemo, useState, type JSX, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX, type MouseEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import { Box, IconButton, Stack } from '@mui/material'
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar'
 import type { MapData, ZoneShort } from '@shared/maps'
@@ -152,6 +152,40 @@ function MarkerRing({
   )
 }
 
+function linkZone(target: EventTarget | null): string | null {
+  return target instanceof Element ? target.closest('[data-map-link]')?.getAttribute('data-map-link') ?? null : null
+}
+
+/** Pointer capture retains the original link even if its raised hover glyph disappears on blur. */
+function useZoneLinkPointer(vp: MapViewport, onJump: (to: JumpTarget) => void) {
+  const gesture = useRef<{ x: number; y: number; zone: string | null; moved: boolean } | null>(null)
+  return {
+    onPointerDown: (event: PointerEvent<HTMLElement>) => {
+      gesture.current = event.button === 0 ? { x: event.clientX, y: event.clientY, zone: linkZone(event.target), moved: false } : null
+      vp.onPointerDown(event)
+    },
+    onPointerMove: (event: PointerEvent<HTMLElement>) => {
+      const start = gesture.current
+      if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5) start.moved = true
+      vp.onPointerMove(event)
+    },
+    onPointerUp: (event: PointerEvent<HTMLElement>) => {
+      const start = gesture.current
+      gesture.current = null
+      vp.onPointerUp(event)
+      if (start?.zone && !start.moved && event.button === 0 && Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 5) {
+        onJump({ zone: start.zone, at: null })
+      }
+    },
+    onPointerCancel: (event: PointerEvent<HTMLElement>) => { gesture.current = null; vp.onPointerUp(event) },
+    onClick: (event: MouseEvent<HTMLElement>) => {
+      // Keyboard activation has no pointer sequence. Native pointer clicks were handled above.
+      const zone = event.detail === 0 ? linkZone(event.target) : null
+      if (zone && event.button === 0) { event.stopPropagation(); onJump({ zone, at: null }) }
+    }
+  }
+}
+
 /**
  * The drawn map: the positioned host the viewport measures, the canvas, the label layer, and the
  * markers — positioned through `labelPosition`, the SAME arithmetic the labels use.
@@ -167,6 +201,8 @@ function MapSurface({
   locMarker,
   playerLocation,
   onExplore,
+  zones,
+  onJump,
   pane
 }: {
   data: MapData
@@ -180,6 +216,8 @@ function MapSurface({
   locMarker: EqLoc | null
   playerLocation: PlayerLocation | null
   onExplore: () => void
+  zones: readonly ZoneShort[]
+  onJump: (to: JumpTarget) => void
   /** The sidebar's contribution, or null when it is closed and draws nothing. */
   pane: PaneOverlay | null
 }): JSX.Element {
@@ -192,13 +230,12 @@ function MapSurface({
   // takes a z window and dims what falls outside it, nothing more. Memoized because it is a
   // canvas redraw dependency — a fresh object every render would repaint on every render.
   const zBand = useMemo(() => (floor == null ? null : bandRange(bands, floor)), [bands, floor])
+  const pointer = useZoneLinkPointer(vp, onJump)
   return (
     <Box
       ref={hostRef}
       data-testid="maps-surface"
-      onPointerDown={vp.onPointerDown}
-      onPointerMove={vp.onPointerMove}
-      onPointerUp={vp.onPointerUp}
+      {...pointer}
       onWheelCapture={onExplore}
       sx={{
         position: 'relative',
@@ -212,7 +249,7 @@ function MapSurface({
       }}
     >
       <MapCanvas lines={data.lines} vp={vp} layers={layers} zBand={zBand} />
-      <MapPointsLayer points={data.points} vp={vp} layers={layers} bands={bands} floor={floor} />
+      <MapPointsLayer points={data.points} vp={vp} layers={layers} bands={bands} floor={floor} zone={data.zone} zones={zones} />
       {pane != null && <MapMobPins pins={pane.pins} vp={vp} selectedId={pane.selectedId} />}
       {ringAt != null && <MarkerRing at={ringAt} size={26} testId="maps-pane-marker" />}
       {at != null && <MarkerRing at={at} size={22} testId="maps-marker" />}
@@ -266,6 +303,7 @@ export interface MapBodyProps {
   locMarker: EqLoc | null
   playerLocation: PlayerLocation | null
   onExplore: () => void
+  zones: readonly ZoneShort[]
   /** A cross-zone hit was clicked — `useSearchJump`'s handler, which changes zone first. */
   onJump: (to: JumpTarget) => void
 }
@@ -287,6 +325,8 @@ export default function MapBody(props: MapBodyProps): JSX.Element {
           locMarker={locMarker}
           playerLocation={props.playerLocation}
           onExplore={props.onExplore}
+          zones={props.zones}
+          onJump={onJump}
           pane={paneOverlay(pane)}
         />
       ) : (
