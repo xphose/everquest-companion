@@ -6,7 +6,7 @@ import type { MacroAssistantMutation, MacroAssistantSettings, MacroAssistantSnap
 import { MacroStatus } from './MacroStatus'
 
 const BUSY_LABELS = {
-  queue: 'Queuing request…', restore: 'Requesting restore…', configure: 'Updating preferences…', prepare: 'Queuing preparation…'
+  queue: 'Queuing request…', restore: 'Requesting restore…', configure: 'Updating preferences…', repair: 'Queuing replacement…', prepare: 'Queuing preparation…'
 }
 function busyLabel(action: MacroAssistantMutation['action'] | undefined): string { return BUSY_LABELS[action ?? 'configure'] }
 

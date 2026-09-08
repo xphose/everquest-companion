@@ -5,6 +5,7 @@ import { assertMacroWorld, emptyMacroSaved, macroMutation, worldKey } from './se
 import { currentRecipes, macroSnapshot, readMacroModel, selectedTarget, trustedQueue, type MacroModel } from './model'
 import { applyQueuedMacros, restoreMacros } from './installation'
 import { cancelQueuedPreparation, failedPreparation, freezeCombatPlan, observePreparation } from './preparationState'
+import { observePendingRepairs, queueRepair } from './repair'
 import { queuePreparation } from './preparationQueue'
 
 function message(error: unknown): string { return error instanceof Error ? error.message : 'Unable to update macros.' }
@@ -27,12 +28,18 @@ function rememberPlan(model: MacroModel): void {
   model.saved.level = model.input.player.level
 }
 
+function hasAutoWork(model: MacroModel): boolean {
+  const saved = model.saved
+  return saved.settings.selections.length > 0 || Boolean(saved.queued?.repairs?.length) ||
+    Object.values(saved.managed).some((items) => items.length)
+}
+
 function refreshAutoQueue(model: MacroModel): void {
   if (!model.input || !model.target || !model.saved.settings.autoUpdate || model.saved.restoreRequested) return
   // Unknown capacity is an incomplete observation, never an instruction to retire spell macros.
   if (castableMacroSlots(model.input.player) === null) return
   if (freezeCombatPlan(model)) return
-  if (!model.saved.settings.selections.length && !Object.values(model.saved.managed).some((items) => items.length)) return
+  if (!hasAutoWork(model)) return
   const queue = trustedQueue(model, 'auto')
   if (queue.signature !== model.saved.lastSignature && queue.signature !== model.saved.queued?.signature) model.saved.queued = queue
 }
@@ -83,6 +90,7 @@ export function createMacroService(deps: MacroServiceDeps): MacroService {
   }
   const finish = async (model: MacroModel): Promise<MacroAssistantSnapshot> => {
     observePreparation(model, deps.now())
+    observePendingRepairs(model)
     rememberPlan(model)
     refreshAutoQueue(model)
     await processPending(deps, model)
@@ -108,6 +116,11 @@ export function createMacroService(deps: MacroServiceDeps): MacroService {
         if (mutation.action === 'configure') configure(model, mutation)
         else if (mutation.action === 'prepare') {
           model.saved.queued = await queuePreparation(deps, model, mutation, trustedQueue(model, 'prepare', false))
+          model.saved.restoreRequested = false
+          model.saved.status = undefined
+        }
+        else if (mutation.action === 'repair') {
+          model.saved.queued = await queueRepair(deps, model, mutation, trustedQueue(model, 'manual'))
           model.saved.restoreRequested = false
           model.saved.status = undefined
         }

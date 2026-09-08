@@ -1,6 +1,7 @@
 import type { MacroApplied, MacroSaved, QueuedMacros } from './types'
 import { readMacroDefaults, type CharacterFile } from './files'
 import { planSpellLoadoutIni, type ManagedSpellLoadout } from './spellLoadoutIni'
+import { repairOwnership } from './repairOwnership'
 import { planSocialIni } from './socialIni'
 
 /** Defaults participate in allocation even when the character file overrides them. */
@@ -21,10 +22,11 @@ export function installationPlan(file: CharacterFile, defaults: CharacterFile | 
 } {
   const prepared = queue.preparation
   const sets = preparedSets(file, defaults, queue, saved)
-  const socials = planSocialIni(sets?.text ?? file.text, queue.requests, saved.managed[queue.targetFile] ?? [], { retireMissing: true })
+  const ownership = repairOwnership(file.text, queue, saved.managed[queue.targetFile] ?? [])
+  const socials = planSocialIni(sets?.text ?? file.text, queue.requests, ownership, { retireMissing: true })
   const packageConflicts = [...sets?.conflicts ?? [], ...socials.conflicts.map((item) => item.reason)]
   // A Load button without a valid return set, or a partial set/social package, is never installed.
-  if (prepared && packageConflicts.length) throw new Error(packageConflicts.join(' '))
+  if ((prepared || queue.repairs?.length) && packageConflicts.length) throw new Error(packageConflicts.join(' '))
   return { text: socials.text, changed: socials.text !== file.text, managed: socials.managed, setManaged: sets?.managed,
     conflicts: [...queue.problems, ...packageConflicts] }
 }

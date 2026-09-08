@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { MacroAssistantMutation, MacroAssistantSettings } from '@shared/macroAssistant'
+import type { MacroAssistantMutation, MacroAssistantSettings, MacroExistingSocial } from '@shared/macroAssistant'
 import { MacroSession, type MacroSessionState } from './macroSession'
 
 export function useMacroAssistant() {
@@ -20,10 +20,15 @@ export function useMacroAssistant() {
       ? { characterId, action } : { characterId, action: 'configure', settings: action }
     void session.current?.mutate(mutation)
   }, [characterId])
+  const targetFile = state.snapshot?.installation.targetFile
+  const repair = useCallback((social: MacroExistingSocial) => {
+    if (characterId && targetFile && social.repair) void session.current?.mutate({ characterId, action: 'repair', targetFile,
+      page: social.page, button: social.button, fingerprint: social.repair.fingerprint, recipeId: social.repair.recipeId })
+  }, [characterId, targetFile])
   const refresh = useCallback(() => { void session.current?.read(true) }, [])
   const prepare = useCallback((spellIds: number[], destination: { bar: number; page: number }) => {
     if (characterId) void session.current?.mutate({ characterId, action: 'prepare', spellIds, destination })
   }, [characterId])
   const dismissNotice = useCallback((id: number) => { session.current?.dismissNotice(id) }, [])
-  return { ...state, mutate, prepare, refresh, dismissNotice }
+  return { ...state, mutate, prepare, repair, refresh, dismissNotice }
 }

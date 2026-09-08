@@ -39,10 +39,18 @@ function preparationMutation(value: Record<string, unknown>): MacroAssistantMuta
   if (new Set(ids).size !== ids.length || !validDestination(value.destination)) return null
   return value as unknown as MacroAssistantMutation
 }
+function repairMutation(value: Record<string, unknown>): MacroAssistantMutation | null {
+  if (Object.keys(value).some((key) => !['characterId', 'action', 'targetFile', 'page', 'button', 'fingerprint', 'recipeId'].includes(key))) return null
+  if (!slot(value.page) || !Number.isInteger(value.button) || Number(value.button) < 1 || Number(value.button) > 12) return null
+  if (typeof value.targetFile !== 'string' || !/^[a-z0-9_-]{1,150}\.ini$/i.test(value.targetFile)) return null
+  if (typeof value.fingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(value.fingerprint) || value.recipeId !== 'self-buffs') return null
+  return value as unknown as MacroAssistantMutation
+}
 export function macroMutation(raw: unknown): MacroAssistantMutation | null {
   const value = object(raw)
   if (!value || typeof value.characterId !== 'string' || value.characterId.length > 200) return null
   if (value.action === 'queue' || value.action === 'restore') return value as unknown as MacroAssistantMutation
+  if (value.action === 'repair') return repairMutation(value)
   if (value.action === 'prepare') return preparationMutation(value)
   if (value.action !== 'configure') return null
   const settings = settingsPatch(value.settings)
