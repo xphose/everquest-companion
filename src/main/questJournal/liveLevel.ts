@@ -1,5 +1,6 @@
 import type { PlayerLocationResult } from '../../shared/playerLocation'
 import type { QuestJournalContext } from '../../shared/questJournal/journal'
+import { currentPlayerLocation } from '../../shared/currentPlayer'
 
 export function journalLevel(manual: number | undefined, live: number | undefined, logged: number | undefined): Pick<QuestJournalContext, 'level' | 'levelSource'> {
   if (manual !== undefined) return { level: manual, levelSource: 'manual' }
@@ -9,9 +10,7 @@ export function journalLevel(manual: number | undefined, live: number | undefine
 
 /** A stale sample or another character must never replace this journal's logged level. */
 export function liveJournalLevel(result: PlayerLocationResult | undefined, name: string | undefined, now: number): number | undefined {
-  if (result?.state !== 'live' || !name) return undefined
-  const { characterName, level, sampledAt } = result.location
-  const age = now - sampledAt
-  if (characterName.toLowerCase() !== name.toLowerCase() || !Number.isFinite(age) || age < 0 || age > 1500) return undefined
+  if (!name) return undefined
+  const { level } = currentPlayerLocation(result, name, now) ?? {}
   return level !== undefined && Number.isInteger(level) && level >= 1 && level <= 125 ? level : undefined
 }

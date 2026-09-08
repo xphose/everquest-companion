@@ -20,13 +20,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ClassAbbr } from '@shared/classCombo'
-import { resolvedClasses } from '@shared/classCombo'
 import type { ItemUpgradeState } from '@shared/itemUpgrade'
 import { GEAR_INDEX_VERSION, type GearBuildStats, type GearRow } from '@shared/planner/gear'
 import { NO_OWNERSHIP, type OwnershipPayload } from '@shared/planner/ownership'
 import { isKept } from '@shared/lootDisposition'
 import { useLootHistory } from '../loot/useLootHistory'
-import { useComboSnap } from '../profiles/ClassComboData'
 // JOS-338: the caller `features/planner/plannerInventory.ts` has been asking for since JOS-326 —
 // see `useGearCompare` for why this channel and not the ownership payload beside it.
 import { usePlannerInventory } from '../planner/plannerInventory'
@@ -43,6 +41,7 @@ import { gearOwnershipMap, ownershipFor, type GearOwnershipMap } from './gearOwn
 // JOS-329: the two pieces of state below survive a tab switch now — see each one's own comment.
 import { sanitizeGearClasses, sanitizeUpgrade } from './areaMemory'
 import { useRemembered } from './useAreaMemory'
+import { useDetectedGearClasses } from './useDetectedGearClasses'
 
 // ---- the fetch ----------------------------------------------------------------------
 
@@ -336,7 +335,8 @@ export function useUpgradeState(): {
  * THE CLASS FILTER, AND ITS PROVENANCE (V2's rule, `plannerClasses.ts` — a trio is a FILTER and
  * never a rule).
  *
- * `detected` is the default: the table reads for whatever the app currently believes this
+ * `detected` is the default: a fresh current-player selection takes precedence over log inference.
+ * The table reads for whatever the app currently believes this
  * character is running, and a loadout switch rewrites it silently and correctly, because nobody
  * has said otherwise yet. The moment the user edits the selection it PINS (`user`), and detection
  * may never overwrite it again — it can only offer, which is what `detectedOffer` is for on the
@@ -371,39 +371,47 @@ export function useUpgradeState(): {
 export interface GearClasses {
   /** the classes the filter is reading for */
   classes: ClassAbbr[]
-  /** what the app currently infers, whether or not the filter follows it */
+  /** the current-player classes, or log inference when no fresh native selection is available */
   detected: ClassAbbr[]
+  source: 'live' | 'log'
   /** true while the filter is following detection */
   following: boolean
   /** the detected trio, when it is worth offering (pinned, resolved, and different) */
   offer: ClassAbbr[] | null
   /** the user picking classes by hand — this PINS the filter */
   set: (next: ClassAbbr[]) => void
-  /** take the detected trio and stay pinned to it (the offer chip) */
+  /** resume continuous detection, including future class switches */
   adopt: () => void
+  /** switch between continuous detection and a manual snapshot of the current filter */
+  toggleFollowing: () => void
+}
+
+/** Match the persisted object contract while recovering bare arrays written by older builds. */
+function storedClassPin(raw: unknown): { classes: ClassAbbr[] } | null {
+  const classes = sanitizeGearClasses(Array.isArray(raw) ? { classes: raw } : raw)
+  return classes === null ? null : { classes }
 }
 
 export function useGearClasses(): GearClasses {
-  const combo = useComboSnap()
-  const current = combo.current
-  // An unresolved slot contributes nothing, so a half-known combo yields the classes it does know
-  // and nothing it does not (law 1) — the same read PlannerView makes.
-  const detected = useMemo(() => (current === null ? [] : resolvedClasses(current)), [current])
-  const [pinned, setPinned] = useRemembered<ClassAbbr[] | null>('eq.gear.classes', sanitizeGearClasses)
+  const { classes: detected, source } = useDetectedGearClasses()
+  const [pin, setPin] = useRemembered('eq.gear.classes', storedClassPin)
+  const pinned = pin?.classes ?? null
 
   const set = useCallback(
     (next: ClassAbbr[]) => {
-      setPinned(next)
+      setPin({ classes: next })
     },
-    [setPinned]
+    [setPin]
   )
-  // ADOPTING THE OFFER PINS, and always did: taking today's detection is accepting one answer, not
-  // handing the filter back to inference forever (the `useBrowseClasses.adopt` rule, stated there).
+  // The offer resumes automatic following; accepting one read must not freeze future switches.
   const adopt = useCallback(() => {
-    setPinned(detected)
-  }, [detected, setPinned])
+    setPin(null)
+  }, [setPin])
+  const toggleFollowing = useCallback(() => {
+    setPin(pinned === null ? { classes: detected } : null)
+  }, [pinned, detected, setPin])
 
   const classes = pinned ?? detected
   const offer = pinned !== null && detected.length > 0 && !sameClasses(pinned, detected) ? detected : null
-  return { classes, detected, following: pinned === null, offer, set, adopt }
+  return { classes, detected, source, following: pinned === null, offer, set, adopt, toggleFollowing }
 }
