@@ -2,6 +2,7 @@ import { isClassAbbr } from '../classCombo'
 import type { MacroPlanInput, MacroRole, MacroSpell } from '../macros'
 import { parseSpellRank, spellLineKey } from '../spellLines'
 import { memorizedMacroSpellIds } from './slots'
+import { utilityRoles } from './utilityRoles'
 
 // Legends target 51: measured Strengthen/Spirit of Wolf rows, documented Single Friendly (or Self).
 // It is not the enemy-target role of type 5, even if an unfamiliar row carries hostile slots.
@@ -25,10 +26,10 @@ export function ownedSpells(input: MacroPlanInput): MacroSpell[] {
   return input.spells.filter((spell) => owned.has(spell.id) && eligibleSpell(spell, input))
 }
 
-/** Small semantic allowlist, from EQEmu common/spdat.h; unsupported/AE effects stay unclassified.
+/** Semantic allowlists, from EQEmu common/spdat.h; unsupported/AE effects stay unclassified.
  * These are roles, never estimates that a spell is stronger because it has a larger ID. */
 export function spellRoles(spell: MacroSpell): MacroRole[] {
-  const roles: MacroRole[] = []
+  const roles: MacroRole[] = utilityRoles(spell)
   const effect = (id: number, test: (base: number) => boolean = () => true): boolean =>
     spell.effects.some((slot) => slot.effect === id && test(slot.base))
   const damage = effect(0, (base) => base < 0)

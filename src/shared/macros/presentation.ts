@@ -1,5 +1,6 @@
 import { macroSelectionKey, type MacroRecipe, type MacroSelection } from '../macros'
 import type { MacroExistingSocial } from '../macroAssistant'
+import { FAMILY_ROLES } from './utilityRoles'
 
 export const MACRO_SELECTION_LIMIT = 12
 
@@ -36,7 +37,7 @@ export function starterSelections(recipes: readonly MacroRecipe[], selected: rea
     if (!recipe.ready || roles.has(recipe.role) || existingRoles.has(recipe.role) || roles.size >= 8) continue
     roles.add(recipe.role)
     // Starter roles can follow classes and gem changes; an individual card keeps its chosen line.
-    next = changeSelection(next, recipe.role === 'buff' ? recipe.selection : { role: recipe.role }, true)
+    next = changeSelection(next, FAMILY_ROLES.includes(recipe.role) ? recipe.selection : { role: recipe.role }, true)
   }
   return next
 }

@@ -28,7 +28,8 @@ export interface MacroPlayer {
 export type MacroStyle = 'solo' | 'group' | 'pet'
 export const MACRO_CAST_GEMS = 14
 export const MACRO_ROLES = ['damage', 'heal-self', 'heal-target', 'heal-pet', 'buff', 'debuff', 'pet-opener', 'self-buffs',
-  'mez', 'summon-pet', 'pet-attack', 'pet-backoff', 'loc', 'export'] as const
+  'mez', 'summon-pet', 'pet-attack', 'pet-backoff', 'loc', 'export', 'summon-item', 'cure', 'root', 'snare', 'lull',
+  'invisibility', 'vision', 'breathing', 'levitation', 'gate', 'rune'] as const
 export type MacroRole = typeof MACRO_ROLES[number]
 export interface MacroSelection { role: MacroRole; spellLine?: string }
 export function isMacroRole(value: unknown): value is MacroRole {
