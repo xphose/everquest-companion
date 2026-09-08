@@ -50,7 +50,7 @@ function Check($name, $ok, $detail = '') {
 # The published release's PERMANENT links. The versioned asset carries the version in its
 # filename and so cannot be hard-coded anywhere; build.yml uploads a byte copy under the
 # stable name for exactly this reason (it is what the website's Download button uses too).
-$releaseBase = 'https://github.com/jmoyers/everquest-companion/releases/latest/download'
+$releaseBase = ''
 $setupName = 'everquest-companion-Setup.exe'
 $sumsName = 'SHA256SUMS.txt'
 
@@ -115,17 +115,24 @@ try {
   Check 'mock-log-planted' $planted "($eqLog, $lineCount lines)"
   if (-not $planted) { return }
 
-  # 3. Download the PUBLISHED installer + the published checksums.
+  # 3. Use the host's explicit local installer or configured project release.
+  $source = Get-Content -LiteralPath 'C:\results\smoke-source.json' -Raw | ConvertFrom-Json
+  $releaseBase = [string]$source.releaseBase
   $sums = Join-Path $env:TEMP $sumsName
   $setup = Join-Path $env:TEMP $setupName
-  try {
-    Invoke-WebRequest -Uri "$releaseBase/$sumsName" -OutFile $sums -UseBasicParsing
-  } catch { Log "download error ($sumsName): $($_.Exception.Message)" }
-  Check 'checksums-downloaded' (Test-Path $sums) "$releaseBase/$sumsName"
-  try {
-    Invoke-WebRequest -Uri "$releaseBase/$setupName" -OutFile $setup -UseBasicParsing
-  } catch { Log "download error ($setupName): $($_.Exception.Message)" }
-  Check 'installer-downloaded' (Test-Path $setup) "$releaseBase/$setupName"
+  if ($source.mode -eq 'local') {
+    Copy-Item -LiteralPath 'C:\results\installer-source.exe' -Destination $setup -Force
+    Set-Content -LiteralPath $sums -Value ("$($source.sha256)  $setupName") -Encoding ascii
+  } elseif ($source.mode -eq 'release' -and $releaseBase -match '^https://github\.com/[a-zA-Z0-9-]+/[a-zA-Z0-9._-]+/releases/latest/download$') {
+    try {
+      Invoke-WebRequest -Uri "$releaseBase/$sumsName" -OutFile $sums -UseBasicParsing
+    } catch { Log "download error ($sumsName): $($_.Exception.Message)" }
+    Check 'checksums-downloaded' (Test-Path $sums) "$releaseBase/$sumsName"
+    try {
+      Invoke-WebRequest -Uri "$releaseBase/$setupName" -OutFile $setup -UseBasicParsing
+    } catch { Log "download error ($setupName): $($_.Exception.Message)" }
+    Check 'installer-downloaded' (Test-Path $setup) "$releaseBase/$setupName"
+  } else { throw 'Missing or invalid explicit installer source.' }
   if (-not (Test-Path $setup) -or -not (Test-Path $sums)) { return }
   Log "installer: $([math]::Round((Get-Item $setup).Length / 1MB, 1)) MB"
 

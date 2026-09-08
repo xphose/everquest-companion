@@ -25,7 +25,6 @@ variable "name_prefix" {
 variable "alarm_email" {
   description = "Address subscribed to the ops SNS topic. AWS sends a confirmation mail once."
   type        = string
-  default     = "jmoyers+eqc@gmail.com"
 }
 
 variable "triage_principal_arn" {

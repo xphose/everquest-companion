@@ -22,10 +22,11 @@
 // feed it a captured response shape and assert the per-tag arithmetic without a network.
 
 import type { TriageDownloadRow, TriageDownloads } from '../../shared/triage'
+import { releasesApiUrl } from '../../shared/deployment'
+import { DEPLOYMENT } from '../deployment'
 
 /** The repo the app publishes to — electron-builder.yml's `publish` block, same owner/repo. */
-const RELEASES_URL =
-  'https://api.github.com/repos/jmoyers/everquest-companion/releases?per_page=100'
+const RELEASES_URL = releasesApiUrl(DEPLOYMENT)
 
 /** The readout must not sit and wait on GitHub; the database half is the point of the screen. */
 const TIMEOUT_MS = 5_000
@@ -103,6 +104,7 @@ function httpReason(status: number, statusText: string, remaining: string | null
  * malformed body all land as `available: false` with a reason the section prints verbatim.
  */
 export async function fetchGhDownloads(nowMs: number = Date.now()): Promise<TriageDownloads> {
+  if (!RELEASES_URL) return { available: false, reason: 'Release repository is not configured for this build.' }
   const ctrl = new AbortController()
   const timer = setTimeout(() => {
     ctrl.abort()

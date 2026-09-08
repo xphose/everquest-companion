@@ -74,9 +74,9 @@
     "notes": "Coats are character-global, not per-weapon: 'Poisons apply globally to all melee and but not ranged attacks, not on a per-weapon basis.' Duration is Permanent - 'Once applied poisons last until class swap or character death.' Coating takes 2.5s; reuse timer 5 sec. Strikes are checked against the target's Poison Resistance and are not reflectable. When a utility coat is swapped the log prints 'The poison dries from the blade.' in the same second as the new coat."
    },
    "sources": [
-    "C:\\Users\\jmoye\\everquest-companion\\scripts\\sources\\cache\\classes\\Rogue.wikitext",
-    "C:\\Users\\jmoye\\everquest-companion\\src\\main\\data\\spells.json",
-    "C:\\Users\\jmoye\\everquest-companion\\src\\shared\\poisons.ts"
+    "scripts/sources/cache/classes/Rogue.wikitext",
+    "src/main/data/spells.json",
+    "src/shared/poisons.ts"
    ]
   },
   {
@@ -164,9 +164,9 @@
     "notes": "The two Strikes a combination poison grants are separate proc rolls against the same melee swing stream; each rolls against the target's Poison Resistance independently. IMPORTANT for attribution (this is why the overlay cannot name a coat from an emote): FOUR poisons grant Weakening Strike (Weakening, Binding, Neurotoxic, Paralytic) and its emote \"<mob>'s limbs move slower!\" names no caster, so a slow landing proves 'a rogue slow proc', never a specific coat. Same shape for Befuddling Strike (5 sources), Clumsiness Strike (4), Concussive (3), Banishing (3), Hobbling (3), Grounding (2)."
    },
    "sources": [
-    "C:\\Users\\jmoye\\everquest-companion\\scripts\\sources\\cache\\classes\\Rogue.wikitext",
-    "C:\\Users\\jmoye\\everquest-companion\\src\\main\\data\\spells.json",
-    "C:\\Users\\jmoye\\everquest-companion\\src\\shared\\poisons.ts",
+    "scripts/sources/cache/classes/Rogue.wikitext",
+    "src/main/data/spells.json",
+    "src/shared/poisons.ts",
     "https://www.everquestguides.com/legends/patch-notes.html"
    ]
   },
@@ -221,8 +221,8 @@
     "notes": "Combat venoms print a different wear-off line from utility poisons: 'The venom drips away.' vs 'The poison dries from the blade.' Asp Venom Strike and Cobra Venom Strike SHARE a landing emote - 'screams as poison burns their veins!' - so the emote cannot distinguish them; both are direct damage, so the effect class is never ambiguous even when the name is."
    },
    "sources": [
-    "C:\\Users\\jmoye\\everquest-companion\\scripts\\sources\\cache\\classes\\Rogue.wikitext",
-    "C:\\Users\\jmoye\\everquest-companion\\src\\shared\\poisons.ts"
+    "scripts/sources/cache/classes/Rogue.wikitext",
+    "src/shared/poisons.ts"
    ]
   },
   {
@@ -276,8 +276,8 @@
     "notes": "Blood Siphon Strike and Blood Draw Strike SHARE the landing emote 'begins to bleed profusely!', so the emote cannot tell them apart; both are DoT-with-lifetap, so the effect class stays unambiguous. This is the only rogue proc with a real duration on the target (36s / 6 ticks) - relevant if the overlay ever needs to reconcile it against shaman or necro poison DoTs on the same mob (see openQuestions)."
    },
    "sources": [
-    "C:\\Users\\jmoye\\everquest-companion\\scripts\\sources\\cache\\classes\\Rogue.wikitext",
-    "C:\\Users\\jmoye\\everquest-companion\\src\\shared\\poisons.ts"
+    "scripts/sources/cache/classes/Rogue.wikitext",
+    "src/shared/poisons.ts"
    ]
   },
   {
@@ -318,8 +318,8 @@
     "notes": "The three combat lines (asp / blood / stunning) are what makes the cap THREE combat coats: it is not a hard slot count the game enforces, it falls out of the five combat venoms forming exactly three mutually-exclusive pairs/singletons. Three combat + one utility = four concurrent coats at any level, which matches the independent off-wiki report 'Rogue 1 utility + 3 combat poisons simultaneously'."
    },
    "sources": [
-    "C:\\Users\\jmoye\\everquest-companion\\scripts\\sources\\cache\\classes\\Rogue.wikitext",
-    "C:\\Users\\jmoye\\everquest-companion\\src\\shared\\poisons.ts",
+    "scripts/sources/cache/classes/Rogue.wikitext",
+    "src/shared/poisons.ts",
     "https://www.everquestguides.com/legends/patch-notes.html"
    ]
   }
@@ -415,10 +415,10 @@
   "Why do exactly these 9 poisons carry a `classes: '* Rogue - Level N'` tag in spells.json while the other 11 do not? All 20 exist as rows. The 9 tagged rows also share two other oddities: durationText 'Permanent' (the 11 untagged rows say 'Instant', which contradicts the wiki's Permanent for every poison) and a BLANK name in their first 'Add Melee Proc:' effect. That is a scrape/template artifact on the wiki side, not a gameplay difference - but it means any class-list-driven UI shows 9 of 20 rogue poisons unless it also reads the untagged rows."
  ],
  "sources": [
-  "C:\\Users\\jmoye\\everquest-companion\\scripts\\sources\\cache\\classes\\Rogue.wikitext - the local eqlwiki Rogue page snapshot. PRIMARY. Carries the full 20-poison roster table (name / level / Combat-or-Utility badge / description with the exact replacement wording / duration / reuse), the Poisons mechanics bullet list, and the per-Strike 'Poison Effects' tables.",
-  "C:\\Users\\jmoye\\everquest-companion\\src\\main\\data\\spells.json - the committed spell DB. Confirms all 20 poison rows and all 12 Strike rows exist, and supplies the numeric effects. Only 9 poison rows carry a Rogue class tag, which is exactly the input file.",
-  "C:\\Users\\jmoye\\everquest-companion\\src\\shared\\poisons.ts - the owner-verified (2026-08-04) in-repo digest of the same two sources plus log evidence: coat messages, wear-off messages, Strike emote suffixes, the three-combat-line model, and the 'Blocked by Neurotoxic Poison' refusal lines.",
-  "C:\\Users\\jmoye\\everquest-companion\\docs\\research\\spell-lines\\lines-merged.json - prior waves; source of the shaman slow-slot claim used (flagged) in the cross-class conflict.",
+  "scripts/sources/cache/classes/Rogue.wikitext - the local eqlwiki Rogue page snapshot. PRIMARY. Carries the full 20-poison roster table (name / level / Combat-or-Utility badge / description with the exact replacement wording / duration / reuse), the Poisons mechanics bullet list, and the per-Strike 'Poison Effects' tables.",
+  "src/main/data/spells.json - the committed spell DB. Confirms all 20 poison rows and all 12 Strike rows exist, and supplies the numeric effects. Only 9 poison rows carry a Rogue class tag, which is exactly the input file.",
+  "src/shared/poisons.ts - the owner-verified (2026-08-04) in-repo digest of the same two sources plus log evidence: coat messages, wear-off messages, Strike emote suffixes, the three-combat-line model, and the 'Blocked by Neurotoxic Poison' refusal lines.",
+  "docs/research/spell-lines/lines-merged.json - prior waves; source of the shaman slow-slot claim used (flagged) in the cross-class conflict.",
   "https://www.everquestguides.com/legends/patch-notes.html - independent corroboration only: 'Rogue 1 utility + 3 combat poisons simultaneously' (Beta Watch, Apr 27 - May 2, 2026); 'Entirely new poison system' (May 3, 2026); 'Rogue sustain raised for Unbound Lethality, which extends poison duration and lowers enemy poison resistance' (v3.7, Jul 24, 2026).",
   "https://www.eqprogression.com/legends/rogue-spells/ - ATTEMPTED, returned HTTP 403. Not used.",
   "NOT USED: wiki.project1999.com poison pages. Classic EQ rogue poison-making is a tradeskill system with entirely different item-based poisons; on Legends these are granted abilities with a custom slot model. The only P99 link in the local Rogue page is about the Evade skill, unrelated."

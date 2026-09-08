@@ -234,7 +234,7 @@ test('self-targeting uses the observed name and refuses absent or unsafe names w
     assert.equal(role(config, 'heal-self').lines[0], `/pause 3, /target ${name}`)
     assert.equal(role(config, 'self-buffs').lines[0], `/pause 3, /target ${name}`)
   }
-  for (const name of [undefined, '', 'A'.repeat(65), 'Paul zac', 'Samplehero\n/quit', 'Samplehero, /quit', 'Paulzac1']) {
+  for (const name of [undefined, '', 'A'.repeat(65), 'Paul zac', 'Samplehero\n/quit', 'Samplehero, /quit', 'Samplehero1']) {
     config.player.characterName = name
     for (const kind of ['heal-self', 'self-buffs'] as const) {
       const recipe = role(config, kind)

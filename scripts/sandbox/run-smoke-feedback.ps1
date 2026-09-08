@@ -60,6 +60,15 @@
 
 [CmdletBinding()]
 param(
+  # Defaults to this checkout; relative result paths are resolved beneath it.
+  [string]$RepositoryRoot,
+  [string]$ResultsDirectory,
+  # Generate the local configuration without VM or cloud operations.
+  [switch]$ConfigurationOnly,
+  # Explicit source: a local installer, or the configured project's published release.
+  [string]$InstallerPath,
+  [string]$ReleaseOwner = $env:EQC_RELEASE_OWNER,
+  [string]$ReleaseRepo = $env:EQC_RELEASE_REPO,
   # Minimize instead of parking on a second monitor, even if one is available.
   [switch]$Minimize,
   # Give up on the VM half after this long (download + install + submit + the telemetry dwell).
@@ -82,12 +91,16 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'sandbox-config.ps1')
+$configuration = New-SandboxConfiguration -Kind 'smoke-feedback' -RepositoryRoot $RepositoryRoot -ResultsDirectory $ResultsDirectory
+if ($ConfigurationOnly) { Write-Output $configuration.Wsb; return }
+. (Join-Path $PSScriptRoot 'smoke-source.ps1')
+$source = Get-SmokeSource -InstallerPath $InstallerPath -ReleaseOwner $ReleaseOwner -ReleaseRepo $ReleaseRepo
 . (Join-Path $PSScriptRoot 'sandbox-lifecycle.ps1')
 
-$sandboxDir = $PSScriptRoot
-$repoRoot = (Resolve-Path (Join-Path $sandboxDir '..\..')).Path
-$wsb = Join-Path $sandboxDir 'smoke-feedback.wsb'
-$resultsDir = Join-Path $sandboxDir 'results'
+$repoRoot = $configuration.RepositoryRoot
+$wsb = $configuration.Wsb
+$resultsDir = $configuration.ResultsDirectory
 $resultFile = Join-Path $resultsDir 'smoke-result.txt'
 $nonceFile = Join-Path $resultsDir 'smoke-nonce.txt'
 $mockLogFile = Join-Path $resultsDir 'smoke-log.txt'
@@ -110,25 +123,20 @@ Write-Host '=== post-release end-to-end feedback smoke test (Windows Sandbox + l
 Write-Host 'ON-DEMAND ONLY: this files a REAL report against the LIVE api and then deletes it.'
 
 # --- 1. Pre-flight ------------------------------------------------------------------
-if (-not (Test-Path $wsb)) { throw "missing harness config: $wsb" }
-if (-not (Test-Path $helper)) { throw "missing cloud helper: $helper" }
+if (-not (Test-Path -LiteralPath $wsb)) { throw "missing harness config: $wsb" }
+if (-not (Test-Path -LiteralPath $helper)) { throw "missing cloud helper: $helper" }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   throw 'node is not on PATH - the host half synthesizes the log and reads the cloud through tsx'
 }
-# The .wsb carries ABSOLUTE HostFolder paths. A repo that moved would silently map somebody
-# else's folder (or nothing), and the guest would sit there waiting for a nonce that never
-# arrives - a 30-minute timeout instead of a one-line error.
-$wsbText = Get-Content $wsb -Raw
-if ($wsbText -notlike "*$repoRoot*") {
-  throw "smoke-feedback.wsb maps a different repo path than $repoRoot - edit its HostFolder entries"
-}
+# HostFolder mappings were generated from the resolved checkout and results directory.
 if (Stop-Sandbox) { Write-Host 'pre-flight: closed a stale Windows Sandbox instance' }
 
-if (-not (Test-Path $resultsDir)) { New-Item -ItemType Directory -Path $resultsDir | Out-Null }
+if (-not (Test-Path -LiteralPath $resultsDir)) { New-Item -ItemType Directory -Path $resultsDir | Out-Null }
 # Clear stale smoke artifacts ONLY - results/.gitkeep is tracked and the tier-2 harness's
 # result.txt lives here too; don't nuke the folder.
-Get-ChildItem $resultsDir -Filter 'smoke-*' -Force -ErrorAction SilentlyContinue |
-  Remove-Item -Force -Confirm:$false
+Get-ChildItem -LiteralPath $resultsDir -File -Filter 'smoke-*' -Exclude '*.wsb', '*.exe' -Force -ErrorAction SilentlyContinue |
+  ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -Confirm:$false }
+Write-SmokeSource -Source $source -ResultsDirectory $resultsDir
 
 # --- 2. The nonce + the booby-trapped log --------------------------------------------
 # Uppercase alphanumerics only: it is grepped by PowerShell, matched by a regex in the guest,
@@ -139,8 +147,8 @@ Write-Host "nonce: $nonce"
 $sinceMs = [long]([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) - 300000
 
 & node --import tsx $helper gen-log --nonce $nonce --out $mockLogFile
-if (-not (Test-Path $mockLogFile)) { throw "the log synthesizer wrote nothing to $mockLogFile" }
-Set-Content -Path $nonceFile -Value $nonce -Encoding ascii
+if (-not (Test-Path -LiteralPath $mockLogFile)) { throw "the log synthesizer wrote nothing to $mockLogFile" }
+Set-Content -LiteralPath $nonceFile -Value $nonce -Encoding ascii
 Add-Verdict 'mock log synthesized' $true (Split-Path -Leaf $mockLogFile)
 
 # --- 3. Launch + park + wait ----------------------------------------------------------
@@ -161,7 +169,7 @@ if (-not $landed) {
 # --- 4. Read the guest's verdict ------------------------------------------------------
 Write-Host ''
 Write-Host '--- guest verdict ---'
-$guest = @(Get-Content $resultFile)
+$guest = @(Get-Content -LiteralPath $resultFile)
 $guest | ForEach-Object { Write-Host "  $_" }
 $outcome = ''
 $reportId = ''

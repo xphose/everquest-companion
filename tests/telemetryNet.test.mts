@@ -50,42 +50,31 @@ const prefs = (over: Partial<TelemetryPrefs> = {}): TelemetryPrefs => ({
 
 // ---- 1. THE ENDPOINT --------------------------------------------------------------------
 
-/**
- * THE ONE URL, pinned as a literal. Not `.startsWith('https://')`, not a regex over
- * execute-api: the whole value of this assertion is that redirecting this app's usage data
- * somewhere else cannot be done without editing this exact line, in a test called THE PIN.
- */
-const ENDPOINT = 'https://pcy0z3xjp9.execute-api.us-east-1.amazonaws.com/v1/telemetry'
+const ENDPOINT = 'https://telemetry.example.invalid/v1/telemetry'
 
-test('THE ENDPOINT PIN: one compiled-in URL, in our own account, and no other', () => {
-  assert.equal(TELEMETRY_API_URL, ENDPOINT)
-  assert.equal(telemetryEndpointConfigured(), true)
-  const u = new URL(TELEMETRY_API_URL)
-  assert.equal(u.protocol, 'https:', 'counters do not travel in clear')
-  assert.equal(u.username + u.password + u.search + u.hash, '', 'nothing clever attached')
-  assert.equal(u.port, '', 'default port only')
-  assert.equal(u.hostname, 'pcy0z3xjp9.execute-api.us-east-1.amazonaws.com')
-  assert.equal(u.pathname, '/v1/telemetry')
+test('unconfigured telemetry has no endpoint and cannot flush', () => {
+  assert.equal(TELEMETRY_API_URL, '')
+  assert.equal(telemetryEndpointConfigured(), false)
+  assert.equal(telemetryFlushEnabled(false, TELEMETRY_API_URL, prefs()), false)
 })
-
 test('THE TRUTH TABLE: the flush gate needs all four facts, and the endpoint is now one of them', () => {
   // The row that sends: a real build, a user who has not opted out, and the notice rendered.
-  assert.equal(telemetryFlushEnabled(false, TELEMETRY_API_URL, prefs()), true)
+  assert.equal(telemetryFlushEnabled(false, ENDPOINT, prefs()), true)
 
   // Every single-fact negation, each fatal on its own.
   assert.equal(
-    telemetryFlushEnabled(true, TELEMETRY_API_URL, prefs()),
+    telemetryFlushEnabled(true, ENDPOINT, prefs()),
     false,
     'THE E2E LAW (plan T7): the headless harness never sends, lit endpoint or not'
   )
   assert.equal(telemetryFlushEnabled(false, '', prefs()), false, 'no endpoint ⇒ nowhere to send')
   assert.equal(
-    telemetryFlushEnabled(false, TELEMETRY_API_URL, prefs({ enabled: false })),
+    telemetryFlushEnabled(false, ENDPOINT, prefs({ enabled: false })),
     false,
     "THE OPT-OUT: the user's switch is off, so the network is off — immediately, not next launch"
   )
   assert.equal(
-    telemetryFlushEnabled(false, TELEMETRY_API_URL, prefs({ noticeShown: false })),
+    telemetryFlushEnabled(false, ENDPOINT, prefs({ noticeShown: false })),
     false,
     'THE T1 GATE: nothing transmits before the first-run notice has rendered'
   )
@@ -95,7 +84,7 @@ test('THE TRUTH TABLE: the flush gate needs all four facts, and the endpoint is 
   for (const enabled of [true, false]) {
     for (const noticeShown of [true, false]) {
       assert.equal(
-        telemetryFlushEnabled(false, TELEMETRY_API_URL, prefs({ enabled, noticeShown })),
+        telemetryFlushEnabled(false, ENDPOINT, prefs({ enabled, noticeShown })),
         enabled && noticeShown,
         `enabled=${String(enabled)} noticeShown=${String(noticeShown)}`
       )

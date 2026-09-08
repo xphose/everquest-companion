@@ -1,7 +1,7 @@
 # scripts/ — build, packaging, and test tooling
 
 Utility scripts for building, branding, and verifying the app. Run everything with
-Node on PATH (`export PATH="/c/Program Files/nodejs:$PATH"` on this machine).
+Node installed and available on PATH.
 
 ## Assets & data
 
@@ -28,7 +28,7 @@ That is exactly what the `fixtures:*` npm scripts do, so the invocation lives in
 `package.json` instead of in someone's memory:
 
 ```bash
-npm run fixtures:combat -- "C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest Legends\Logs\eqlog_Primitive_freeport.txt"
+npm run fixtures:combat -- "$EQLOG"
 ```
 
 (Node 22+/24 will type-strip `logScrub.ts` on its own, so a bare `node` happens to work today
@@ -62,9 +62,7 @@ is already dirty.
 
 ## Clean-machine installer harnesses (Task #25)
 
-Two ready-to-run harnesses verify the installer on a pristine Windows (neither
-Windows Sandbox nor Windows containers is enabled on this dev machine yet — enable
-per the notes below, then run).
+Two harnesses verify the installer on a pristine Windows environment. Enable the desired Windows feature before running its wrapper.
 
 ### Windows Sandbox — full GUI launch test (`scripts/sandbox/`)
 
@@ -78,12 +76,30 @@ that the **app window process starts**, silent-uninstalls, checks cleanup, and w
 # one-time: enable Windows Sandbox (Win11 Pro/Enterprise), then reboot
 Enable-WindowsOptionalFeature -Online -FeatureName 'Containers-DisposableClientVM' -All
 # run:
-WindowsSandbox scripts\sandbox\installer-test.wsb
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sandbox\run-installer-test.ps1
 # then read scripts\sandbox\results\result.txt
 ```
 
-Host paths in the `.wsb` are absolute and assume the repo lives at
-`C:\Users\jmoye\everquest-companion` — adjust if it moves.
+The tracked `.wsb` files are templates; always launch them through their wrappers.
+Both `run-installer-test.ps1` and `run-smoke-feedback.ps1` resolve the checkout from
+`$PSScriptRoot`, generate XML-escaped mappings, and put the local configuration and
+results in `scripts/sandbox/results/`. They support these optional parameters:
+
+- `-RepositoryRoot <path>` selects another checkout containing the harness and installer.
+- `-ResultsDirectory <path>` selects a dedicated results directory. Relative paths resolve
+  beneath the selected checkout; absolute paths can keep results outside it.
+- `-ConfigurationOnly` writes the configuration and prints its path without starting or
+  stopping a VM, loading the window-management code, or contacting a service.
+
+Generated `*.generated.wsb` files contain resolved local paths and must remain untracked.
+The feedback smoke test is still an explicit post-release operation against the configured
+live service; configuration-only verification does not run it.
+
+The feedback wrapper requires an explicit installer source: `-InstallerPath <local.exe>`
+or `-ReleaseOwner <owner> -ReleaseRepo <repo>`. The latter also reads `EQC_RELEASE_OWNER`
+and `EQC_RELEASE_REPO` from the build environment. A local installer is staged with a SHA-256
+checksum; a release download still verifies its published `SHA256SUMS.txt` before installation.
+The installer must itself have the intended feedback/telemetry deployment compiled in.
 
 ### Windows containers — file-level verification (`scripts/docker/`)
 

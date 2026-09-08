@@ -24,6 +24,11 @@
 
 [CmdletBinding()]
 param(
+  # Defaults to this checkout; relative result paths are resolved beneath it.
+  [string]$RepositoryRoot,
+  [string]$ResultsDirectory,
+  # Generate the local configuration without starting or stopping a sandbox.
+  [switch]$ConfigurationOnly,
   # Minimize instead of parking on a second monitor, even if one is available.
   [switch]$Minimize,
   # Give up waiting for results after this long.
@@ -33,10 +38,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$sandboxDir = $PSScriptRoot
-$repoRoot = Resolve-Path (Join-Path $sandboxDir '..\..')
-$wsb = Join-Path $sandboxDir 'installer-test.wsb'
-$resultsDir = Join-Path $sandboxDir 'results'
+. (Join-Path $PSScriptRoot 'sandbox-config.ps1')
+$configuration = New-SandboxConfiguration -Kind 'installer-test' -RepositoryRoot $RepositoryRoot -ResultsDirectory $ResultsDirectory
+if ($ConfigurationOnly) { Write-Output $configuration.Wsb; return }
+$repoRoot = $configuration.RepositoryRoot
+$wsb = $configuration.Wsb
+$resultsDir = $configuration.ResultsDirectory
 $resultFile = Join-Path $resultsDir 'result.txt'
 $releaseDir = Join-Path $repoRoot 'release'
 $setupGlob = 'everquest-companion-Setup-*.exe'
@@ -46,13 +53,13 @@ $setupGlob = 'everquest-companion-Setup-*.exe'
 Write-Host "=== tier-2 clean-machine installer test (Windows Sandbox) ==="
 
 # --- 1. Pre-flight -----------------------------------------------------------------
-if (-not (Test-Path $wsb)) { throw "missing harness config: $wsb" }
+if (-not (Test-Path -LiteralPath $wsb)) { throw "missing harness config: $wsb" }
 if (Stop-Sandbox) { Write-Host 'pre-flight: closed a stale Windows Sandbox instance' }
 
-$setup = Get-ChildItem -Path $releaseDir -Recurse -Filter $setupGlob -ErrorAction SilentlyContinue |
+$setup = Get-ChildItem -LiteralPath $releaseDir -Recurse -Filter $setupGlob -ErrorAction SilentlyContinue |
   Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if (-not $setup) {
-  $stale = @(Get-ChildItem -Path $releaseDir -Recurse -Filter '*Setup*.exe' -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
+  $stale = @(Get-ChildItem -LiteralPath $releaseDir -Recurse -Filter '*Setup*.exe' -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
   $msg = "no $setupGlob under $releaseDir - run 'npm run dist' to COMPLETION first"
   if ($stale.Count) { $msg += " (found only stale-named build(s): $($stale -join ', '))" }
   throw $msg
@@ -62,10 +69,10 @@ Write-Host "installer: $($setup.FullName)"
 Write-Host "           built $($setup.LastWriteTime.ToString('o')) ($ageMin min ago)"
 if ($ageMin -gt 120) { Write-Warning "that build is $ageMin minutes old - tier 2 must test the CURRENT 'npm run dist' output" }
 
-if (-not (Test-Path $resultsDir)) { New-Item -ItemType Directory -Path $resultsDir | Out-Null }
+if (-not (Test-Path -LiteralPath $resultsDir)) { New-Item -ItemType Directory -Path $resultsDir | Out-Null }
 # Clear stale verdicts ONLY - results/.gitkeep is tracked, don't nuke the whole folder.
-Get-ChildItem $resultsDir -Filter 'result*.txt' -Force -ErrorAction SilentlyContinue |
-  Remove-Item -Force -Confirm:$false
+Get-ChildItem -LiteralPath $resultsDir -File -Filter 'result*.txt' -Force -ErrorAction SilentlyContinue |
+  ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -Confirm:$false }
 
 # --- 2. Launch + park --------------------------------------------------------------
 Start-SandboxRun -Wsb $wsb -Minimize:$Minimize | Out-Null
@@ -79,11 +86,11 @@ if (-not $KeepOpen) {
 }
 else { Write-Host 'teardown: -KeepOpen set, VM left running' }
 
-if (-not (Test-Path $resultFile)) {
+if (-not (Test-Path -LiteralPath $resultFile)) {
   Write-Host "RESULT: FAIL - no $resultFile after $TimeoutSeconds s (harness never reported)"
   exit 1
 }
-$content = Get-Content $resultFile
+$content = Get-Content -LiteralPath $resultFile
 $content | ForEach-Object { Write-Host $_ }
 if ($content -contains 'RESULT: PASS') { exit 0 }
 exit 1

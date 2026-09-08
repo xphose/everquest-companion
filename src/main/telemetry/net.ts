@@ -28,6 +28,7 @@
 // must stay pinnable by a node test that loads no Electron.
 
 import type { TelemetryBatch, TelemetryPrefs } from '../../shared/telemetry'
+import { DEPLOYMENT } from '../deployment'
 
 /**
  * The ingest API as COMPILED IN — the `/v1/telemetry` route of the same API the feedback stack
@@ -35,7 +36,7 @@ import type { TelemetryBatch, TelemetryPrefs } from '../../shared/telemetry'
  *
  * This is the only value any build can ever use. It is a constant, not a setting.
  */
-export const TELEMETRY_API_URL = 'https://pcy0z3xjp9.execute-api.us-east-1.amazonaws.com/v1/telemetry'
+export const TELEMETRY_API_URL = DEPLOYMENT.telemetryApiUrl
 
 /** JSON POST budget. A batch is counters, not a log slice — feedback's submit budget is plenty. */
 export const TELEMETRY_TIMEOUT_MS = 15_000
@@ -44,7 +45,7 @@ export const TELEMETRY_TIMEOUT_MS = 15_000
 const UA = 'everquest-companion/0.1 (telemetry)'
 
 /** Does this build have an endpoint compiled in? The Preferences pane reads it to say what the
- *  "last batch sent" panel means. True in every build from this commit on. */
+ *  "last batch sent" panel means. False unless configured explicitly at build time. */
 export function telemetryEndpointConfigured(): boolean {
   return TELEMETRY_API_URL.length > 0
 }
@@ -114,6 +115,7 @@ export async function postTelemetryBatch(
   batch: TelemetryBatch,
   timeoutMs = TELEMETRY_TIMEOUT_MS
 ): Promise<TelemetryAttempt> {
+  if (!TELEMETRY_API_URL) return { status: 0 }
   try {
     const res = await fetch(TELEMETRY_API_URL, {
       method: 'POST',

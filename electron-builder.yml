@@ -156,13 +156,8 @@ asarUnpack:
 # `electron-builder install-app-deps`), or it would ship built against the wrong ABI.
 npmRebuild: false
 
-# Auto-update + release hosting: electron-updater pulls from GitHub Releases of
-# this repo. The CI workflows (.github/workflows) publish here; the app reads
-# latest*.yml from the same owner/repo. `channel` is per-release (main vs latest).
-publish:
-  provider: github
-  owner: jmoyers
-  repo: everquest-companion
+# Deployment is explicit and disabled by default; public identifiers stay stable.
+extends: scripts/electron-builder-deployment.cjs
 
 win:
   target:
@@ -175,8 +170,8 @@ win:
   # needs winCodeSign extracted into the electron-builder cache; on Windows that
   # requires either Developer Mode (symlink privilege) OR the manual cache-seed
   # workaround (see scripts/seed-wincodesign.ps1). CI builds are SIGNED via Azure
-  # Artifact Signing (account jmoyers-eqtools, profile eq-companion-public — the
-  # azureSignOptions args are injected by build.yml when the AZURE_* secrets
+  # Artifact Signing (deployment account/profile supplied explicitly). The
+  # signing arguments are injected by build.yml when the AZURE_* secrets
   # exist); local `npm run dist` builds stay unsigned.
   signAndEditExecutable: true
   # `sign` and `publisherName` MOVED UNDER signtoolOptions in electron-builder 26 —
@@ -199,10 +194,9 @@ win:
     # UPDATE SIGNATURE VERIFICATION (do not remove): electron-updater's
     # NsisUpdater.verifySignature SKIPS all checking when publisherName is null —
     # a signed build alone protects nothing on the update path. This name must
-    # exactly match the certificate subject CN (Azure profile eq-companion-public).
+    # exactly match the configured certificate subject CN.
     # With it set, every downloaded update must carry a valid Authenticode
     # signature from this publisher or it is rejected before install.
-    publisherName: Joshua Moyers
 
 # One-click installer (Discord model): double-click installs per-user under
 # %LOCALAPPDATA%\Programs (no UAC prompt), then launches. Friendly for friends

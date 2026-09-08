@@ -56,6 +56,7 @@
 //     with no cloud, no credentials and no deployed anything.
 
 import { E2E } from '../e2e'
+import { DEPLOYMENT } from '../deployment'
 
 /**
  * The ingest API as COMPILED IN. EMPTY until the stack is deployed (wave F2) — an empty value
@@ -64,7 +65,7 @@ import { E2E } from '../e2e'
  *
  * e.g. 'https://<apiId>.execute-api.us-east-1.amazonaws.com/v1/feedback'
  */
-const COMPILED_FEEDBACK_API_URL = 'https://pcy0z3xjp9.execute-api.us-east-1.amazonaws.com/v1/feedback'
+const COMPILED_FEEDBACK_API_URL = DEPLOYMENT.feedbackApiUrl
 
 /**
  * The S3 bucket the presigned POST must target, and its region. EMPTY alongside the API URL:
@@ -74,9 +75,9 @@ const COMPILED_FEEDBACK_API_URL = 'https://pcy0z3xjp9.execute-api.us-east-1.amaz
  * The bucket name carries a `random_id` suffix for global uniqueness, so committing it leaks
  * no account id — that is the whole reason the name is randomized (§7.3).
  */
-export const FEEDBACK_S3_BUCKET = 'eqcompanion-logs-6c58f5cc'
+export const FEEDBACK_S3_BUCKET = DEPLOYMENT.feedbackBucket
 /** Region of the bucket above. Owner decision, 2026-08-03. */
-export const FEEDBACK_S3_REGION = 'us-east-1'
+export const FEEDBACK_S3_REGION = DEPLOYMENT.feedbackRegion
 
 /** JSON POST budget. The `itemLookup`/`mobLookup` precedent, one notch longer. */
 export const SUBMIT_TIMEOUT_MS = 15_000
@@ -288,7 +289,7 @@ function isDevUpload(u: URL, devOrigin: string): boolean {
  * Every check, and why it is a check and not a nicety:
  *   * `https:` ONLY        — an `http:` presign would put a user's log on the wire in clear.
  *                            `file:`/`data:` would make "upload" mean something else entirely.
- *   * no credentials       — `https://our-bucket.s3.us-east-1.amazonaws.com@evil.com/` parses
+ *   * no credentials       — `https:maintainer@example.invalid/` parses
  *                            with hostname `evil.com`; the host test already rejects it, and
  *                            refusing userinfo outright means we never send one either.
  *   * default port only    — `:8443` on an S3 hostname is not S3.

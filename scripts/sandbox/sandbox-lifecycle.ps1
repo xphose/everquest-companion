@@ -69,7 +69,7 @@ function Set-SandboxPlacement {
 # $false means we never saw it, which is a warning and not a reason to stop waiting.
 function Start-SandboxRun {
   param([Parameter(Mandatory = $true)][string]$Wsb, [switch]$Minimize)
-  Start-Process -FilePath "$env:SystemRoot\System32\WindowsSandbox.exe" -ArgumentList $Wsb
+  Start-Process -FilePath "$env:SystemRoot\System32\WindowsSandbox.exe" -ArgumentList ('"' + $Wsb + '"') -WindowStyle Hidden
   Write-Host "launched $(Split-Path -Leaf $Wsb) at $(Get-Date -Format o)"
   for ($i = 0; $i -lt 60; $i++) {
     $proc = Get-SandboxWindow
@@ -94,7 +94,7 @@ function Wait-SandboxResult {
   )
   $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
   while ((Get-Date) -lt $deadline) {
-    if (Test-Path $ResultFile) { Start-Sleep -Seconds 2; return $true }
+    if (Test-Path -LiteralPath $ResultFile) { Start-Sleep -Seconds 2; return $true }
     $proc = Get-SandboxWindow
     if ($proc) { Set-SandboxPlacement -Hwnd $proc.MainWindowHandle -Minimize:$Minimize | Out-Null }
     Start-Sleep -Seconds 3

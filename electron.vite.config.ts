@@ -1,9 +1,11 @@
 import { resolve } from 'path'
 import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import { readDeployment } from './scripts/deployment-config.cjs'
 
 export default defineConfig(({ command }) => ({
   main: {
+    define: { __EQC_DEPLOYMENT__: JSON.stringify(readDeployment(process.env)) },
     // `include` EXTERNALIZES four devDependencies that would otherwise be BUNDLED.
     //
     // externalizeDepsPlugin externalizes `dependencies` only, which is right: a devDependency
