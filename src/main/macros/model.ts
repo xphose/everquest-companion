@@ -5,6 +5,7 @@ import { planMacros } from '../../shared/macros/planner'
 import { planMacroLoadout } from '../../shared/macros/loadout'
 import { castableMacroSlots } from '../../shared/macros/slots'
 import { auditMacro } from '../../shared/macros/audit'
+import { macroBindings } from '../../shared/macros/bindings'
 import { currentPlayerLocation, currentPlayerClasses } from '../../shared/currentPlayer'
 import type { PlayerLocationResult } from '../../shared/playerLocation'
 import type { MacroSaved, MacroServiceDeps, MacroWorld, QueuedMacros } from './types'
@@ -67,7 +68,9 @@ export function selectedTarget(saved: MacroSaved, files: string[]): string | und
 }
 
 export function currentRecipes(model: MacroModel): MacroRecipe[] {
-  if (!model.input) return model.saved.recipes ?? []
+  if (!model.input) return (model.saved.recipes ?? []).map((recipe) => ({ ...recipe, bindings: undefined,
+    ready: false, status: 'unavailable', lines: [],
+    reasons: ['Wait for a fresh observation of this character’s classes, spellbook, and gems before using this preview.'] }))
   model.input.style = model.saved.settings.style
   return planMacros(model.input, model.saved.settings.selections)
 }
@@ -95,6 +98,7 @@ async function existingSocials(model: MacroModel): Promise<MacroAssistantSnapsho
   const managed = model.saved.managed[model.target] ?? []
   return readSocials(file.text).map((social) => ({ page: social.page, button: social.button, name: social.name, lines: [...social.lines],
     managed: managed.some((item) => item.page === social.page && item.button === social.button),
+    ...(model.input ? { bindings: macroBindings(social.lines, model.input) } : {}),
     issues: [...auditMacro(social.name, [...social.lines], input), ...social.ambiguous ? [{ severity: 'error' as const,
       code: 'ambiguous-settings', message: 'Duplicate or ambiguous social fields need to be corrected in game before this slot can be managed.' }] : []] }))
 }

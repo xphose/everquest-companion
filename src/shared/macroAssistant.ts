@@ -1,6 +1,6 @@
 import type { CharacterRef } from './types'
 import type { ClassAbbr } from './classCombo'
-import type { MacroAuditIssue, MacroLoadoutPlan, MacroRecipe, MacroSelection, MacroStyle } from './macros'
+import type { MacroAuditIssue, MacroCastBinding, MacroLoadoutPlan, MacroRecipe, MacroSelection, MacroStyle } from './macros'
 import type { MacroPreparationSnapshot } from './macroPreparation'
 
 export interface MacroAssistantSettings {
@@ -19,6 +19,8 @@ export interface MacroExistingSocial {
   lines: string[]
   managed: boolean
   issues: MacroAuditIssue[]
+  /** Present only when resolved against a fresh observed player profile. */
+  bindings?: MacroCastBinding[]
 }
 
 export interface MacroInstallCompletion {
