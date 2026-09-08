@@ -27,7 +27,7 @@ test('the verified profile reads /loc axes, heading and the zone short name', ()
   assert.equal(matchesMappedImage(fixture.read, fixture.base), true)
   assert.deepEqual(samplePlayer(fixture.read, fixture.base, () => 1234), {
     state: 'live', location: { characterName: 'Wayfinder', zone: 'akanon', ns: 1109.5,
-      ew: -963.25, z: 30.9375, heading: 450.375, sampledAt: 1234 }
+      ew: -963.25, z: 30.9375, heading: 450.375, level: 10, sampledAt: 1234 }
   })
   assert.ok(fixture.reads.every(value => value.size <= 4096))
 })
@@ -118,6 +118,53 @@ test('movement during a sample is allowed; a new read observes the new position'
     assert.equal(first.location.ew, -963.25)
     assert.equal(next.location.ew, -970)
   }
+})
+
+test('the literal local-player level byte observes increases and decreases without retaining a maximum', () => {
+  const fixture = locationFixture()
+  for (const level of [10, 11, 9, 1, 125]) {
+    fixture.playerBytes.writeUInt8(level, 0x4bc)
+    const result = samplePlayer(fixture.read, fixture.base)
+    assert.equal(result.state, 'live')
+    if (result.state === 'live') assert.equal(result.location.level, level)
+  }
+  const levelReads = fixture.reads.filter(value => value.address === fixture.player + 0x4bcn)
+  assert.equal(levelReads.length, 5)
+  assert.ok(levelReads.every(value => value.size === 1))
+})
+
+test('invalid level bytes are omitted while the valid player position stays live', () => {
+  const fixture = locationFixture()
+  for (const level of [0, 126, 255]) {
+    fixture.playerBytes.writeUInt8(level, 0x4bc)
+    const result = samplePlayer(fixture.read, fixture.base)
+    assert.equal(result.state, 'live')
+    if (result.state === 'live') {
+      assert.equal('level' in result.location, false)
+      assert.equal(result.location.ns, 1109.5)
+      assert.equal(result.location.ew, -963.25)
+    }
+  }
+})
+
+test('failed and partial optional level reads do not hide a valid map position', () => {
+  const fixture = locationFixture()
+  for (const unreadable of [() => null, () => Buffer.alloc(0), () => Buffer.alloc(2), () => { throw new Error('Unreadable level') }]) {
+    const read = (address: bigint, size: number) => address === fixture.player + 0x4bcn ? unreadable() : fixture.read(address, size)
+    const result = samplePlayer(read, fixture.base)
+    assert.equal(result.state, 'live')
+    if (result.state === 'live') assert.equal('level' in result.location, false)
+  }
+})
+
+test('a character change during the level read rejects the entire observation', () => {
+  const fixture = locationFixture()
+  const read = (address: bigint, size: number) => {
+    const bytes = fixture.read(address, size)
+    if (address === fixture.player + 0x4bcn) fixture.playerBytes.write('Changedxx', 0xb8)
+    return bytes
+  }
+  assert.equal(samplePlayer(read, fixture.base).state, 'not-in-world')
 })
 
 test('partial reads, impossible pointers and overlarge lengths are never interpreted', () => {

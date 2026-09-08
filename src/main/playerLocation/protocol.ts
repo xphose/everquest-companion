@@ -23,9 +23,14 @@ function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object'
 }
 
+function validLevel(value: unknown): boolean {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 125
+}
+
 function validLocation(value: unknown): value is PlayerLocation {
   if (!record(value)) return false
   return typeof value.characterName === 'string' && typeof value.zone === 'string' &&
+    (!('level' in value) || validLevel(value.level)) &&
     ['ns', 'ew', 'z', 'heading', 'sampledAt'].every(key =>
       typeof value[key] === 'number' && Number.isFinite(value[key]))
 }
