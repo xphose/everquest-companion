@@ -25,6 +25,12 @@ them; it does not run rotations or send game commands.
   suggestions only; they are not silently adopted or rewritten.
 - The managed set has a clear preview, destination bar/page, automatic updates,
   pending/applied/conflict status and a reversible last-application backup.
+  Each Queue click acknowledges acceptance. Queued updates explain that the player
+  must leave the companion open, fully exit EverQuest, and wait for the saved result
+  before relaunching. Completion distinguishes a new write from an unchanged plan;
+  only a real write supplies a new saved timestamp. A persistent status panel and
+  a dismissible acknowledgement show the result and the next step. Conflicts never
+  claim that all selected macros were installed.
   Starter selections follow a role across class and gem changes; individual spell
   choices retain their selected family. Up to twelve macros fit on a hotbar page.
 - A spell-loadout plan shows the gem budget for the selected macros. Several macros
@@ -102,3 +108,19 @@ chunk before the newly restarted Electron process loaded it. Main/preload output
 now survives subsequent `serve` builds. Actual Vite bundle tests verify retention
 between generations and ordinary production cleanup; a fresh dev launch also
 includes the spell metadata worker and starts without the missing-module error.
+
+Post-relaunch verification on 2026-09-08: all eight selected macros were visible on
+the configured hotbar. A fresh native profile produced the same commands already
+on disk, with no INI plan changes or conflicts. Each managed social and hotbutton
+reference matched, and the ten personal socials from the pre-install backup were
+preserved. The latest manual queue had completed as an unchanged plan.
+
+Feedback stores an optional typed completion receipt (`written`, `unchanged`, or
+`restored`) for compatibility with older saved results. A check timestamp never
+replaces the timestamp of the last actual write. Each successful manual Queue
+click receives its own acknowledgement; polling does not repeat it, and a newer
+completion, error, or character switch clears obsolete feedback. The merged
+feedback change passed typecheck, lint and 4,470 unit tests, with one skipped.
+The targeted Macros E2E passed (64.8 seconds), including repeated Queue clicks,
+visible pending instructions, a completed write with timestamp and destination,
+background application, personal-field preservation, and exact backup restoration.
