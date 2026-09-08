@@ -65,6 +65,7 @@
     // …and `engine.ts` (the data server's brokered byte channel, JOS-484), likewise.
     "src/preload/engine.ts",
     "src/preload/questJournal.ts",
-    "src/preload/macros.ts"
+    "src/preload/macros.ts",
+    "src/preload/activeBuffs.ts"
   ]
 }

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc'
+import { activeBuffsBridge } from './activeBuffs'
 import type { CombatSnapshot, SnapshotOpts } from '../shared/combat'
 import type {
   AppFocus,
@@ -50,6 +51,7 @@ function readKind(): OverlayKind {
 const KIND: OverlayKind = readKind()
 
 const overlayApi = {
+  ...activeBuffsBridge,
   /** This overlay window's kind ('fight' | 'overall' | 'events'). */
   kind: KIND,
   /** Current-character identity and the shared read-only native observation. */
