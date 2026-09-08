@@ -53,7 +53,8 @@ function stepsFor(role: MacroRole, spell: MacroSpell): MacroStep[] {
   return steps
 }
 function hasPet(input: MacroPlanInput): boolean {
-  return ownedSpells(input).some((s) => s.effects.some((effect) => [22, 33, 71].includes(effect.effect)))
+  return ownedSpells(input).some((s) => s.effects.some((effect) => [22, 33, 71].includes(effect.effect) ||
+    s.targetType === 6 && effect.effect === 106))
 }
 function commandRecipe(role: MacroRole, input: MacroPlanInput): MacroRecipe | null {
   const command = COMMANDS[role]
