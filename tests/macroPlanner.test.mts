@@ -107,6 +107,46 @@ test('selected lines do not drift into another family, and unavailable selection
   assert.equal(missing.ready, false)
   assert.equal(missing.selection.spellLine, 'ember')
 })
+test('an explicit bare role follows current spell families without changing its selection or managed ID', () => {
+  const config = input()
+  config.spells.push(spell(40, 'Zephyr', { classLevels: { SHM: 1 } }))
+  config.player.spellbook!.push(40)
+  config.player.memorizedSpells!.push(40)
+  const selected = [{ role: 'damage' as const }]
+  const current = () => planMacros(config, selected).find((recipe) => recipe.id === 'damage')!
+  assert.equal(current().ready, true)
+  assert.deepEqual(current().selection, selected[0])
+  assert.deepEqual(current().requiredSpellIds, [900])
+  config.player.memorizedSpells = [null, 40]
+  assert.equal(current().ready, true)
+  assert.deepEqual(current().requiredSpellIds, [40])
+  assert.deepEqual(current().selection, selected[0])
+  config.player.classes = ['SHM', 'ENC']
+  assert.equal(current().ready, true)
+  assert.equal(current().id, 'damage')
+  assert.deepEqual(current().selection, selected[0])
+  config.player.classes = ['WAR', 'MNK']
+  assert.equal(current().ready, false)
+  assert.equal(current().id, 'damage')
+  assert.deepEqual(current().selection, selected[0])
+  assert.equal(role(input(), 'damage').id, 'damage:ember')
+})
+test('a bare buff role follows one family without also inventing that family as a duplicate recommendation', () => {
+  const config = input()
+  config.spells.push(spell(40, 'Zephyr Guard', { classLevels: { SHM: 1 }, effects: [{ effect: 1, base: 20 }] }))
+  config.player.spellbook!.push(40)
+  config.player.memorizedSpells!.push(40)
+  const selected = [{ role: 'buff' as const }]
+  const buffs = () => planMacros(config, selected).filter((recipe) => recipe.role === 'buff')
+  assert.deepEqual(buffs().map((recipe) => recipe.id), ['buff', 'buff:zephyr guard'])
+  assert.deepEqual(buffs()[0].selection, selected[0])
+  config.player.memorizedSpells = [40]
+  assert.deepEqual(buffs().map((recipe) => recipe.id), ['buff', 'buff:iron skin'])
+  assert.deepEqual(buffs()[0].requiredSpellIds, [40])
+  config.player.classes = ['WAR', 'MNK']
+  assert.deepEqual(buffs().map((recipe) => recipe.id), ['buff'])
+  assert.equal(buffs()[0].ready, false)
+})
 test('playstyles prioritize useful roles and every pure melee class still gets universal utilities', () => {
   const config = input({ classes: ['MAG', 'SHM', 'ENC'] })
   assert.equal(planMacros(config)[0].role, 'heal-self')

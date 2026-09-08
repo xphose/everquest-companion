@@ -61,8 +61,9 @@ function spellRecipe(role: MacroRole, input: MacroPlanInput, selection?: MacroSe
   if (!family) return selection ? unavailableRecipe(selection, input) : null
   const { spell, upgrade } = familyChoice(family, input)
   const line = spellLineKey(spell.name)
+  const chosen = selection ?? { role, spellLine: line }
   return {
-    id: `${role}:${line}`, role, ...ROLES[role], selection: { role, spellLine: line },
+    id: macroSelectionKey(chosen), role, ...ROLES[role], selection: chosen,
     ...compileMacro(ROLES[role].name, stepsFor(role, spell), input),
     description: `${ROLES[role].description} Uses ${spell.name}.`,
     ...(upgrade ? { upgrade: { from: spell, to: upgrade,
@@ -82,8 +83,13 @@ function selfBuffs(input: MacroPlanInput, selected: MacroSelection[]): MacroReci
 }
 function buffRecipes(input: MacroPlanInput, choices: MacroSelection[]): MacroRecipe[] {
   const selected = new Map(choices.map((choice) => [choice.spellLine, choice]))
-  for (const family of roleFamilies(input, 'buff')) {
+  const families = roleFamilies(input, 'buff')
+  const following = choices.some((choice) => choice.spellLine === undefined) ? families[0] : undefined
+  for (const family of families) {
     const line = spellLineKey(family[0].name)
+    // A role-following choice already represents this default family. Explicit family choices
+    // remain in the map, but do not invent a second recommendation for the same active buff.
+    if (family === following) continue
     selected.set(line, { role: 'buff', spellLine: line })
   }
   const recipes = [...selected.values()].flatMap((selection) => {
