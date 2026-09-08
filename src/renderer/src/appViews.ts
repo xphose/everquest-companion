@@ -9,6 +9,7 @@ export type View =
   | 'combat'
   | 'mobs'
   | 'maps'
+  | 'macros'
   | 'bosses'
   | 'posky'
   | 'questJournal'
@@ -74,6 +75,7 @@ export const VIEW_LABELS: Record<View, string> = {
   combat: 'Combat',
   mobs: 'Mobs',
   maps: 'Maps',
+  macros: 'Macros',
   bosses: 'Raid Targets',
   posky: 'Plane of Sky',
   questJournal: 'Quest journal',
@@ -108,6 +110,7 @@ const KNOWN_VIEWS: View[] = [
   'combat',
   'mobs',
   'maps',
+  'macros',
   'bosses',
   'posky',
   'questJournal',

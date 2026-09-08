@@ -163,3 +163,26 @@ test('ambiguous ownership records are rejected before retiring any missing recip
     assert.deepEqual(plan.managed, previous)
   }
 })
+
+test('a destination change moves the unchanged owned binding while preserving its custom icon and label', () => {
+  const first = planSocialIni(INI, [REQUEST])
+  const previous = first.managed.map((entry) => ({ ...entry, hotbutton: { ...entry.hotbutton!, value: 'E0,B2,0000000000000000,0,Pet,' } }))
+  const input = first.text.replace('E0,@-1,0000000000000000,0,,', previous[0].hotbutton.value)
+  const plan = planSocialIni(input, [{ ...REQUEST, hotbar: { bar: 2, page: 3 } }], previous)
+  assert.deepEqual(plan.conflicts, [])
+  assert.deepEqual(plan.managed[0].hotbutton, { bar: 2, page: 3, button: 1, value: previous[0].hotbutton.value })
+  assert.equal(plan.text.includes('Page1Button2=E0,'), false)
+  assert.ok(plan.text.includes('[HotButtons2]\r\nPage3Button1=E0,B2,0000000000000000,0,Pet,\r\n'))
+  assert.ok(plan.text.includes(USER))
+})
+
+test('a full destination page preserves both the original managed binding and its social', () => {
+  const first = planSocialIni(INI, [REQUEST])
+  const occupied = Array.from({ length: 12 }, (_, i) => `Page1Button${i + 1}=H${i},@-1,0000000000000000,0,,\n`).join('')
+  const text = first.text + '\n[HotButtons2]\n' + occupied
+  const plan = planSocialIni(text, [{ ...REQUEST, lines: ['/cast 2'], hotbar: { bar: 2, page: 1 } }], first.managed)
+  assert.equal(plan.text, text)
+  assert.equal(plan.changed, false)
+  assert.equal(plan.conflicts.length, 1)
+  assert.deepEqual(plan.managed, first.managed)
+})

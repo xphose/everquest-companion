@@ -12,6 +12,7 @@ import TimerIcon from '@mui/icons-material/Timer'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import PetsIcon from '@mui/icons-material/Pets'
 import MapIcon from '@mui/icons-material/Map'
+import KeyboardIcon from '@mui/icons-material/Keyboard'
 import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard'
 import CheckroomIcon from '@mui/icons-material/Checkroom'
 import FeedbackIcon from '@mui/icons-material/Feedback'
@@ -98,6 +99,7 @@ const ROWS: NavRow[] = [
     opens: loadGearTab
   },
   { view: 'maps', icon: <MapIcon /> },
+  { view: 'macros', icon: <KeyboardIcon /> },
   { view: 'bosses', icon: <EmojiEventsIcon /> },
   { view: 'posky', icon: <ShieldMoonIcon /> },
   { view: 'questJournal', icon: <MenuBookIcon /> },
