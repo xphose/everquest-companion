@@ -31,6 +31,15 @@ import type { CharacterRef, OverlayKind } from '../shared/types'
 // its whole subject is a fold over months of log, and a window open at launch hydrates part-way
 // through one.
 export const MODULE_READING_OVERLAYS: OverlayKind[] = ['events', 'buffs', 'debuffs', 'xp', 'respawn']
+export const COMBAT_READING_OVERLAYS: OverlayKind[] = ['fight', 'overall', 'heal-fight', 'heal-overall']
+
+/** Combat meters need activity and world resets, not every module cursor. */
+export function sendToCombatOverlays(channel: string, ...args: unknown[]): void {
+  for (const kind of COMBAT_READING_OVERLAYS) {
+    const window = getOverlayWindow(kind)
+    if (window && !window.isDestroyed()) window.webContents.send(channel, ...args)
+  }
+}
 
 /**
  * Push to every overlay window that reads modules.
@@ -63,7 +72,7 @@ export function sendToModuleOverlays(channel: string, ...args: unknown[]): void 
 
 /**
  * "The world for this character was rebuilt — re-hydrate." ONE call, every window that folds a
- * module: the main window and the module-reading overlays.
+ * module or combat snapshot: the main window and both overlay groups.
  *
  * Every `log:character` send in this process goes through here, so "who is told the world was
  * rebuilt" is answered in one place rather than at each call site — which is precisely how the
@@ -79,6 +88,7 @@ export function sendWorldRebuilt(character: CharacterRef | null): void {
   timeSeam('worldRebuilt', () => {
     sendToMain(IPC.onCharacter, character)
     sendToModuleOverlays(IPC.onCharacter, character)
+    sendToCombatOverlays(IPC.onCharacter, character)
   })
   // …AND ANYTHING IN-PROCESS THAT NEEDS THE SAME NEWS (JOS-479). See `setWorldRebuiltObserver`.
   worldRebuiltObserver?.(character)

@@ -6,11 +6,9 @@
 // bg-alpha slider, and the lock (pin) semantics. Styling deliberately mirrors the meter — plain
 // divs + inline styles, no MUI — so the window stays cheap to paint over the game.
 //
-// DATA: the main-side eventFeed module (modules/eventFeed.ts) owns the capped ring and is the
-// single source of truth. We hydrate it once over `module:getSnapshot` and then ride
-// `module:delta`, the same contract useModule implements for the main app. Because that module
-// admits only LIVE events, opening this overlay during the startup replay shows an empty feed
-// that fills as things actually happen — never a burst of hours-old history.
+// DATA: the engine's eventFeed module owns the capped ring. The shared overlay snapshot
+// reader follows module cursors, clears unavailable/old-character rows, and retries failed reads.
+// The module admits only LIVE events, so startup never replays hours-old history into this feed.
 //
 // INTERACTION, by mode:
 //   interactive — rows with a link open the wiki page in the DEFAULT BROWSER (an <a
@@ -37,7 +35,8 @@
 // block at all (an empty block would claim "we checked, there's nothing" — we can't know that).
 
 import { type JSX, useEffect, useRef, useState } from 'react'
-import { MODULE_WORLD_CHANGED, type FeedEvent, type FeedSnap, type ModuleChanged } from '@shared/types'
+import type { FeedEvent, FeedSnap } from '@shared/types'
+import { useOverlayModule } from './useOverlayModule'
 import { CONSIDER_FACTION_COLOR } from '@shared/logEvents'
 import { wikiPageUrl } from '@shared/wiki'
 import { formatTime } from '../lib/formatDate'
@@ -304,60 +303,10 @@ function Row({ e, interactive }: { e: FeedEvent; interactive: boolean }): JSX.El
   )
 }
 
-/**
- * Hydrate the feed, then ride deltas. A `log:character` rebuild resets the module's ring; the
- * next delta's seq restarts low, so we accept a delta whose seq went BACKWARDS by re-hydrating
- * rather than silently dropping rows forever. Same gap/dupe rule useModule enforces in the app.
- *
- * …AND WE NO LONGER WAIT FOR THAT DELTA TO ARRIVE (JOS-172). A backwards seq is evidence that only
- * exists once something happens; `log:character` is main SAYING the world was rebuilt, and it now
- * reaches this window (pipeline.ts `sendWorldRebuilt`). On a switch the previous character's rows
- * used to sit here until the new one's log produced a live event of a kind this feed admits.
- */
-function useEventFeed(): FeedSnap {
-  const [rows, setRows] = useState<FeedSnap>([])
-  const seqRef = useRef(-1)
+const EMPTY_FEED: FeedSnap = []
 
-  useEffect(() => {
-    let alive = true
-    const hydrate = (): void => {
-      void window.eqOverlay.getModuleSnapshot<FeedSnap>('eventFeed').then((snap) => {
-        if (!alive || !snap) return
-        seqRef.current = snap.seq
-        setRows(snap.state)
-      })
-    }
-    hydrate()
-    // THE INCREMENT IS A CURSOR NOW (JOS-499 item 7). Main's own fold is deleted, so there is no
-    // `module:delta` carrying appended rows to concatenate: `module:changed` is a name and a
-    // revision, and the answer to it is the whole read above.
-    //
-    // THE CAP MOVES BACK WHERE IT BELONGS. This hook used to mirror the module's own 100-row cap
-    // while concatenating, because it was accumulating rows itself. It no longer accumulates — the
-    // served snapshot IS the ring, already capped by whoever owns it — so mirroring the number here
-    // would be a second opinion about a bound that is not this window's to hold.
-    const off = window.eqOverlay.onModuleChanged((c: ModuleChanged) => {
-      // The world that answers reads changed hands: nothing held is trustworthy, ask again.
-      if (c.moduleId === MODULE_WORLD_CHANGED) {
-        hydrate()
-        return
-      }
-      if (c.moduleId !== 'eventFeed') return
-      if (c.seq <= seqRef.current) return
-      hydrate()
-    })
-    const offChar = window.eqOverlay.onCharacter(() => {
-      hydrate()
-    })
-    return () => {
-      alive = false
-      off()
-      offChar()
-    }
-  }, [])
-
-  return rows
-}
+/** The same ordered snapshot reader as the other module overlays. */
+function useEventFeed(): FeedSnap { return useOverlayModule('eventFeed', EMPTY_FEED) }
 
 /** Footer — interactive mode only: the bg-alpha slider + text size, matching the meters. Chrome,
  *  so unscaled and ONE ROW at any width: the buttons never shrink and the slider absorbs whatever
