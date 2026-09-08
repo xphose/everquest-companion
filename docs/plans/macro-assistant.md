@@ -13,6 +13,8 @@ them; it does not run rotations or send game commands.
   Ready macros can join the managed set. Learned spells that need memorizing say so.
 - Useful roles include direct damage, self/target/pet healing, pet control, crowd
   control, debuffs, buffs, summoning and basic navigation/character-export utilities.
+  A pet opener combines pet attack with damage. Self Buffs combines up to four
+  memorized buff lines after targeting yourself, within the five-line limit.
 - Spell upgrades compare owned ranks within a verified spell line. The app never
   treats level eligibility as proof of ownership or a larger spell ID as an upgrade.
 - Existing socials are audited for broken syntax, empty gem references and pauses
@@ -20,13 +22,20 @@ them; it does not run rotations or send game commands.
   suggestions only; they are not silently adopted or rewritten.
 - The managed set has a clear preview, destination bar/page, automatic updates,
   pending/applied/conflict status and a reversible last-application backup.
+  Starter selections follow a role across class and gem changes; individual spell
+  choices retain their selected family. Up to twelve macros fit on a hotbar page.
 
 ## Evidence and application
 
 The supported client exposes a current-profile spellbook and memorized gem array.
 Both are optional read-only observations behind the same executable guard as live
-position/classes. Occupied gems are usable bindings; empty capacity does not prove
-that a gem slot is unlocked. The installed spells_us.txt supplies names, class
+position/classes. Only occupied gems 1 through 14 are verified `/cast` bindings;
+the native array's eighteen slots include capacity beyond that command's range.
+Empty capacity does not prove that a gem slot is unlocked. Full-name casting uses
+unquoted names, with numeric fallback when prefix matching would be ambiguous.
+Self-target sequences use the observed character name. This client does not accept
+`myself` as a `/target` keyword; missing character identity blocks those sequences.
+The installed spells_us.txt supplies names, class
 levels, cast/recovery times, mana, targets and effects. Its large parse runs off the
 main thread and is cached by source identity.
 
@@ -57,3 +66,14 @@ changes, queued latest-plan replacement, no writes while running/uncertain, clos
 client application, backups and restore conflicts. End-to-end tests use isolated
 game folders and controlled native observations; a final check uses the real
 character's visible Macros view without casting or changing gameplay.
+
+The independent E2E client rows include Legends target type 51 (friendly or self),
+observed in installed healing and buff rows and corroborated by the wiki's
+[Strengthen](https://eqlwiki.com/Strengthen) and
+[Minor Healing](https://eqlwiki.com/Minor_Healing) target descriptions.
+
+Merged verification on 2026-09-08: typecheck and lint passed; 4,419 unit tests
+passed with one skipped. The macros, gear-auto-classes, maps-player and
+quest-journal-level E2E specs passed. The macro spec covers the full native-to-file
+path, a queued rank/gem update while the view is unmounted, uncertain process
+states, post-exit application, preservation of personal fields, and exact restore.
