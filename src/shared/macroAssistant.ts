@@ -1,6 +1,7 @@
 import type { CharacterRef } from './types'
 import type { ClassAbbr } from './classCombo'
 import type { MacroAuditIssue, MacroLoadoutPlan, MacroRecipe, MacroSelection, MacroStyle } from './macros'
+import type { MacroPreparationSnapshot } from './macroPreparation'
 
 export interface MacroAssistantSettings {
   autoUpdate: boolean
@@ -47,6 +48,7 @@ export interface MacroAssistantSnapshot {
   settings: MacroAssistantSettings
   recipes: MacroRecipe[]
   loadout?: MacroLoadoutPlan
+  preparation?: MacroPreparationSnapshot
   existing: MacroExistingSocial[]
   installation: {
     state: 'off' | 'ready' | 'pending' | 'applied' | 'conflict' | 'unavailable'
@@ -66,6 +68,7 @@ export interface MacroAssistantSnapshot {
 export type MacroAssistantMutation =
   | { characterId: string; action: 'configure'; settings: Partial<MacroAssistantSettings> }
   | { characterId: string; action: 'queue' | 'restore' }
+  | { characterId: string; action: 'prepare'; spellIds: number[]; destination: { bar: number; page: number } }
 
 export interface MacroAssistantMutationResult {
   ok: boolean
