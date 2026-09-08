@@ -11,8 +11,10 @@ export const LEGENDS_PROFILE = {
   optionalMagic: 0x20b,
   playerRva: 0xf0c360n,
   worldRva: 0xf0be50n,
-  ew: 0x74,
-  ns: 0x78,
+  // Verified against the in-game Ak'Anon map: native X is /loc NS, native Y is /loc EW.
+  // The map's axis swap and negation are applied later by mapFromLoc, once.
+  ns: 0x74,
+  ew: 0x78,
   z: 0x7c,
   heading: 0x94,
   name: 0xb8,
