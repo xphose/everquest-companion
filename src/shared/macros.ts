@@ -14,6 +14,8 @@ export interface MacroSpell {
   durationTicks?: number
 }
 export interface MacroPlayer {
+  /** Exact observed player name; required when a recipe explicitly targets the player. */
+  characterName?: string
   classes: ClassAbbr[]
   level?: number
   /** Undefined means unavailable; an empty array is a verified empty spellbook. */
@@ -52,7 +54,8 @@ export interface MacroPlanInput {
   /** Set only after this client is verified to support full-name /cast. Gem mode is the default. */
   castByName?: boolean
 }
-export type MacroStep = { kind: 'cast'; spellId: number } | { kind: 'command'; command: string; pauseTenths?: number }
+export type MacroStep = { kind: 'cast'; spellId: number } | { kind: 'command'; command: string; pauseTenths?: number } |
+  { kind: 'target-self' }
 export interface CompiledMacro {
   lines: string[]
   requiredSpellIds: number[]
