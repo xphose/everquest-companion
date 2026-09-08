@@ -33,7 +33,7 @@ function stepsFor(role: MacroRole, spell: MacroSpell): MacroStep[] {
   const steps: MacroStep[] = []
   if (role === 'pet-opener') steps.push({ kind: 'command', command: '/pet attack' })
   if (role === 'mez') steps.push({ kind: 'command', command: '/attack off' })
-  if (role === 'heal-self' && spell.targetType !== 6) steps.push({ kind: 'command', command: '/target myself', pauseTenths: 3 })
+  if (role === 'heal-self' && spell.targetType !== 6) steps.push({ kind: 'target-self' })
   if (role === 'heal-pet' && spell.targetType !== 14) steps.push({ kind: 'command', command: '/pet target', pauseTenths: 3 })
   steps.push({ kind: 'cast', spellId: spell.id })
   return steps
@@ -76,7 +76,7 @@ function selfBuffs(input: MacroPlanInput, selected: MacroSelection[]): MacroReci
     .filter((spell) => [5, 6, 51].includes(spell.targetType) && spellGem(spell.id, input) !== null).slice(0, 4)
   if (spells.length < 2) return selected.length ? unavailableRecipe({ role: 'self-buffs' }, input) : null
   const role = 'self-buffs'
-  const steps: MacroStep[] = [{ kind: 'command', command: '/target myself', pauseTenths: 3 },
+  const steps: MacroStep[] = [{ kind: 'target-self' },
     ...spells.map((spell): MacroStep => ({ kind: 'cast', spellId: spell.id }))]
   return { id: role, role, ...ROLES[role], selection: { role }, ...compileMacro(ROLES[role].name, steps, input),
     description: `${ROLES[role].description} Includes ${spells.map((s) => s.name).join(', ')}.` }

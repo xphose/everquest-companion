@@ -1,5 +1,5 @@
 import type { MacroAuditIssue, MacroPlanInput, MacroSpell } from '../macros'
-import { castPause, MACRO_CAST_GEMS, MACRO_MAX_LINE, MACRO_MAX_LINES, MACRO_MAX_NAME, MACRO_MAX_PAUSE, safeMacroText, spellGem } from './compiler'
+import { castPause, MACRO_CAST_GEMS, MACRO_MAX_LINE, MACRO_MAX_LINES, MACRO_MAX_NAME, MACRO_MAX_PAUSE, safeMacroText, selfTargetCommand, spellGem } from './compiler'
 
 interface ParsedLine { command: string; pause: number; issues: MacroAuditIssue[] }
 function parseLine(text: string, line: number): ParsedLine {
@@ -59,6 +59,13 @@ function waitAfter(parsed: ParsedLine[], index: number): number {
   for (let i = index + 1; i < parsed.length && !parsed[i].command; i++) wait += parsed[i].pause
   return wait
 }
+function auditSelfTarget(parsed: ParsedLine, input: MacroPlanInput, line: number): MacroAuditIssue[] {
+  if (!/^\/target\s+myself$/iu.test(parsed.command)) return []
+  const command = selfTargetCommand(input.player.characterName)
+  return [{ line, code: 'unsupported-self-target', severity: 'error',
+    message: 'This client targets a character by name; /target myself is not a self-target keyword.',
+    ...(command ? { suggestion: parsed.pause ? `/pause ${parsed.pause}, ${command}` : command } : {}) }]
+}
 
 /** Syntactic and current-binding advice only: personal macros are never changed by this audit. */
 export function auditMacro(name: string, lines: string[], input: MacroPlanInput): MacroAuditIssue[] {
@@ -69,6 +76,7 @@ export function auditMacro(name: string, lines: string[], input: MacroPlanInput)
   const parsed = lines.map((text, index) => text.trim() ? parseLine(text, index + 1) : { command: '', pause: 0, issues: [] })
   for (const [index, entry] of parsed.entries()) {
     issues.push(...entry.issues)
+    issues.push(...auditSelfTarget(entry, input, index + 1))
     const later = parsed.slice(index + 1).some((line) => line.command)
     if (!lines[index].trim() && later) issues.push({ line: index + 1, code: 'empty-line', severity: 'warning', message: 'This empty line leaves fewer command slots available.' })
     const cast = auditCast(entry, input)

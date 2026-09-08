@@ -19,7 +19,7 @@ const heal = spell(8, 'Mend Friend', { classLevels: { SHM: 1 }, effects: [{ effe
 const pet = spell(9, 'Call Helper', { targetType: 6, effects: [{ effect: 33, base: 1 }] })
 const buff = spell(10, 'Iron Skin', { classLevels: { SHM: 1 }, effects: [{ effect: 1, base: 20 }] })
 function input(changes: Partial<MacroPlanInput['player']> = {}): MacroPlanInput {
-  return { player: { classes: ['MAG', 'SHM'], level: 10, spellbook: [900, 7, 8, 9, 10],
+  return { player: { characterName: 'Example', classes: ['MAG', 'SHM'], level: 10, spellbook: [900, 7, 8, 9, 10],
     memorizedSpells: [900, 7, 8, 9, 10], ...changes }, spells: [ember, ember2, mez, heal, pet, buff], style: 'solo' }
 }
 function role(config: MacroPlanInput, name: MacroRole) {
@@ -159,7 +159,7 @@ test('playstyles prioritize useful roles and every pure melee class still gets u
 })
 test('heals and pet actions have deliberate targets and no unsolicited chat', () => {
   const config = input()
-  assert.equal(role(config, 'heal-self').lines[0], '/pause 3, /target myself')
+  assert.equal(role(config, 'heal-self').lines[0], '/pause 3, /target Example')
   assert.equal(role(config, 'heal-pet').lines[0], '/pause 3, /pet target')
   assert.deepEqual(role(config, 'pet-attack').lines, ['/pet attack'])
   assert.deepEqual(role(config, 'pet-backoff').lines, ['/pet back off'])
@@ -188,7 +188,7 @@ test('self buffs combine at most four distinct memorized self-compatible lines w
   config.player.memorizedSpells!.push(...extra.map((s) => s.id))
   const recipe = role(config, 'self-buffs')
   assert.equal(recipe.lines.length, 5)
-  assert.equal(recipe.lines[0], '/pause 3, /target myself')
+  assert.equal(recipe.lines[0], '/pause 3, /target Example')
   assert.equal(recipe.requiredSpellIds.length, 4)
   assert.equal(recipe.requiredSpellIds.includes(25), false)
   assert.equal(recipe.requiredSpellIds.includes(10), false)
@@ -213,6 +213,36 @@ test('Legends target 51 supports friendly heals and buffs, including the self-bu
   assert.deepEqual(spellRoles(spell(32, 'Not Hostile', { targetType: 51 })), [])
   assert.deepEqual(spellRoles(spell(33, 'Not Debuff', { targetType: 51, effects: [{ effect: 11, base: 50 }] })), [])
   assert.deepEqual(role(config, 'self-buffs').requiredSpellIds, [31, 10])
+})
+test('self-targeting uses the observed name and refuses absent or unsafe names without partial lines', () => {
+  const config = input({ characterName: 'Samplehero' })
+  const extra = spell(31, 'Friendly Vigor', { targetType: 51, effects: [{ effect: 4, base: 10 }] })
+  config.spells.push(extra)
+  config.player.spellbook!.push(31)
+  config.player.memorizedSpells!.push(31)
+  for (const name of ['Samplehero', 'A'.repeat(64)]) {
+    config.player.characterName = name
+    assert.equal(role(config, 'heal-self').lines[0], `/pause 3, /target ${name}`)
+    assert.equal(role(config, 'self-buffs').lines[0], `/pause 3, /target ${name}`)
+  }
+  for (const name of [undefined, '', 'A'.repeat(65), 'Paul zac', 'Samplehero\n/quit', 'Samplehero, /quit', 'Paulzac1']) {
+    config.player.characterName = name
+    for (const kind of ['heal-self', 'self-buffs'] as const) {
+      const recipe = role(config, kind)
+      assert.equal(recipe.status, 'unavailable')
+      assert.equal(recipe.ready, false)
+      assert.deepEqual(recipe.lines, [])
+      assert.ok(recipe.reasons.some((reason) => reason.includes('observed character name')))
+    }
+  }
+})
+test('a native self-only heal needs no explicit target command or character name', () => {
+  const config = input({ characterName: undefined })
+  const selfHeal = { ...heal, targetType: 6 }
+  config.spells = [selfHeal]
+  const recipe = role(config, 'heal-self')
+  assert.equal(recipe.ready, true)
+  assert.deepEqual(recipe.lines, ['/pause 37, /cast 3'])
 })
 test('compiler enforces five lines, printable short labels, safe commands, and full post-cast waits', () => {
   const config = input()
@@ -255,6 +285,19 @@ test('audit respects client name-prefix matching, unmemorized names, and cast sl
   const partial = auditMacro('Partial data', ['/cast Unlearned'], config)
   assert.ok(partial.some((i) => i.code === 'spell-data-unavailable' && i.severity === 'warning'))
   assert.equal(partial.some((i) => i.code === 'name-not-memorized'), false)
+})
+test('audit corrects the unsupported myself keyword only when an observed safe name is available', () => {
+  const config = input({ characterName: 'Samplehero' })
+  const issue = auditMacro('Self Heal', ['/pause 3, /target myself', '/cast 3'], config)
+    .find((item) => item.code === 'unsupported-self-target')!
+  assert.equal(issue.line, 1)
+  assert.equal(issue.suggestion, '/pause 3, /target Samplehero')
+  assert.equal(auditMacro('Other Target', ['/target Friendlynpc'], config).some((item) => item.code === 'unsupported-self-target'), false)
+  for (const characterName of [undefined, 'Samplehero\n/quit']) {
+    config.player.characterName = characterName
+    const unavailable = auditMacro('Self Heal', ['/target myself'], config).find((item) => item.code === 'unsupported-self-target')!
+    assert.equal(unavailable.suggestion, undefined)
+  }
 })
 test('selection validators keep runtime requests bounded and selected IDs stable', () => {
   assert.equal(isMacroRole('pet-opener'), true)

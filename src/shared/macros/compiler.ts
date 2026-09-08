@@ -68,6 +68,24 @@ function addCommand(out: CompiledMacro, step: Extract<MacroStep, { kind: 'comman
   out.lines.push(pause ? `/pause ${pause}, ${step.command}` : step.command)
   out.pauseTenths += pause
 }
+export function selfTargetCommand(name: string | undefined): string | null {
+  return name && /^[A-Za-z]{1,64}$/u.test(name) ? `/target ${name}` : null
+}
+function targetSelf(out: CompiledMacro, input: MacroPlanInput): void {
+  const command = selfTargetCommand(input.player.characterName)
+  if (!command) {
+    out.reasons.push('A valid observed character name is required to target yourself.'); return
+  }
+  // Native /target resolves a spawn name. It does not implement a "myself" keyword.
+  addCommand(out, { kind: 'command', command, pauseTenths: 3 })
+}
+function addSteps(out: CompiledMacro, steps: MacroStep[], input: MacroPlanInput): void {
+  for (const [index, step] of steps.entries()) {
+    if (step.kind === 'command') addCommand(out, step)
+    else if (step.kind === 'target-self') targetSelf(out, input)
+    else addCast(out, step, input, steps.slice(index + 1).some((s) => s.kind === 'cast' && s.spellId === step.spellId))
+  }
+}
 
 /** Compilation builds reviewable text only. It never runs commands or writes the game files. */
 export function compileMacro(name: string, steps: MacroStep[], input: MacroPlanInput): CompiledMacro {
@@ -75,10 +93,7 @@ export function compileMacro(name: string, steps: MacroStep[], input: MacroPlanI
     ready: false, status: 'unavailable', reasons: [] }
   if (!safeMacroText(name, MACRO_MAX_NAME) || name.trim() !== name) out.reasons.push('Use a short printable macro name (1 to 15 characters).')
   if (!steps.length || steps.length > MACRO_MAX_LINES) out.reasons.push('A social must contain one to five commands.')
-  for (const [index, step] of steps.entries()) {
-    if (step.kind === 'command') addCommand(out, step)
-    else addCast(out, step, input, steps.slice(index + 1).some((s) => s.kind === 'cast' && s.spellId === step.spellId))
-  }
+  addSteps(out, steps, input)
   if (out.lines.some((line) => !safeMacroText(line, MACRO_MAX_LINE))) out.reasons.push('A compiled command exceeds the line limit.')
   out.requiredSpellIds = [...new Set(out.requiredSpellIds)]
   out.missingSpellIds = [...new Set(out.missingSpellIds)]
