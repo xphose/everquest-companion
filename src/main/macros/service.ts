@@ -97,7 +97,10 @@ export function createMacroService(deps: MacroServiceDeps): MacroService {
         const model = await read()
         if (!model.world.characterId || mutation.characterId !== model.world.characterId) throw new Error('The active character changed. Refresh Macros.')
         if (mutation.action === 'configure') configure(model, mutation)
-        else if (mutation.action === 'queue') model.saved.queued = trustedQueue(model, 'manual')
+        else if (mutation.action === 'queue') {
+          model.saved.queued = trustedQueue(model, 'manual')
+          model.saved.restoreRequested = false
+        }
         else {
           model.saved.settings.autoUpdate = false
           model.saved.queued = undefined

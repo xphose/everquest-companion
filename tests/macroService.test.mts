@@ -154,6 +154,27 @@ test('restore refuses any external file edit after installation', async (t) => {
   assert.equal(await f.read(), edited)
 })
 
+test('explicit queue after pending restore replaces that action without a restore-then-reinstall cycle', async (t) => {
+  const f = await macroFixture(t)
+  await f.service.mutate({ characterId: f.world.characterId, action: 'configure', settings: { autoUpdate: true, selections: [{ role: 'loc' }] } })
+  f.setPlayer(STOPPED)
+  await f.service.tick()
+  const installed = await f.read()
+  f.setPlayer(f.live())
+  await f.service.mutate({ characterId: f.world.characterId, action: 'restore' })
+  const queued = await f.service.mutate({ characterId: f.world.characterId, action: 'queue' })
+  assert.equal(queued.ok, true)
+  assert.equal(queued.snapshot.settings.autoUpdate, false)
+  const saved = await f.deps.repository.get(worldKey(f.world))
+  assert.equal(saved.restoreRequested, false)
+  assert.ok(saved.queued)
+  f.setPlayer(STOPPED)
+  await f.service.tick()
+  assert.equal(await f.read(), installed)
+  await f.service.tick()
+  assert.equal(await f.read(), installed)
+})
+
 test('class change retires an unchanged managed spell while preserving the user social', async (t) => {
   const f = await macroFixture(t)
   await f.service.mutate({ characterId: f.world.characterId, action: 'configure', settings: { autoUpdate: true, selections: [{ role: 'damage', spellLine: 'test flame' }] } })
