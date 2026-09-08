@@ -157,6 +157,13 @@ jobs:
       # moment the secrets existed. Signing lives in the release job only.
       - name: Build installer
         shell: pwsh
+        # Optional deployment metadata comes from repository configuration, never source literals.
+        # Keep release settings absent here: this job intentionally packages an unsigned artifact.
+        env:
+          EQC_FEEDBACK_API_URL: ${{ vars.EQC_FEEDBACK_API_URL || secrets.EQC_FEEDBACK_API_URL }}
+          EQC_FEEDBACK_S3_BUCKET: ${{ vars.EQC_FEEDBACK_S3_BUCKET || secrets.EQC_FEEDBACK_S3_BUCKET }}
+          EQC_FEEDBACK_S3_REGION: ${{ vars.EQC_FEEDBACK_S3_REGION || secrets.EQC_FEEDBACK_S3_REGION }}
+          EQC_TELEMETRY_API_URL: ${{ vars.EQC_TELEMETRY_API_URL || secrets.EQC_TELEMETRY_API_URL }}
         run: |
           npm run build
           npx electron-builder --win --publish never
@@ -416,6 +423,15 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Configure the feedback trio together, and the release pair plus certificate publisher.
+          # Empty optional service values keep the corresponding network features disabled.
+          EQC_FEEDBACK_API_URL: ${{ vars.EQC_FEEDBACK_API_URL || secrets.EQC_FEEDBACK_API_URL }}
+          EQC_FEEDBACK_S3_BUCKET: ${{ vars.EQC_FEEDBACK_S3_BUCKET || secrets.EQC_FEEDBACK_S3_BUCKET }}
+          EQC_FEEDBACK_S3_REGION: ${{ vars.EQC_FEEDBACK_S3_REGION || secrets.EQC_FEEDBACK_S3_REGION }}
+          EQC_TELEMETRY_API_URL: ${{ vars.EQC_TELEMETRY_API_URL || secrets.EQC_TELEMETRY_API_URL }}
+          EQC_RELEASE_OWNER: ${{ vars.EQC_RELEASE_OWNER || secrets.EQC_RELEASE_OWNER }}
+          EQC_RELEASE_REPO: ${{ vars.EQC_RELEASE_REPO || secrets.EQC_RELEASE_REPO }}
+          EQC_SIGNING_PUBLISHER: ${{ vars.EQC_SIGNING_PUBLISHER || secrets.EQC_SIGNING_PUBLISHER }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
