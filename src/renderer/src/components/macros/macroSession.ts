@@ -15,15 +15,25 @@ function sameInstallation(previous: MacroAssistantSnapshot | null, next: MacroAs
   return previous?.installation.state === next.installation.state &&
     previous?.preparation?.installation?.state === next.preparation?.installation?.state
 }
+function samePendingPreparation(previous: MacroAssistantSnapshot | null, next: MacroAssistantSnapshot): boolean {
+  const before = previous?.preparation?.installation
+  return Boolean(before?.packageId && before.state === 'pending' && before.packageId === next.preparation?.installation?.packageId)
+}
 function preparationNotice(previous: MacroAssistantSnapshot | null, next: MacroAssistantSnapshot, action?: MacroAssistantMutation['action']): MacroFeedback | undefined {
-  const before = previous?.preparation?.installation?.state
-  const after = next.preparation?.installation?.state
-  const completed = before === 'pending' && after !== 'pending' && after !== undefined
-  return next.preparation && (action === 'prepare' || completed) ? preparationFeedback(next.preparation) : undefined
+  if (!next.preparation || action === 'configure') return undefined
+  if (action === 'prepare') return preparationFeedback(next.preparation)
+  const after = next.preparation.installation
+  if (!after || !samePendingPreparation(previous, next)) return undefined
+  if (after.state === 'conflict' || after.state === 'saved' && after.completion) return preparationFeedback(next.preparation)
+  return undefined
+}
+function preparationStopped(previous: MacroAssistantSnapshot | null, next: MacroAssistantSnapshot): boolean {
+  return previous?.preparation?.installation?.state === 'pending' && next.preparation?.installation?.state !== 'pending'
 }
 function snapshotNotice(previous: MacroAssistantSnapshot | null, next: MacroAssistantSnapshot, action?: MacroAssistantMutation['action']): MacroFeedback | undefined {
+  if (action === 'configure') return undefined
   const preparation = preparationNotice(previous, next, action)
-  if (preparation) return preparation
+  if (preparation || preparationStopped(previous, next)) return preparation
   const completed = previous?.installation.state === 'pending' && next.installation.state !== 'pending' &&
     (next.installation.completion !== undefined || next.installation.state === 'conflict')
   return action === 'queue' || completed ? installationFeedback(next) : undefined

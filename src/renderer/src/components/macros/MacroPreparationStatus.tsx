@@ -1,23 +1,24 @@
 import type { JSX } from 'react'
 import { Alert, AlertTitle, Stack, Typography } from '@mui/material'
 import type { MacroPreparationSnapshot } from '@shared/macroPreparation'
+import { preparationFeedback, type MacroFeedback } from './macroFeedback'
 
-function PreparationTime({ installation }: { installation: NonNullable<MacroPreparationSnapshot['installation']> }): JSX.Element | null {
-  if (installation.state !== 'saved' || !installation.at) return null
-  return <Typography variant="caption" component="div">Saved: <time dateTime={installation.at}>{new Date(installation.at).toLocaleString()}</time></Typography>
+function PreparationTime({ timestamp }: { timestamp: MacroFeedback['timestamp'] }): JSX.Element | null {
+  if (!timestamp) return null
+  return <Typography variant="caption" component="div">{timestamp.label}: <time dateTime={timestamp.value}>{new Date(timestamp.value).toLocaleString()}</time></Typography>
 }
 
 export function MacroPreparationStatus({ preparation }: { preparation: MacroPreparationSnapshot }): JSX.Element {
   const installed = preparation.installation
+  const feedback = preparationFeedback(preparation)
   return <Stack spacing={1}>
-    {installed && <Alert severity={installed.state === 'conflict' ? 'warning' : installed.state === 'saved' ? 'success' : 'info'}
+    {installed && <Alert severity={feedback.severity}
       role="status" data-testid="macros-preparation-status" data-state={installed.state}>
-      <AlertTitle>{installed.state === 'pending' ? 'Preparation queued, not written yet' : installed.state === 'saved' ? 'Preparation saved' : 'Preparation needs attention'}</AlertTitle>
-      <Typography variant="body2">{installed.message}</Typography>
-      {installed.state === 'pending' && <Typography variant="body2">Keep the companion open. Fully exit EverQuest, wait for Preparation saved, then launch the game to load the buttons.</Typography>}
-      {installed.state === 'saved' && <Typography variant="body2">Start or restart EverQuest to load the saved preparation buttons.</Typography>}
-      {installed.destination && <Typography variant="body2">Hotbar {installed.destination.bar} · Page {installed.destination.page}</Typography>}
-      <PreparationTime installation={installed} />
+      <AlertTitle>{feedback.title}</AlertTitle>
+      <Typography variant="body2">{feedback.message}</Typography>
+      {feedback.detail && <Typography variant="body2">{feedback.detail}</Typography>}
+      {installed.destination && <Typography variant="body2">Show Hotbar {installed.destination.bar}, page {installed.destination.page} in EverQuest to find these buttons.</Typography>}
+      <PreparationTime timestamp={feedback.timestamp} />
     </Alert>}
     <Alert severity={preparation.phase === 'changed' ? 'warning' : preparation.phase === 'utility-ready' ? 'success' : 'info'}
       role="status" data-testid="macros-preparation-phase" data-phase={preparation.phase}>

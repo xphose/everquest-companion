@@ -9,7 +9,7 @@ export function MacroPreparationPlan({ plan, installation, preview }: {
 }): JSX.Element {
   return <Stack spacing={1}>
     <Typography variant="subtitle2">{preview ? 'Preview of the next package' : 'Captured preparation package'}</Typography>
-    <Typography variant="body2" color="text.secondary">{plan.utilities.length} utility buttons · {plan.replacements.length} temporary gem swaps · {plan.classes.join(' / ')}</Typography>
+    <Typography variant="body2" color="text.secondary">{plan.utilities.length} utility {plan.utilities.length === 1 ? 'button' : 'buttons'} · {plan.replacements.length} temporary gem {plan.replacements.length === 1 ? 'swap' : 'swaps'} · {plan.classes.join(' / ')}</Typography>
     {plan.replacements.length === 0 ? <Typography variant="body2">These utilities already occupy their gems. This package needs no Load Prep or Restore Combat buttons.</Typography>
       : <Box component="ol" sx={{ my: 0, pl: 2.5, '& li': { mb: 0.5 } }}>
         <li><Typography variant="body2">Press <strong>Load Prep</strong> in game, then wait for <strong>Utility spells are ready</strong> below.</Typography></li>
@@ -34,7 +34,7 @@ export function MacroPreparationPlan({ plan, installation, preview }: {
           {utility.guidance.map((message) => <Typography key={message} variant="caption" color="text.secondary">{message}</Typography>)}
         </Stack>)}
         {!preview && installation?.buttons && <Box>
-          <Typography variant="subtitle2">Saved hotbuttons</Typography>
+          <Typography variant="subtitle2">Package hotbuttons</Typography>
           {installation.buttons.map((button) => <Box key={button.id} sx={{ mt: 1 }}><Typography variant="body2">{button.name}</Typography><MacroCommands lines={button.lines} /></Box>)}
         </Box>}
       </Stack></AccordionDetails>
