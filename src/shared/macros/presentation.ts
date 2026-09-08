@@ -1,6 +1,8 @@
 import { macroSelectionKey, type MacroRecipe, type MacroSelection } from '../macros'
 import type { MacroExistingSocial } from '../macroAssistant'
 
+export const MACRO_SELECTION_LIMIT = 12
+
 /** Keep unavailable selections visible: changing class must never strand a hidden checked box. */
 export function visibleRecipes(recipes: readonly MacroRecipe[], selected: readonly MacroSelection[]): MacroRecipe[] {
   const present = new Set(recipes.map((recipe) => macroSelectionKey(recipe.selection)))
@@ -15,6 +17,7 @@ export function visibleRecipes(recipes: readonly MacroRecipe[], selected: readon
 
 export function changeSelection(selected: readonly MacroSelection[], selection: MacroSelection, checked: boolean): MacroSelection[] {
   const key = macroSelectionKey(selection)
+  if (checked && selected.length >= MACRO_SELECTION_LIMIT && !selected.some((entry) => macroSelectionKey(entry) === key)) return [...selected]
   const others = selected.filter((entry) => macroSelectionKey(entry) !== key)
   return checked ? [...others, selection] : others
 }
@@ -27,6 +30,7 @@ export function starterSelections(recipes: readonly MacroRecipe[], selected: rea
   const opener = recipes.find((recipe) => recipe.ready && recipe.role === 'pet-opener')
   const roles = new Set<string>()
   for (const candidate of recipes) {
+    if (next.length >= MACRO_SELECTION_LIMIT) break
     const recipe = starterReplacement(candidate, buffs, opener)
     if (!recipe.ready || roles.has(recipe.role) || roles.size >= 8) continue
     roles.add(recipe.role)

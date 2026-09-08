@@ -7,7 +7,7 @@ import { MacroContext } from './MacroContext'
 import { MacroInstallation } from './MacroInstallation'
 import { MacroRecipeCard } from './MacroRecipeCard'
 import { MacroExisting } from './MacroExisting'
-import { changeSelection, starterSelections, recipePresentation } from '@shared/macros/presentation'
+import { changeSelection, starterSelections, recipePresentation, MACRO_SELECTION_LIMIT } from '@shared/macros/presentation'
 import { useMacroAssistant } from './useMacroAssistant'
 import type { View } from '../../appViews'
 
@@ -36,11 +36,11 @@ export default function MacrosView(): JSX.Element {
       <Chip size="small" variant="outlined" label={`${selected.size} selected`} />
       <Box sx={{ flexGrow: 1 }} />
       <Button size="small" startIcon={<RefreshIcon />} disabled={busy} onClick={refresh}>Refresh</Button>
-      <Button variant="outlined" size="small" startIcon={<AutoAwesomeIcon />} disabled={busy || !snapshot.characterId || ready === 0}
+      <Button variant="outlined" size="small" startIcon={<AutoAwesomeIcon />} disabled={busy || !snapshot.characterId || ready === 0 || selected.size >= MACRO_SELECTION_LIMIT}
         data-testid="macros-starter-set" onClick={() => mutate({ selections: starterSelections(recipes, snapshot.settings.selections) })}>Add starter set</Button>
     </Stack>
     <Typography variant="body2" color="text.secondary">
-      Start with up to eight ready macros, or choose your own. Review the exact commands before adding them to your managed set.
+      Start with up to eight ready macros, or choose your own. Each hotbar page holds 12 buttons; deselect a macro to make room when your set is full.
     </Typography>
     <Tabs value={filter} onChange={(_, value: string) => setFilter(value)} aria-label="Macro suggestions" sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36 } }}>
       <Tab value="all" label={`All suggestions (${recipes.length})`} /><Tab value="ready" label={`Ready (${ready})`} /><Tab value="selected" label={`Selected (${selected.size})`} />
@@ -48,6 +48,7 @@ export default function MacrosView(): JSX.Element {
     {displayed.length === 0 && <Alert severity="info">{filter === 'selected' ? 'Choose a ready macro or add the starter set to begin.' : 'No suggestions in this group yet. Your active classes and learned spells will fill it in.'}</Alert>}
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5 }}>
       {displayed.map((recipe) => <MacroRecipeCard key={recipe.id} recipe={recipe} selected={selected.has(macroSelectionKey(recipe.selection))}
+        selectionFull={selected.size >= MACRO_SELECTION_LIMIT}
         busy={busy || !snapshot.characterId} onSelect={(checked) => mutate({ selections: changeSelection(snapshot.settings.selections, recipe.selection, checked) })} />)}
     </Box>
     <Alert severity="info" icon={false} sx={{ py: 0.5 }}>

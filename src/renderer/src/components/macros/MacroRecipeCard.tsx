@@ -30,8 +30,8 @@ function CopyCommands({ recipe }: { recipe: MacroRecipe }): JSX.Element {
   </Stack>
 }
 
-export function MacroRecipeCard({ recipe, selected, busy, onSelect }: {
-  recipe: MacroRecipe; selected: boolean; busy: boolean; onSelect: (checked: boolean) => void
+export function MacroRecipeCard({ recipe, selected, busy, selectionFull = false, onSelect }: {
+  recipe: MacroRecipe; selected: boolean; busy: boolean; selectionFull?: boolean; onSelect: (checked: boolean) => void
 }): JSX.Element {
   const label = recipe.ready ? 'Ready' : recipe.status === 'needs-memorizing' ? 'Needs memorizing' : 'Unavailable'
   return <Paper variant="outlined" data-testid={`macros-recipe-${recipe.id}`} sx={{ p: 1.5, minWidth: 0,
@@ -55,7 +55,7 @@ export function MacroRecipeCard({ recipe, selected, busy, onSelect }: {
     </Stack>
     <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap>
       <FormControlLabel sx={{ mr: 0 }} label="Manage this macro" control={<Checkbox size="small" checked={selected}
-        disabled={busy || (!recipe.ready && !selected)} onChange={(_, checked) => onSelect(checked)}
+        disabled={busy || (!selected && (selectionFull || !recipe.ready))} onChange={(_, checked) => onSelect(checked)}
         slotProps={{ input: { 'aria-label': `Manage ${recipe.name}`, ...{ 'data-testid': `macros-select-${recipe.id}` } } }} />} />
       <CopyCommands recipe={recipe} />
     </Stack>

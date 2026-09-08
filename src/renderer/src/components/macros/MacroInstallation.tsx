@@ -37,7 +37,7 @@ export function MacroInstallation({ snapshot, busy, configure, action }: {
         <Box sx={{ flexGrow: 1 }} />
         <Button size="small" startIcon={<RestoreIcon />} disabled={disabled || !installation.canRestore}
           data-testid="macros-restore" onClick={() => action('restore')}>Restore last install</Button>
-        <Button variant="contained" size="small" startIcon={<SaveAltIcon />} disabled={disabled || installation.state === 'unavailable'}
+        <Button variant="contained" size="small" startIcon={<SaveAltIcon />} disabled={disabled || !snapshot.context.live || installation.state === 'unavailable'}
           data-testid="macros-queue" onClick={() => action('queue')}>Queue selected macros</Button>
       </Stack>
       {installation.targetFiles.length > 1 && <TextField select size="small" label="Character loadout file"
@@ -49,6 +49,7 @@ export function MacroInstallation({ snapshot, busy, configure, action }: {
         Leave the companion open when you close EverQuest. Your macros are installed for the next launch; you press their hotbuttons in game.
         {' '}Personal buttons are preserved, and every installation has a backup.
       </Typography>
+      {!snapshot.context.live && <Typography variant="caption" color="warning.main">A fresh in-game character observation is needed to queue a new plan. Existing queued plans still install after EverQuest closes.</Typography>}
       {installation.conflicts.length > 0 && <Alert severity="warning">
         {installation.conflicts.map((message, index) => <Typography key={index} variant="body2">{message}</Typography>)}
       </Alert>}
