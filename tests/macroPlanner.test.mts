@@ -20,7 +20,16 @@ const pet = spell(9, 'Call Helper', { targetType: 6, effects: [{ effect: 33, bas
 const buff = spell(10, 'Iron Skin', { classLevels: { SHM: 1 }, effects: [{ effect: 1, base: 20 }] })
 function input(changes: Partial<MacroPlanInput['player']> = {}): MacroPlanInput {
   return { player: { characterName: 'Example', classes: ['MAG', 'SHM'], level: 10, spellbook: [900, 7, 8, 9, 10],
-    memorizedSpells: [900, 7, 8, 9, 10], ...changes }, spells: [ember, ember2, mez, heal, pet, buff], style: 'solo' }
+    memorizedSpells: [900, 7, 8, 9, 10, ...Array<null>(13).fill(null)], unlockedSpellSlots: Array.from({ length: 14 }, (_, i) => i + 1), ...changes },
+    spells: [ember, ember2, mez, heal, pet, buff], style: 'solo' }
+}
+function memorize(config: MacroPlanInput, ...ids: number[]): void {
+  const gems = config.player.memorizedSpells!
+  for (const id of ids) {
+    const empty = gems.indexOf(null)
+    assert.notEqual(empty, -1, 'Fixture has an empty gem for the observation')
+    gems[empty] = id
+  }
 }
 function role(config: MacroPlanInput, name: MacroRole) {
   const found = planMacros(config).find((recipe) => recipe.role === name)
@@ -60,7 +69,7 @@ test('spell catalog presence and character level never prove ownership', () => {
   assert.equal(role(config, 'damage').upgrade, undefined)
 })
 test('owned unmemorized spells are suggested but never compile an executable partial macro', () => {
-  const config = input({ memorizedSpells: [] })
+  const config = input({ memorizedSpells: Array<null>(18).fill(null) })
   const recipe = role(config, 'damage')
   assert.equal(recipe.status, 'needs-memorizing')
   assert.deepEqual(recipe.missingSpellIds, [900])
@@ -74,7 +83,7 @@ test('unavailable observations are distinct from a verified empty book or gem li
 })
 test('numeric casts follow reordered gems and never address profile slots 15 through 18', () => {
   const config = input()
-  config.player.memorizedSpells = [null, 900]
+  config.player.memorizedSpells = [null, 900, ...Array<null>(16).fill(null)]
   assert.deepEqual(role(config, 'damage').lines, ['/pause 37, /cast 2'])
   config.player.memorizedSpells = [...Array(14).fill(null), 900]
   assert.equal(role(config, 'damage').status, 'needs-memorizing')
@@ -89,17 +98,17 @@ test('name casting uses the full unquoted name and falls back on prefix collisio
   config.castByName = true
   assert.equal(castCommand(ember, config), '/cast Ember I')
   config.player.spellbook!.push(12)
-  config.player.memorizedSpells!.push(12)
+  memorize(config, 12)
   // “Ember I” prefixes “Ember II”, even though both are exact table names.
   assert.equal(castCommand(ember, config), '/cast 1')
-  config.player.memorizedSpells!.push(123456)
+  memorize(config, 123456)
   assert.equal(castCommand(heal, config), '/cast 3')
 })
 test('selected lines do not drift into another family, and unavailable selections stay explicit', () => {
   const config = input()
   config.spells.push(spell(4, 'Aardvark Bolt'))
   config.player.spellbook!.push(4)
-  config.player.memorizedSpells!.push(4)
+  memorize(config, 4)
   const selected = [{ role: 'damage' as const, spellLine: 'ember' }]
   assert.deepEqual(planMacros(config, selected).find((r) => r.role === 'damage')!.requiredSpellIds, [900])
   config.player.spellbook = [4]
@@ -111,13 +120,13 @@ test('an explicit bare role follows current spell families without changing its 
   const config = input()
   config.spells.push(spell(40, 'Zephyr', { classLevels: { SHM: 1 } }))
   config.player.spellbook!.push(40)
-  config.player.memorizedSpells!.push(40)
+  memorize(config, 40)
   const selected = [{ role: 'damage' as const }]
   const current = () => planMacros(config, selected).find((recipe) => recipe.id === 'damage')!
   assert.equal(current().ready, true)
   assert.deepEqual(current().selection, selected[0])
   assert.deepEqual(current().requiredSpellIds, [900])
-  config.player.memorizedSpells = [null, 40]
+  config.player.memorizedSpells = [null, 40, ...Array<null>(16).fill(null)]
   assert.equal(current().ready, true)
   assert.deepEqual(current().requiredSpellIds, [40])
   assert.deepEqual(current().selection, selected[0])
@@ -135,12 +144,12 @@ test('a bare buff role follows one family without also inventing that family as 
   const config = input()
   config.spells.push(spell(40, 'Zephyr Guard', { classLevels: { SHM: 1 }, effects: [{ effect: 1, base: 20 }] }))
   config.player.spellbook!.push(40)
-  config.player.memorizedSpells!.push(40)
+  memorize(config, 40)
   const selected = [{ role: 'buff' as const }]
   const buffs = () => planMacros(config, selected).filter((recipe) => recipe.role === 'buff')
   assert.deepEqual(buffs().map((recipe) => recipe.id), ['buff', 'buff:zephyr guard'])
   assert.deepEqual(buffs()[0].selection, selected[0])
-  config.player.memorizedSpells = [40]
+  config.player.memorizedSpells = [40, ...Array<null>(17).fill(null)]
   assert.deepEqual(buffs().map((recipe) => recipe.id), ['buff', 'buff:iron skin'])
   assert.deepEqual(buffs()[0].requiredSpellIds, [40])
   config.player.classes = ['WAR', 'MNK']
@@ -185,7 +194,7 @@ test('self buffs combine at most four distinct memorized self-compatible lines w
     spell(25, 'Pet Guard', { targetType: 14, effects: [{ effect: 1, base: 20 }] })]
   config.spells.push(...extra)
   config.player.spellbook!.push(...extra.map((s) => s.id))
-  config.player.memorizedSpells!.push(...extra.map((s) => s.id))
+  memorize(config, ...extra.map((s) => s.id))
   const recipe = role(config, 'self-buffs')
   assert.equal(recipe.lines.length, 5)
   assert.equal(recipe.lines[0], '/pause 3, /target Example')
@@ -207,7 +216,7 @@ test('Legends target 51 supports friendly heals and buffs, including the self-bu
   const friendlyBuff = spell(31, 'Friendly Vigor', { targetType: 51, effects: [{ effect: 4, base: 10 }] })
   config.spells.push(friendlyHeal, friendlyBuff)
   config.player.spellbook!.push(30, 31)
-  config.player.memorizedSpells!.push(30, 31)
+  memorize(config, 30, 31)
   assert.deepEqual(spellRoles(friendlyHeal), ['heal-self', 'heal-target', 'heal-pet'])
   assert.deepEqual(spellRoles(friendlyBuff), ['buff'])
   assert.deepEqual(spellRoles(spell(32, 'Not Hostile', { targetType: 51 })), [])
@@ -219,7 +228,7 @@ test('self-targeting uses the observed name and refuses absent or unsafe names w
   const extra = spell(31, 'Friendly Vigor', { targetType: 51, effects: [{ effect: 4, base: 10 }] })
   config.spells.push(extra)
   config.player.spellbook!.push(31)
-  config.player.memorizedSpells!.push(31)
+  memorize(config, 31)
   for (const name of ['Samplehero', 'A'.repeat(64)]) {
     config.player.characterName = name
     assert.equal(role(config, 'heal-self').lines[0], `/pause 3, /target ${name}`)
@@ -262,7 +271,7 @@ test('repeating a spell reserves its reuse delay but unrelated spells do not inh
   assert.equal(compileMacro('Mixed', [cast, { kind: 'cast', spellId: 8 }], config).lines[0], '/pause 37, /cast 1')
 })
 test('audit finds missing slash, empty internal lines, empty gems and short pauses without mutating text', () => {
-  const config = input({ memorizedSpells: [900, null] })
+  const config = input({ memorizedSpells: [900, ...Array<null>(17).fill(null)] })
   const lines = ['/pet attack', '/pause 30, cast 1', '', '/cast 2', '/loc']
   const before = [...lines]
   const issues = auditMacro('Pet Opener', lines, config)
@@ -276,12 +285,12 @@ test('audit finds missing slash, empty internal lines, empty gems and short paus
 test('audit respects client name-prefix matching, unmemorized names, and cast slot range', () => {
   const config = input()
   config.castByName = true
-  config.player.memorizedSpells!.push(12)
+  memorize(config, 12)
   assert.ok(auditMacro('Ambiguous', ['/cast Ember I'], config).some((i) => i.code === 'name-ambiguous'))
   assert.ok(auditMacro('Missing', ['/cast Unlearned'], config).some((i) => i.code === 'name-not-memorized'))
   assert.ok(auditMacro('Quoted', ['/cast "Ember I"'], config).some((i) => i.code === 'quoted-name'))
   assert.ok(auditMacro('Out of range', ['/cast 15'], config).some((i) => i.code === 'gem-range'))
-  config.player.memorizedSpells!.push(123456)
+  memorize(config, 123456)
   const partial = auditMacro('Partial data', ['/cast Unlearned'], config)
   assert.ok(partial.some((i) => i.code === 'spell-data-unavailable' && i.severity === 'warning'))
   assert.equal(partial.some((i) => i.code === 'name-not-memorized'), false)
