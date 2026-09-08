@@ -1,7 +1,7 @@
 import { isClassAbbr } from '../classCombo'
 import type { MacroPlanInput, MacroRole, MacroSpell } from '../macros'
-import { MACRO_CAST_GEMS } from '../macros'
 import { parseSpellRank, spellLineKey } from '../spellLines'
+import { memorizedMacroSpellIds } from './slots'
 
 // Legends target 51: measured Strengthen/Spirit of Wolf rows, documented Single Friendly (or Self).
 // It is not the enemy-target role of type 5, even if an unfamiliar row carries hostile slots.
@@ -64,7 +64,7 @@ function buffEffect(slot: MacroSpell['effects'][number]): boolean {
 
 /** Families are ordered by readiness, then a stable name. Rank comparison is ONLY within a line. */
 export function roleFamilies(input: MacroPlanInput, role: MacroRole): MacroSpell[][] {
-  const memorized = input.player.memorizedSpells?.slice(0, MACRO_CAST_GEMS)
+  const memorized = memorizedMacroSpellIds(input.player)
   const lines = new Map<string, MacroSpell[]>()
   for (const spell of ownedSpells(input).filter((s) => spellRoles(s).includes(role))) {
     const key = spellLineKey(spell.name)
@@ -82,6 +82,7 @@ function compareRanks(a: MacroSpell, b: MacroSpell): number {
 
 export function familyChoice(family: MacroSpell[], input: MacroPlanInput): { spell: MacroSpell; upgrade?: MacroSpell } {
   const best = family[0]
-  const spell = family.find((s) => input.player.memorizedSpells?.slice(0, MACRO_CAST_GEMS).includes(s.id)) ?? best
+  const memorized = memorizedMacroSpellIds(input.player)
+  const spell = family.find((s) => memorized.includes(s.id)) ?? best
   return { spell, ...(parseSpellRank(best.name).rank > parseSpellRank(spell.name).rank ? { upgrade: best } : {}) }
 }

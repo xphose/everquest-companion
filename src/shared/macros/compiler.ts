@@ -1,6 +1,8 @@
 import type { CompiledMacro, MacroPlanInput, MacroSpell, MacroStep } from '../macros'
 import { MACRO_CAST_GEMS } from '../macros'
 import { eligibleSpell } from './spells'
+import { castableMacroSlots, spellGem } from './slots'
+export { spellGem } from './slots'
 
 export const MACRO_MAX_LINES = 5
 /** Conservative writer bounds; the client /cast handler was verified to inspect only gems 1–14. */
@@ -16,17 +18,14 @@ export function castPause(spell: MacroSpell, repeated = false): number {
   const cooldown = repeated ? Math.max(spell.recoveryMs, spell.recastMs) : spell.recoveryMs
   return Math.ceil((spell.castMs + cooldown + 200) / 100)
 }
-export function spellGem(spellId: number, input: MacroPlanInput): number | null {
-  const position = input.player.memorizedSpells?.slice(0, MACRO_CAST_GEMS).indexOf(spellId) ?? -1
-  return position >= 0 ? position + 1 : null
-}
 
 /** Full names are unquoted. The client does PREFIX lookup, so collisions use the actual gem. */
 export function castCommand(spell: MacroSpell, input: MacroPlanInput): string | null {
   const gem = spellGem(spell.id, input)
   if (gem === null) return null
   if (!input.castByName || !safeCastName(spell.name)) return `/cast ${gem}`
-  const gems = input.player.memorizedSpells?.slice(0, MACRO_CAST_GEMS) ?? []
+  if ((input.player.memorizedSpells?.length ?? 0) < MACRO_CAST_GEMS) return `/cast ${gem}`
+  const gems = Array.from(input.player.memorizedSpells?.slice(0, MACRO_CAST_GEMS) ?? [])
   const lookup = new Map(input.spells.map((s) => [s.id, s.name.toLowerCase()]))
   const names = gems.filter((id) => id !== null).map((id) => lookup.get(id))
   const matches = names.filter((name) => name?.startsWith(spell.name.toLowerCase()))
@@ -50,11 +49,12 @@ function addCast(out: CompiledMacro, step: Extract<MacroStep, { kind: 'cast' }>,
   const pause = castPause(spell, repeated)
   out.pauseTenths += pause
   if (pause > MACRO_MAX_PAUSE) { out.reasons.push(`${spell.name} needs a wait longer than one social line supports.`); return }
+  if (castableMacroSlots(input.player) === null) { out.reasons.push('Unlocked spell-slot information is unavailable.'); return }
   if (!input.player.memorizedSpells) { out.reasons.push('Current spell-gem data is unavailable.'); return }
   const command = castCommand(spell, input)
   if (!command) {
     out.missingSpellIds.push(spell.id)
-    out.reasons.push(`Memorize ${spell.name} in a castable gem (1 to 14).`)
+    out.reasons.push(`Memorize ${spell.name} in an unlocked castable gem (1 to 14).`)
     return
   }
   out.lines.push(`/pause ${pause}, ${command}`)

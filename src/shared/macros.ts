@@ -22,6 +22,8 @@ export interface MacroPlayer {
   spellbook?: number[]
   /** Array position + 1 is the actual /cast gem number. Null is an empty gem. */
   memorizedSpells?: (number | null)[]
+  /** Verified unlocked one-based positions, sorted and unique. Undefined is unknown, never inferred from occupancy. */
+  unlockedSpellSlots?: number[]
 }
 export type MacroStyle = 'solo' | 'group' | 'pet'
 export const MACRO_CAST_GEMS = 14
@@ -83,4 +85,23 @@ export interface MacroAuditIssue {
   code: string
   message: string
   suggestion?: string
+}
+export interface MacroLoadoutSlot {
+  gem: number
+  spellId?: number
+  name?: string
+  currentSpellId?: number
+  currentName?: string
+  action: 'keep' | 'memorize' | 'replace' | 'empty'
+  required: boolean
+}
+export interface MacroLoadoutPlan {
+  state: 'ready' | 'needs-memorizing' | 'over-capacity' | 'unavailable'
+  message: string
+  availableSlots?: number
+  requiredSpellCount: number
+  missingSpellCount: number
+  overflow: number
+  slots: MacroLoadoutSlot[]
+  omitted: { id: number; name: string; reason: string }[]
 }
