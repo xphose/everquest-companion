@@ -65,18 +65,23 @@ function terminalFields(row: Record<string, unknown>): Partial<QuestJournalObser
   }
 }
 
-function detectedClasses(value: unknown): string[] {
+function detectedClasses(value: unknown): { classes: string[]; inferredClasses: string[] } {
   const combo = value as ComboSnap | null
-  return combo?.current?.slots.flatMap((slot) => {
+  const resolved = combo?.current?.slots.flatMap((slot) => {
     const candidate = slot.candidates[0]
-    return slot.candidates.length === 1 && slot.provenance !== 'inferred' && isClassAbbr(candidate)
-      ? [classDisplayName(candidate)] : []
+    return slot.candidates.length === 1 && isClassAbbr(candidate)
+      ? [{ name: classDisplayName(candidate), inferred: slot.provenance === 'inferred' }] : []
   }) ?? []
+  return {
+    classes: resolved.map((slot) => slot.name),
+    inferredClasses: resolved.filter((slot) => slot.inferred).map((slot) => slot.name)
+  }
 }
 
 interface ObservationSet {
   character?: CharacterSnap
   classes: string[]
+  inferredClasses: string[]
   tasks: QuestJournalObservedTask[]
   truncated: boolean
   loot: LootEvent[]
@@ -86,13 +91,13 @@ interface ObservationSet {
 }
 
 async function observations(deps: JournalServiceDeps, world: JournalWorld): Promise<ObservationSet> {
-  const out: ObservationSet = { classes: [], tasks: [], truncated: false, loot: [], turnins: [], inventoryUpdatesAvailable: false }
+  const out: ObservationSet = { classes: [], inferredClasses: [], tasks: [], truncated: false, loot: [], turnins: [], inventoryUpdatesAvailable: false }
   if (!world.characterId || world.readiness !== 'ready') return out
   const results = await Promise.allSettled(['character', 'combo', 'tasks', 'loot', 'turnins'].map(deps.snapshot))
   assertCurrent(deps, world)
   const [character, combo, tasks, loot, turnins] = results
   if (character.status === 'fulfilled') out.character = character.value as CharacterSnap
-  if (combo.status === 'fulfilled') out.classes = detectedClasses(combo.value)
+  if (combo.status === 'fulfilled') Object.assign(out, detectedClasses(combo.value))
   if (tasks.status === 'fulfilled') {
     try {
       const parsed = taskRows(tasks.value)
@@ -110,13 +115,14 @@ function arrayResult(result: PromiseSettledResult<unknown>): result is PromiseFu
   return result.status === 'fulfilled' && Array.isArray(result.value)
 }
 
-function profileContext(input: ObservationSet, stored: ProgressState): Pick<QuestJournalContext, 'classes' | 'level' | 'profileSource'> {
+function profileContext(input: ObservationSet, stored: ProgressState): Pick<QuestJournalContext, 'classes' | 'inferredClasses' | 'level' | 'profileSource'> {
   const profile = sanitizeProgress(stored.questJournal).profile
   const classes = profile?.classes.length ? profile.classes : input.classes
+  const inferredClasses = profile?.classes.length ? [] : input.inferredClasses
   const level = profile?.level ?? input.character?.level?.level
   const manual = hasManualProfile(stored)
   const known = level !== undefined || classes.length > 0
-  return { classes, level, profileSource: !known ? 'unknown' : manual ? 'manual' : 'detected' }
+  return { classes, inferredClasses, level, profileSource: !known ? 'unknown' : manual ? 'manual' : 'detected' }
 }
 
 function hasManualProfile(stored: ProgressState): boolean {

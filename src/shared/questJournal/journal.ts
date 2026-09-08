@@ -28,6 +28,8 @@ export interface QuestJournalContext {
   characterServer?: string
   level?: number
   classes: string[]
+  /** Display names inferred from gameplay; /who and user statements are not estimates. */
+  inferredClasses?: string[]
   profileSource: 'detected' | 'manual' | 'unknown'
   zone?: string
   readiness: 'ready' | 'loading' | 'unavailable'
