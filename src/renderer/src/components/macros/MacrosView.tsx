@@ -5,6 +5,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { macroSelectionKey } from '@shared/macros'
 import { MacroContext } from './MacroContext'
 import { MacroInstallation } from './MacroInstallation'
+import { MacroLoadout } from './MacroLoadout'
 import { MacroRecipeCard } from './MacroRecipeCard'
 import { MacroExisting } from './MacroExisting'
 import { changeSelection, starterSelections, recipePresentation, MACRO_SELECTION_LIMIT } from '@shared/macros/presentation'
@@ -31,6 +32,7 @@ export default function MacrosView(): JSX.Element {
     <MacroContext snapshot={snapshot} busy={busy} onStyle={(style) => mutate({ style })} />
     {error && <Alert severity="error" action={<Button disabled={busy} onClick={refresh}>Retry</Button>}>{error}</Alert>}
     <MacroInstallation snapshot={snapshot} busy={busy} configure={mutate} action={mutate} />
+    <MacroLoadout snapshot={snapshot} />
     <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
       <Typography variant="h6">Build your hotbar</Typography>
       <Chip size="small" variant="outlined" label={`${selected.size} selected`} />
@@ -45,7 +47,7 @@ export default function MacrosView(): JSX.Element {
     <Tabs value={filter} onChange={(_, value: string) => setFilter(value)} aria-label="Macro suggestions" sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36 } }}>
       <Tab value="all" label={`All suggestions (${recipes.length})`} /><Tab value="ready" label={`Ready (${ready})`} /><Tab value="selected" label={`Selected (${selected.size})`} />
     </Tabs>
-    {displayed.length === 0 && <Alert severity="info">{filter === 'selected' ? 'Choose a ready macro or add the starter set to begin.' : 'No suggestions in this group yet. Your active classes and learned spells will fill it in.'}</Alert>}
+    {displayed.length === 0 && <Alert severity="info">{filter === 'selected' ? 'Choose a macro or add the starter set to begin.' : 'No suggestions in this group yet. Your active classes and learned spells will fill it in.'}</Alert>}
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5 }}>
       {displayed.map((recipe) => <MacroRecipeCard key={recipe.id} recipe={recipe} selected={selected.has(macroSelectionKey(recipe.selection))}
         selectionFull={selected.size >= MACRO_SELECTION_LIMIT}

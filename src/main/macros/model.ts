@@ -2,6 +2,8 @@ import type { MacroAssistantSnapshot } from '../../shared/macroAssistant'
 import type { MacroPlanInput, MacroRecipe } from '../../shared/macros'
 import { macroSelectionKey } from '../../shared/macros'
 import { planMacros } from '../../shared/macros/planner'
+import { planMacroLoadout } from '../../shared/macros/loadout'
+import { castableMacroSlots } from '../../shared/macros/slots'
 import { auditMacro } from '../../shared/macros/audit'
 import { currentPlayerLocation, currentPlayerClasses } from '../../shared/currentPlayer'
 import type { PlayerLocationResult } from '../../shared/playerLocation'
@@ -25,8 +27,15 @@ function completePlayer(player: PlayerLocationResult, name: string, now: number)
   const classes = currentPlayerClasses(player, name, now)
   if (!location || !classes || !location.spellbook || !location.memorizedSpells) return undefined
   const profile = { characterName: location.characterName, classes, level: location.level,
-    spellbook: location.spellbook, memorizedSpells: location.memorizedSpells }
+    spellbook: location.spellbook, memorizedSpells: location.memorizedSpells,
+    unlockedSpellSlots: location.unlockedSpellSlots }
   return profile
+}
+
+function observationMessage(player: MacroPlanInput['player']): string {
+  return castableMacroSlots(player) === null
+    ? 'Unlocked spell slots are not verified yet. New macro updates wait; existing trusted queued plans are preserved.'
+    : 'Reading your current classes, owned spells, memorized gems, and unlocked spell slots.'
 }
 
 export async function readMacroModel(deps: MacroServiceDeps, world: MacroWorld, saved: MacroSaved): Promise<MacroModel> {
@@ -46,7 +55,7 @@ export async function readMacroModel(deps: MacroServiceDeps, world: MacroWorld, 
     assertMacroWorld(world, deps.world())
     if (!currentPlayerLocation(player.value, world.character.name, deps.now())) throw new Error('The player observation expired while reading spells. Refresh to try again.')
     model.input = { player: profile, spells, style: saved.settings.style, castByName: true }
-    model.message = 'Reading your current classes, owned spells, and memorized gems.'
+    model.message = observationMessage(profile)
   } catch (error) { model.message = error instanceof Error ? error.message : 'The client spell table is unavailable.' }
   return model
 }
@@ -64,6 +73,7 @@ export function currentRecipes(model: MacroModel): MacroRecipe[] {
 
 export function trustedQueue(model: MacroModel, source: QueuedMacros['source']): QueuedMacros {
   if (!model.input) throw new Error('Wait for a fresh observation of this character’s classes, spellbook, and gems.')
+  if (castableMacroSlots(model.input.player) === null) throw new Error('Wait for a verified observation of unlocked spell slots before queuing a new macro plan.')
   if (!model.target) throw new Error(model.files.length > 1 ? 'Choose the character settings file to update.' : 'No matching character settings file is available.')
   const recipes = currentRecipes(model)
   const selected = new Set(model.saved.settings.selections.map(macroSelectionKey))
@@ -101,17 +111,30 @@ function installation(model: MacroModel): MacroAssistantSnapshot['installation']
   return { ...base, state: saved.settings.autoUpdate ? 'ready' : 'off', message: saved.settings.autoUpdate ? 'Automatic updates are enabled for selected macros.' : 'Choose macros to install or keep updated automatically.' }
 }
 
+function slotCounts(live: MacroPlanInput['player'] | undefined): Pick<MacroAssistantSnapshot['context'], 'availableSpellSlots' | 'filledSpellSlots' | 'emptySpellSlots'> {
+  const slots = live ? castableMacroSlots(live) : null
+  if (slots === null) return {}
+  const entries = slots.map((gem) => live?.memorizedSpells?.[gem - 1])
+  const observed = entries.every((id) => id === null || typeof id === 'number' && Number.isInteger(id) && id > 0)
+  return { availableSpellSlots: slots.length,
+    filledSpellSlots: observed ? entries.filter((id) => id !== null).length : undefined,
+    emptySpellSlots: observed ? entries.filter((id) => id === null).length : undefined }
+}
+
 function playerContext(model: MacroModel): MacroAssistantSnapshot['context'] {
   const live = model.input?.player
   return { live: Boolean(live), message: model.message, classes: live?.classes ?? model.saved.classes ?? [],
     level: live?.level ?? model.saved.level, knownSpells: live?.spellbook?.length,
-    memorizedSpells: live?.memorizedSpells?.filter((id) => id !== null).length }
+    memorizedSpells: live?.memorizedSpells?.filter((id) => id !== null).length,
+    ...slotCounts(live) }
 }
 
 export async function macroSnapshot(model: MacroModel): Promise<MacroAssistantSnapshot> {
   let existing: MacroAssistantSnapshot['existing'] = []
   try { existing = await existingSocials(model) } catch (error) { model.message = error instanceof Error ? error.message : 'Cannot read existing socials.' }
+  const recipes = currentRecipes(model)
+  const loadout = model.input ? planMacroLoadout(model.input, recipes, model.saved.settings.selections) : undefined
   return { character: model.world.character, characterId: model.world.characterId,
     context: playerContext(model),
-    settings: model.saved.settings, recipes: currentRecipes(model), existing, installation: installation(model) }
+    settings: model.saved.settings, recipes, loadout, existing, installation: installation(model) }
 }

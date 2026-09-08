@@ -28,7 +28,7 @@ export async function macroFixture(t: TestContext): Promise<{
     characterId: 'Example@test', root, token: 'world-one' }
   const live = (): PlayerLocationResult => ({ state: 'live', location: { characterName: 'Example', zone: 'test', ns: 1, ew: 2,
     z: 3, heading: 4, sampledAt: 10_000, classes: ['MAG', 'SHM', 'ENC'], level: 10, spellbook: [94],
-    memorizedSpells: [94, ...Array<null>(17).fill(null)] } })
+    memorizedSpells: [94, ...Array<null>(17).fill(null)], unlockedSpellSlots: [1, 2, 3, 4, 5, 6, 7, 8] } })
   let player = live()
   let count = 0
   const deps: MacroServiceDeps = { world: () => ({ ...world }), livePlayer: async () => { count++; return structuredClone(player) },

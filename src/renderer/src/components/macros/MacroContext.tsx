@@ -2,10 +2,10 @@ import type { JSX } from 'react'
 import { Box, Chip, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import type { MacroAssistantSnapshot } from '@shared/macroAssistant'
-import { isMacroStyle, type MacroStyle } from '@shared/macros'
+import { isMacroStyle, type MacroStyle } from '../../../../shared/macros'
 
 function Count({ label, value }: { label: string; value: number | undefined }): JSX.Element {
-  return <Box sx={{ minWidth: 70 }}><Typography variant="h6" sx={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1.3 }}>{value ?? '-'}</Typography>
+  return <Box sx={{ minWidth: 70 }}><Typography variant="h6" sx={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1.3, fontSize: value === undefined ? 16 : undefined }}>{value ?? 'Unknown'}</Typography>
     <Typography variant="caption" color="text.secondary">{label}</Typography></Box>
 }
 
@@ -23,8 +23,10 @@ export function MacroContext({ snapshot, busy, onStyle }: {
           {context.classes.length > 0 ? ` · ${context.classes.join(' / ')}` : ''}</Typography>
         <Typography variant="caption" color="text.secondary">{context.message}</Typography>
       </Stack>
-      <Stack direction="row" spacing={3} alignItems="center">
-        <Count label="Level" value={context.level} /><Count label="Known spells" value={context.knownSpells} /><Count label="Filled gems" value={context.memorizedSpells} />
+      <Stack direction="row" gap={2} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Count label="Level" value={context.level} /><Count label="Known spells" value={context.knownSpells} />
+        <Count label="Unlocked slots" value={context.availableSpellSlots} /><Count label="Filled slots" value={context.filledSpellSlots} />
+        <Count label="Empty slots" value={context.emptySpellSlots} />
       </Stack>
     </Stack>
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ mt: 2 }}>

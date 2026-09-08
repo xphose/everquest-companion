@@ -62,7 +62,7 @@ export function MacroRecipeCard({ recipe, selected, busy, selectionFull = false,
     </Stack>
     <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap>
       <FormControlLabel sx={{ mr: 0 }} label="Manage this macro" control={<Checkbox size="small" checked={selected}
-        disabled={busy || (!selected && (selectionFull || !recipe.ready))} onChange={(_, checked) => onSelect(checked)}
+        disabled={busy || (!selected && (selectionFull || recipe.status === 'unavailable'))} onChange={(_, checked) => onSelect(checked)}
         slotProps={{ input: { 'aria-label': `Manage ${recipe.name}`, ...{ 'data-testid': `macros-select-${recipe.id}` } } }} />} />
       <CopyCommands recipe={recipe} />
     </Stack>
