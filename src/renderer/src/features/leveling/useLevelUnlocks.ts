@@ -11,9 +11,10 @@
 // the toast falls back to celebrating the level alone — the same shapes a class with zero
 // unlocks at that level produces, so there is no second failure path to reason about.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { EMPTY_UNLOCK_DATA, comboClassesOf, type ComboClasses, type LevelUnlockData } from '@shared/levelUnlocks'
 import { useComboSnap } from '../profiles/ClassComboData'
+import { LevelingCurrentClasses } from './currentLevelingProfile'
 
 let pending: Promise<LevelUnlockData> | null = null
 
@@ -47,5 +48,6 @@ export function useLevelUnlocks(): LevelUnlockData {
  */
 export function useCurrentComboClasses(): ComboClasses {
   const snap = useComboSnap()
-  return useMemo(() => comboClassesOf(snap.current), [snap])
+  const live = useContext(LevelingCurrentClasses)
+  return useMemo(() => live ?? comboClassesOf(snap.current), [snap, live])
 }
