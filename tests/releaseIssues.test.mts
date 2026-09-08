@@ -158,7 +158,7 @@ test('TOP ISSUES: an exemplar that is no longer schema-legal is REFUSED at the l
     issues: [
       issue({
         n: 9,
-        exemplar: exemplarOf({ redactedMessage: "ENOENT: open 'C:\\Users\\jmoye\\a.json'" })
+        exemplar: exemplarOf({ redactedMessage: "ENOENT: open 'C:\\Users\\example\\a.json'" })
       })
     ]
   })

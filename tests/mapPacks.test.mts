@@ -309,7 +309,7 @@ test('traversal is rejected at the handler predicate and finds nothing if it eve
   // (src/main/ipc/maps.ts) — the same predicate `sounds:getData` uses for its packId. These are
   // the spellings that would otherwise reach a join() against a pack directory.
   const hostile = [
-    '../../../Users/x/Documents/secret',
+    '../../../Users/example/Documents/secret',
     '..\\..\\windows\\system32\\drivers\\etc\\hosts',
     '..',
     '.',
@@ -330,7 +330,7 @@ test('traversal is rejected at the handler predicate and finds nothing if it eve
   withLibrary((lib, fx) => {
     const packs = discoverPacks({ eqRoot: fx.eqRoot, userPacksRoot: fx.userPacksRoot })
     for (const id of hostile) assert.deepEqual(resolveZoneLayers(packs, id, {}), [])
-    assert.equal(lib.get('../../../Users/x/Documents/secret').ok, false)
+    assert.equal(lib.get('../../../Users/example/Documents/secret').ok, false)
   })
 })
 

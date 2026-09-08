@@ -66,7 +66,7 @@ test('every failure class is reached by a message a real producer actually emits
     ['getaddrinfo ENOTFOUND github.com', 'network'],
     ['read ECONNRESET', 'network'],
     ['net::ERR_CERT_AUTHORITY_INVALID certificate', 'network'],
-    ['could not create C:\\Users\\x\\speech\\kokoro: Error: EACCES: permission denied', 'disk'],
+    ['could not create C:\\Users\\example\\speech\\kokoro: Error: EACCES: permission denied', 'disk'],
     ['ENOSPC: no space left on device', 'disk'],
     ['The operation was aborted due to timeout', 'timeout'],
     ['connect ETIMEDOUT 140.82.121.4:443', 'timeout'],
@@ -298,7 +298,7 @@ test('the reading is ALL SIX FIELDS OR NONE, and absent survives an older schema
   const extra = validateTelemetryEvent({
     t: 'sessionHeartbeat',
     uptimeMs: 1,
-    startup: { ...full, logPath: 'C:/Users/x/eqlog_Primitive_freeport.txt' }
+    startup: { ...full, logPath: 'C:/Users/example/eqlog_Primitive_freeport.txt' }
   })
   assert.ok(extra.ok && extra.value.t === 'sessionHeartbeat')
   assert.ok(!('logPath' in (extra.value.startup ?? {})))

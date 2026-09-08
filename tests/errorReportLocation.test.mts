@@ -102,8 +102,8 @@ test('an EXTERNAL frame may name a public module and may not name anything else'
   // the install directory — and therefore the user's account name — is not a value this field
   // can hold however it was constructed. Traversal is refused for FRAME_FILE_RE's reason.
   for (const file of [
-    'C:\\Users\\jmoye\\app\\node_modules\\chokidar\\lib\\a.js',
-    '/home/josh/app/node_modules/chokidar',
+    'C:\\Users\\example\\app\\node_modules\\chokidar\\lib\\a.js',
+    '/home/example/app/node_modules/chokidar',
     'node_modules/../../secret.txt',
     'node_modules/chokidar/lib/fsevents-handler.js',
     'out/main/index.js',
@@ -168,8 +168,8 @@ test('the three JOS-111 fields are ADDITIVE: absent is the whole old contract', 
 
 test('the CLASSIFIER truncates to the package, and an unrecognizable location is dropped', () => {
   const cases: [string, string | null][] = [
-    ['C:\\Users\\jmoye\\AppData\\Local\\Programs\\eqc\\node_modules\\chokidar\\lib\\handler.js', 'node_modules/chokidar'],
-    ['/home/josh/app/node_modules/@aws-sdk/client-s3/dist-cjs/index.js', 'node_modules/@aws-sdk/client-s3'],
+    ['C:\\Users\\example\\AppData\\Local\\Programs\\eqc\\node_modules\\chokidar\\lib\\handler.js', 'node_modules/chokidar'],
+    ['/home/example/app/node_modules/@aws-sdk/client-s3/dist-cjs/index.js', 'node_modules/@aws-sdk/client-s3'],
     // A NESTED dependency resolves to the package that actually holds the frame, and the LAST
     // boundary is what guarantees nothing to the left of it can survive.
     ['/app/node_modules/a/node_modules/b/index.js', 'node_modules/b'],
@@ -178,11 +178,11 @@ test('the CLASSIFIER truncates to the package, and an unrecognizable location is
     // Truncated at three segments, so a deep internal path cannot grow without bound.
     ['node:internal/streams/readable/extra/more', 'node:internal/streams/readable'],
     ['node:electron/js2c/renderer_init', 'electron/js2c/renderer_init'],
-    ['file:///C:/Users/jmoye/eqc/node_modules/electron/dist/resources/x.js', 'node_modules/electron'],
+    ['file:///C:/Users/example/eqc/node_modules/electron/dist/resources/x.js', 'node_modules/electron'],
     // Nothing recognizable: refused rather than repaired. A location we cannot classify is a
     // location we cannot promise is not somebody's home directory.
-    ['C:\\Users\\jmoye\\Documents\\thing.js', null],
-    ['/home/josh/secret/plan.js', null],
+    ['C:\\Users\\example\\Documents\\thing.js', null],
+    ['/home/example/secret/plan.js', null],
     ['<anonymous>', null],
     ['out/main/index.js', null]
   ]
@@ -203,8 +203,8 @@ test('a stack with no bundle in it still yields EXTERNAL frames, newest first', 
     'Error: ENOENT: no such file or directory',
     '    at Object.readFileSync (node:fs:452:20)',
     '    at async open (node:internal/fs/promises:601:12)',
-    '    at FSWatcher._handle (C:\\Users\\jmoye\\eqc\\node_modules\\chokidar\\lib\\handler.js:88:9)',
-    '    at Timeout._onTimeout (C:\\Users\\jmoye\\Documents\\private.js:1:1)'
+    '    at FSWatcher._handle (C:\\Users\\example\\eqc\\node_modules\\chokidar\\lib\\handler.js:88:9)',
+    '    at Timeout._onTimeout (C:\\Users\\example\\Documents\\private.js:1:1)'
   ].join('\n')
   assert.deepEqual(parseStackFrames(stack), [], 'nothing in the bundle — this is the frameless case')
   assert.deepEqual(parseExternalFrames(stack), [

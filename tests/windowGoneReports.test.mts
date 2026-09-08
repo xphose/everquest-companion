@@ -59,7 +59,7 @@ test('THE SHAPE GATE: a reason that is not one of Chromium’s words does not ri
   // The bright line, held by shape rather than by trusting the source. Anything that could spell a
   // path, a character name or a line of the game's log is refused ENTIRELY, not trimmed.
   const nasty = renderGoneReport({
-    reason: "C:\\Users\\jmoye\\Logs\\eqlog_Primitive_freeport.txt says 'a rat'",
+    reason: "C:\\Users\\example\\Logs\\eqlog_Primitive_freeport.txt says 'a rat'",
     exitCode: 1
   })
   assert.equal(nasty.message, 'render process gone: reason=unknown, exitCode=1')
@@ -122,7 +122,7 @@ test('THE TAG IS HELD TO A SHAPE, because one logError source is renderer-suppli
   // `ipc/windowControls.ts` builds `renderer:${report.source}` out of the `error:report` IPC, so
   // "every call site passes a literal" is FALSE and the shape is the actual control.
   const hostile = [
-    "renderer:C:\\Users\\jmoye\\Logs\\eqlog_Primitive.txt",
+    "renderer:C:\\Users\\example\\Logs\\eqlog_Primitive.txt",
     'renderer:a rat says hello',
     "renderer:'Primitive'",
     'renderer:[Sat Aug 01 13:00:28 2026] You slash a rat',
@@ -180,7 +180,7 @@ function withFrames(message: string): Record<string, unknown> {
     message,
     stack: [
       `Error: ${message}`,
-      '    at WebContents.<anonymous> (C:\\Users\\jmoye\\eqc\\out\\main\\index.js:10455:5)'
+      '    at WebContents.<anonymous> (C:\\Users\\example\\eqc\\out\\main\\index.js:10455:5)'
     ].join('\n')
   }
 }

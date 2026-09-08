@@ -131,7 +131,7 @@ function ready(watcher: FSWatcher): Promise<void> {
 async function withRoot(
   run: (root: string, arm: (w: FSWatcher) => FSWatcher) => Promise<void>
 ): Promise<void> {
-  // `realpathSync.native` because of WHERE CI puts its temp dir: `C:\Users\RUNNER~1\…` is an 8.3
+  // `realpathSync.native` because of WHERE CI puts its temp dir: `C:\Users\example\…` is an 8.3
   // short name, the events come back under the LONG name, and libuv's prefix assertion
   // (`src\win\fs-event.c:72`, run 32447274260) aborts the whole test process on the mismatch.
   // Resolving to the long form before anything watches it is the canonical workaround; a dev

@@ -134,7 +134,7 @@ export function wikiItemIconUrl(id: string): string {
  *   * `https:` only        — an http URL would be a silent downgrade the CSP can no longer
  *                            see (img-src lists `eqimg:`, not the upstream scheme), and a
  *                            `file:`/`data:` URL here would be a local-file read primitive.
- *   * no credentials       — `https://wiki.project1999.com@evil.com/x` parses with hostname
+ *   * no credentials       — `https://<userinfo>@<allowed-host>/x` parses with hostname
  *                            `evil.com`; the hostname test alone already rejects it, but
  *                            refusing userinfo outright means we never send one either.
  *   * default port only    — `:8080` on an allowlisted host is a different service; WHATWG

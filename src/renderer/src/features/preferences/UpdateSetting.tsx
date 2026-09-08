@@ -85,7 +85,7 @@ export function VersionSetting({
  */
 function chipLook(status: UpdateStatus, ui: UpdateChipState): ChipLook {
   // Dev build: the updater is off, so "up to date" would be a claim no check ever made.
-  if (status.disabled) return { label: 'dev build - updates off', color: 'default' }
+  if (status.disabled) return { label: 'updates off for this build', color: 'default' }
   if (ui.kind === 'quiet' && status.state === 'ready') return STATE_CHIP.idle
   return STATE_CHIP[status.state]
 }

@@ -89,7 +89,7 @@ test('…AND THE MODULE PATTERN STILL CANNOT CARRY A NAME', () => {
     'module:Innoruuk`s Chosen',
     'module:Primitive',           // …a plain name IS admitted, and is checked below instead
     'module:loot/../../etc',
-    'module:C:\\Users\\jmoye',
+    'module:C:\\Users\\example',
     'module:a b',
     'module:with-dash',
     'module:with_underscore',

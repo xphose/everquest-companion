@@ -372,7 +372,7 @@ test('the validator RECONSTRUCTS the block — a smuggled key does not survive',
   const perf = oneTick()
   const res = validatePerf({
     ...perf,
-    logPath: 'C:\\Users\\somebody\\Logs\\eqlog_Bob_firiona.txt',
+    logPath: 'C:\\Users\\example\\Logs\\eqlog_Bob_firiona.txt',
     rows: [{ ...perf.rows[0], selfName: 'Bob' }, ...perf.rows.slice(1)],
     state: { ...perf.state, machineName: 'BOBS-PC' }
   })

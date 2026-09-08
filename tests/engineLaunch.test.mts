@@ -217,7 +217,7 @@ test('THE REPORT PREFILL CARRIES THE CLASS AND NOTHING ELSE', () => {
   const withPaths: EngineFaultSay = {
     kind: 'no-binary',
     attempts: 0,
-    lookedIn: ['C:/Users/somebody/app/engine/target/debug/engined.exe'],
+    lookedIn: ['C:/Users/example/app/engine/target/debug/engined.exe'],
     detail: null
   }
   assert.doesNotMatch(reportPrefill(withPaths), /somebody/)

@@ -67,7 +67,7 @@ const BEL = ch(0x07)
 
 test('the redactor eats a Windows user path out of an ENOENT — the shape that names a person', () => {
   const raw =
-    "ENOENT: no such file or directory, open 'C:\\Users\\jmoye\\AppData\\Roaming\\everquest-companion\\alerts.json'"
+    "ENOENT: no such file or directory, open 'C:\\Users\\example\\AppData\\Roaming\\everquest-companion\\alerts.json'"
   const out = redactMessage(raw)
   // The account name is the whole point: it must not survive in ANY form.
   assert.equal(out.includes('jmoye'), false, out)
@@ -91,7 +91,7 @@ test('the redactor over the rest of the nasty catalogue', () => {
   const table: [string, string, string][] = [
     [
       'a POSIX home path',
-      'EACCES: permission denied, scandir /home/josh/.config/everquest-companion/soundpacks',
+      'EACCES: permission denied, scandir /home/example/.config/everquest-companion/soundpacks',
       'EACCES: permission denied, scandir <path>'
     ],
     // THE SPACE CASE, which the first draft of PATH_RE got wrong and this row is why it is
@@ -109,8 +109,8 @@ test('the redactor over the rest of the nasty catalogue', () => {
       'spawn <path> failed after 3 retries'
     ],
     [
-      'a two-segment POSIX home path — named directories, because /Users/josh and /v1/x are the same shape',
-      'EACCES: open /Users/josh',
+      'a two-segment POSIX home path — named directories, because /Users/example and /v1/x are the same shape',
+      'EACCES: open /Users/example',
       'EACCES: open <path>'
     ],
     [
@@ -135,7 +135,7 @@ test('the redactor over the rest of the nasty catalogue', () => {
     ],
     [
       'a file: URL from the renderer',
-      'Failed to fetch file:///C:/Users/jmoye/app/out/renderer/index.html',
+      'Failed to fetch file:///C:/Users/example/app/out/renderer/index.html',
       'Failed to fetch <path>'
     ],
     ['nothing to redact is left completely alone', 'Maximum call stack size exceeded', 'Maximum call stack size exceeded'],
@@ -146,14 +146,14 @@ test('the redactor over the rest of the nasty catalogue', () => {
 
 test('THE FIXED POINT: redacting twice is redacting once — the server check rests on it', () => {
   const inputs = [
-    "ENOENT: open 'C:\\Users\\jmoye\\a\\b.json'",
+    "ENOENT: open 'C:\\Users\\example\\a\\b.json'",
     'Cannot find module /usr/lib/node_modules/x/y.js',
     'a "b" c 1234567890 D:\\e\\f',
     '<path> <str> <n>',
     'x'.repeat(MAX_REDACTED_MESSAGE + 400),
     // A cut that lands mid-path is exactly the case that would break idempotence if the cap ran
     // BEFORE the redaction. It runs after, so there is no path left to cut into.
-    `${'y'.repeat(MAX_REDACTED_MESSAGE - 5)} C:\\Users\\jmoye\\deep\\path\\file.json`,
+    `${'y'.repeat(MAX_REDACTED_MESSAGE - 5)} C:\\Users\\example\\deep\\path\\file.json`,
     '',
     'no quotes but an apostrophe: don\u2019t'
   ]
@@ -205,14 +205,14 @@ test('the redactor is total: a thrown non-string has no message and that is fine
 
 test('normalizeFrameFile keeps the bundle path and nothing above it', () => {
   const table: [string, string | null][] = [
-    ['C:\\Users\\jmoye\\AppData\\Local\\Programs\\eqc\\resources\\app.asar\\out\\main\\index.js', 'out/main/index.js'],
-    ['file:///C:/Users/jmoye/dev/eqc/out/renderer/assets/index-a1b2.js', 'out/renderer/assets/index-a1b2.js'],
-    ['/home/josh/eqc/out/preload/index.js', 'out/preload/index.js'],
+    ['C:\\Users\\example\\AppData\\Local\\Programs\\eqc\\resources\\app.asar\\out\\main\\index.js', 'out/main/index.js'],
+    ['file:///C:/Users/example/dev/eqc/out/renderer/assets/index-a1b2.js', 'out/renderer/assets/index-a1b2.js'],
+    ['/home/example/eqc/out/preload/index.js', 'out/preload/index.js'],
     ['out/main/session.js', 'out/main/session.js'],
     // THE GREEDY-MATCH TRIPWIRE. `scout` contains the letters `out`, so a lazy regex with an
     // optional separator returns `out/app/out/main/index.js` and publishes a directory the user
     // named themselves. This assertion is the whole reason BUNDLE_ROOT_RE is written the way it is.
-    ['C:\\Users\\scout\\app\\out\\main\\index.js', 'out/main/index.js'],
+    ['C:\\Users\\example\\app\\out\\main\\index.js', 'out/main/index.js'],
     // THE HARNESS ROOT NORMALIZES TO THE SHIPPED ONE. `out-e2e/` is the same files from the same
     // sources, built to a different directory so the headless suite never races the dev watcher.
     // The e2e spec found this: it asserted on frames and got an empty list, because every
@@ -221,7 +221,7 @@ test('normalizeFrameFile keeps the bundle path and nothing above it', () => {
     ['out-e2e/main/index.js', 'out/main/index.js'],
     ['node:internal/modules/cjs/loader', null],
     ['electron/js2c/browser_init', null],
-    ['C:\\Users\\jmoye\\secret\\notes.txt', null]
+    ['C:\\Users\\example\\secret\\notes.txt', null]
   ]
   for (const [raw, want] of table) assert.equal(normalizeFrameFile(raw), want, raw)
 })
@@ -229,9 +229,9 @@ test('normalizeFrameFile keeps the bundle path and nothing above it', () => {
 test('parseStackFrames takes app frames, skips the rest, and caps at ten', () => {
   const stack = [
     'TypeError: x is not a function',
-    '    at Object.foldEvent (C:\\Users\\jmoye\\eqc\\out\\main\\pipeline.js:120:15)',
+    '    at Object.foldEvent (C:\\Users\\example\\eqc\\out\\main\\pipeline.js:120:15)',
     '    at node:internal/modules/cjs/loader:1105:14',
-    '    at C:\\Users\\jmoye\\eqc\\out\\main\\index.js:44:3',
+    '    at C:\\Users\\example\\eqc\\out\\main\\index.js:44:3',
     '    at file:///C:/eqc/out/renderer/assets/index-a1b2.js:9:1'
   ].join('\n')
   const frames = parseStackFrames(stack)
@@ -336,7 +336,7 @@ test('ADVERSARIAL: free text is refused in every field', () => {
   // so the server refuses it rather than repairing it: a repaired message is a message accepted
   // from a client that is not running the code we think it is.
   refused(
-    sample({ redactedMessage: 'C:\\Users\\jmoye\\AppData\\Roaming\\eqc\\alerts.json' }),
+    sample({ redactedMessage: 'C:\\Users\\example\\AppData\\Roaming\\eqc\\alerts.json' }),
     'redactedMessage',
     'a bare Windows path as the message'
   )
@@ -372,8 +372,8 @@ test('ADVERSARIAL: free text is refused in every field', () => {
   )
   // A FILE THAT IS NOT BUNDLE-RELATIVE. The anchor is the privacy property.
   for (const file of [
-    'C:\\Users\\jmoye\\out\\main\\a.js',
-    '/home/josh/out/main/a.js',
+    'C:\\Users\\example\\out\\main\\a.js',
+    '/home/example/out/main/a.js',
     '../out/main/a.js',
     'out/../../secret.txt',
     'src/main/index.ts',

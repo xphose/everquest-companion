@@ -64,7 +64,7 @@ test('allowedUploadUrl refuses credentials, non-default ports, query and fragmen
   const { virtualHost, pathHost } = uploadEndpoints(BUCKET, REGION)
   // Parses with hostname `evil.com`; the host test alone would catch it, and we also refuse
   // userinfo outright so we never SEND one.
-  assert.equal(ok(`https:maintainer@example.invalid/`), null)
+  assert.equal(ok(`https://${virtualHost}@` + `evil.com/`), null)
   assert.equal(ok(`https://user:pw@${virtualHost}/`), null)
   assert.equal(ok(`https://${virtualHost}:8443/`), null)
   assert.equal(ok(`https://${pathHost}:8443/${BUCKET}`), null)

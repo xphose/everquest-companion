@@ -2328,10 +2328,10 @@ failure. Reuses the tier-2 lifecycle via `scripts/sandbox/sandbox-lifecycle.ps1`
 
 <!-- Moved verbatim from AGENTS.md (lines 2543-2550 at the JOS-252 cut). -->
 
-- **AWS**: dedicated sub-account `eqcompanion` **001634075447** (org
-  management = the `jmoyers` account 383185690517), region **us-east-1**.
-  CLI: profile `eqc` in `~/.aws/config` assumes
-  `OrganizationAccountAccessRole` via source profile `windows-desktop-eqc`
+- **AWS**: a dedicated deployment account `<deployment-account-id>` within the
+  configured organization `<management-account-id>`, using the chosen deployment region.
+  CLI: the configured AWS profile in `~/.aws/config` assumes
+  `OrganizationAccountAccessRole` via the configured source profile
   (an IAM user whose key the OWNER manages; a least-privilege inline
   policy limiting it to that one AssumeRole was recommended and handed to
   the owner). Terraform + AWS CLI are installed (winget; terraform.exe
@@ -2481,7 +2481,7 @@ failure. Reuses the tier-2 lifecycle via `scripts/sandbox/sandbox-lifecycle.ps1`
 - **Feedback loop (the next big feature)**: fully planned + reviewed in
   `docs/plans/feedback-triage.md` — in-app reports, scrubbed log-window
   uploads, **Terraform** infra (owner decision: HCL, us-east-1, dedicated
-  AWS sub-account, alarms to maintainer@example.invalid), agentic triage CLI.
+  AWS sub-account, alarms to ops@example.invalid), agentic triage CLI.
   Wave F1 ships dark (no endpoint) and needs no cloud; F2 (deploy) needs
   the owner to create the sub-account. Targeted at the v0.3.0 cycle.
 

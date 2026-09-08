@@ -111,7 +111,7 @@ const MAX_LINK_LEN = 2048
  *   * `https:` ONLY        — this is the whole point. `file:` executes, `mailto:`/`ms-*:`/
  *                            `search-ms:` reach arbitrary registered protocol handlers, and
  *                            `http:` would be a silent downgrade. One scheme, no exceptions.
- *   * no credentials       — `https://eqlwiki.com@evil.com/x` parses with hostname
+ *   * no credentials       — `https://<userinfo>@<allowed-host>/x` parses with hostname
  *                            `evil.com` (the host test already rejects it), and refusing
  *                            userinfo outright means we never hand the OS one either.
  *   * default port only    — `:8080` on an allowlisted host is a different service.
@@ -212,7 +212,7 @@ export function fileUrlToLocalPath(u: URL): string | null {
     return null // malformed percent-escapes
   }
   if (p.includes('\0')) return null
-  // Windows: `/C:/Users/…` → `C:\Users\…`. POSIX: the leading slash is the path.
+  // Windows file URLs have an extra slash before the drive letter; POSIX paths keep it.
   if (/^\/[A-Za-z]:/.test(p)) p = p.slice(1)
   return process.platform === 'win32' ? p.replace(/\//g, '\\') : p
 }
@@ -238,7 +238,7 @@ export function isInsideDir(path: string, dir: string): boolean {
 /**
  * Soundpack ids name a DIRECTORY under `<userData>/soundpacks` (and under the bundled
  * roots), and `sounds:getData` takes one straight off the renderer. A crafted id
- * (`../../../Users/x/Documents`) would make `join()` resolve outside those roots, turning the
+ * (`../../../Users/<user>/Documents`) would make `join()` resolve outside those roots, turning the
  * channel into a "read any .wav/.mp3/.ogg next to a manifest.json" primitive.
  *
  * The ids in play are registry pack names (`alan-rickman`, `sc_marine`) — lowercase words,

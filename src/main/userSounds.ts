@@ -2,7 +2,7 @@
 // into the reserved pack, and the removal.
 //
 // THE FILE IS COPIED, NEVER REFERENCED. An alert that pointed at
-// `C:\Users\me\Downloads\fanfare.mp3` would go mute the day that folder is tidied, and it
+// `C:\Users\<user>\Downloads\fanfare.mp3` would go mute the day that folder is tidied, and it
 // would put an absolute path in the store and across IPC. So an import reads the bytes once
 // and writes them into `<userData>/my-sounds/sounds/<soundId>.<ext>` — a filename minted
 // from the sanitized id, so not one byte of user-supplied path text ever reaches `join()`.

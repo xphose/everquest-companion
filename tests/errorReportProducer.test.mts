@@ -145,8 +145,8 @@ function thrown(message: string, fn = 'foldEvent', line = 120): Error {
   const err = new TypeError(message)
   err.stack = [
     `TypeError: ${message}`,
-    `    at ${fn} (C:\\Users\\jmoye\\eqc\\out\\main\\pipeline.js:${String(line)}:15)`,
-    '    at LogBus.emit (C:\\Users\\jmoye\\eqc\\out\\main\\log\\bus.js:78:20)'
+    `    at ${fn} (C:\\Users\\example\\eqc\\out\\main\\pipeline.js:${String(line)}:15)`,
+    '    at LogBus.emit (C:\\Users\\example\\eqc\\out\\main\\log\\bus.js:78:20)'
   ].join('\n')
   return err
 }
@@ -310,7 +310,7 @@ test('a failure INSIDE the error logger does not mint a report about the error l
 const site = (fn: string, line: number) => (): string =>
   [
     '[object Object]',
-    `    at ${fn} (C:\\Users\\jmoye\\eqc\\out\\main\\index.js:${String(line)}:9)`,
+    `    at ${fn} (C:\\Users\\example\\eqc\\out\\main\\index.js:${String(line)}:9)`,
     '    at EventEmitter.emit (node:events:518:28)'
   ].join('\n')
 
@@ -357,7 +357,7 @@ test('a NESTED error is unwrapped: `{ preloadPath, error }` reports the real sta
   // stack; the whole error is one property down, and the old read gave up at the top level.
   fresh()
   const inner = thrown('preload blew up')
-  noteError('main:preload-error', { preloadPath: 'C:\\Users\\jmoye\\eqc\\out\\preload\\index.js', error: inner })
+  noteError('main:preload-error', { preloadPath: 'C:\\Users\\example\\eqc\\out\\preload\\index.js', error: inner })
   const [ev] = takeErrorReports()
   assert.equal(ev.errorName, 'TypeError', 'the inner error names it')
   assert.equal(ev.frameOrigin, 'thrown', 'a real stack, not a capture site')
@@ -373,7 +373,7 @@ test('EXTERNAL frames ride along, and they are what the fingerprint falls back o
   enoent.stack = [
     'Error: ENOENT',
     '    at Object.readFileSync (node:fs:452:20)',
-    '    at FSWatcher._handle (C:\\Users\\jmoye\\eqc\\node_modules\\chokidar\\lib\\handler.js:88:9)'
+    '    at FSWatcher._handle (C:\\Users\\example\\eqc\\node_modules\\chokidar\\lib\\handler.js:88:9)'
   ].join('\n')
   const other = new Error('ENOENT: no such file or directory, open <path>')
   other.stack = 'Error: ENOENT\n    at Object.statSync (node:fs:1600:3)'

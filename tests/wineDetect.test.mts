@@ -55,7 +55,7 @@ test('an ordinary Windows machine is NOT Wine — and stays that way under provo
   const posixish = windows({
     env: {
       SystemRoot: 'C:\\Windows',
-      HOME: '/c/Users/jmoye',
+      HOME: '/c/Users/example',
       SHELL: '/usr/bin/bash',
       USER: 'jmoye',
       DISPLAY: ':0',

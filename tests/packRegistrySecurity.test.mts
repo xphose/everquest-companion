@@ -125,7 +125,7 @@ test('sanitizeRegistryPacks drops poisoned rows and keeps the honest ones', () =
   const good1 = pack({ name: 'alan-rickman' })
   const good2 = pack({ name: 'sc_marine', source_repo: 'PeonPing/og-packs', source_path: 'sc_marine' })
   const poisoned = [
-    pack({ name: '../../../../Users/x/Documents' }),
+    pack({ name: '../../../../Users/example/Documents' }),
     pack({ name: '..\\..\\Windows' }),
     pack({ name: 'x:y' }),
     pack({ name: 'ok', source_repo: '../../evil' }),

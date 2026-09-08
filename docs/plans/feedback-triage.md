@@ -26,7 +26,7 @@ over and turns into `set` / `issue` commands the human approves.
 > - **IaC is Terraform (HCL)**, not CDK — owner decision. See the amended §7.1/§7.2.
 > - **Region: us-east-1** (not us-east-2).
 > - **Dedicated AWS sub-account** (AWS Organizations) for this product.
-> - **Alarm email: jmoyers+eqc@gmail.com** on the SNS ops topic.
+> - **Alarm email: ops@example.invalid** on the SNS ops topic.
 > - Open questions 1–3 in §11 are answered by the above; Q4 (contact field) = keep
 >   optional; Q5 (ErrorBoundary prefill) = yes, as the stretch.
 
@@ -667,7 +667,7 @@ where a future website would have to live under it.
 | DynamoDB table | `EqCompanionFeedback` | one table per bounded context, not one per app |
 | S3 bucket | `eqcompanion-logs-<random_id hex>` | see below |
 | Triage role | `EqCompanionFeedbackTriageRole` | |
-| SNS alarm topic | `EqCompanionOpsAlerts` | product-wide; email sub: jmoyers+eqc@gmail.com |
+| SNS alarm topic | `EqCompanionOpsAlerts` | product-wide; email sub: ops@example.invalid |
 | Region | **us-east-1** | owner decision; the bucket makes it effectively sticky |
 
 **The bucket name gets a `random_id` suffix** (Terraform `random_id` resource) for global
@@ -1145,7 +1145,7 @@ deliberate — F1 is independently shippable and cannot regress anything.
    it, and the state-backend bootstrap (S3 bucket + DynamoDB lock table) in **us-east-1**;
    record the steps in `infra/README.md`.
 2. `cd infra && terraform init` then
-   `terraform apply -var triage_principal_arn=<arn> -var alarm_email=jmoyers+eqc@gmail.com`
+   `terraform apply -var triage_principal_arn=<arn> -var alarm_email=ops@example.invalid`
    (confirm the SNS subscription email).
 3. Seed the config item: `triage-feedback closed off --message "…"` (i.e. `acceptingReports: true`).
 4. Put the `api_url` output into `FEEDBACK_API_URL` in `src/main/feedback/net.ts`; commit.

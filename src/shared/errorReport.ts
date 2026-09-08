@@ -74,9 +74,9 @@ export const FINGERPRINT_FRAMES = 3
  *      segment with no spaces in it. So `C:\Program Files\eqc\out\a.js` goes whole, while
  *      `seek to C:\a\b failed after 3 retries` gives up the path and keeps the sentence: the
  *      loop cannot take ` failed after 3 retries` because there is no separator after it.
- *   2. POSIX HOME DIRECTORIES BY NAME (`/home/…`, `/Users/…`, `/root/…`), consumed to the end
- *      of the run. This arm exists because arm 3 cannot cover `/Users/josh` — two segments,
- *      structurally identical to `/v1/telemetry` — and `/Users/josh` is precisely where a
+ *   2. POSIX HOME DIRECTORIES BY NAME (`/Users/<user>`, `/home/<user>`, `/root/...`), consumed to the end
+ *      of the run. This arm exists because arm 3 cannot cover `/Users/<user>` — two segments,
+ *      structurally identical to `/v1/telemetry` — and `/Users/<user>` is precisely where a
  *      person's name lives. Naming the three directories is the only non-guessing way to tell
  *      those two apart.
  *   3. POSIX, GENERIC: at least three segments (`/usr/lib/node_modules/x`). Two segments are
@@ -95,7 +95,7 @@ const PATH_RE = new RegExp(
   [
     // 1. Windows. The optional `file://` prefix is consumed INTO the match, and the lookbehind
     //    is what stops the drive-letter arm firing on the `e:/` inside the word `file:` —
-    //    without it, `Failed to fetch file:///C:/Users/…` redacts to `Failed to fetch fil<path>`
+    //    without it, file URL redaction can leave stray letters from the file: scheme.
     //    and publishes three letters of nothing while looking like it worked. (The suite found
     //    that; it is exactly the class of near-miss a regex reviewer reads straight past.)
     String.raw`(?:file:\/{2,3})?(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|\\\\)(?:[^'"<>|\r\n\\/]*[\\/])*[^\s'"<>|\r\n\\/]*`,
@@ -171,7 +171,7 @@ export const REDACTION_PLACEHOLDERS = ['<path>', '<str>', '<n>', '<logline>'] as
  *   6. COLLAPSE RUNS OF SPACES and trim — a redaction leaves gaps behind, and two messages
  *      that differ only in how much whitespace the redaction left are the same message.
  *   7. CAP, LAST. Capping before redacting would break idempotence: a cut could leave half a
- *      path (`C:\Users\jm`) that the next pass would redact, so the second run would not equal
+ *      path (`C:\Users\<user>`) that the next pass would redact, so the second run would not equal
  *      the first. Cutting AFTER the placeholders are in place cannot create a new match —
  *      there are no paths, quotes or long numbers left to cut into.
  *

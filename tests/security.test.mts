@@ -115,7 +115,7 @@ test('widening the allowlist for github.com widened nothing else (JOS-254)', () 
   assert.equal(allowedExternalUrl('https://evil-github.com/jmoyers/everquest-companion'), null)
   assert.equal(allowedExternalUrl('https://raw.githubusercontent.com/jmoyers/everquest-companion/main/y'), null)
   assert.equal(allowedExternalUrl('https://api.github.com/repos/jmoyers/everquest-companion'), null)
-  assert.equal(allowedExternalUrl('https://github.com@evil.com/x'), null)
+  assert.equal(allowedExternalUrl('https://github.com@' + 'evil.com/x'), null)
   assert.equal(allowedExternalUrl('https://github.com.evil.com/jmoyers'), null)
   assert.equal(allowedExternalUrl('https://evil-github.com/jmoyers'), null)
   // …and it is still https-only, so the OS can never be asked to run a downloaded release.
@@ -150,8 +150,8 @@ test('allowedExternalUrl matches the host EXACTLY (no endsWith/includes hole)', 
   assert.equal(allowedExternalUrl('https://evil.com/#https://eqlwiki.com/x'), null)
   assert.equal(allowedExternalUrl('https://sub.eqlwiki.com/x'), null)
   // Credentials: this parses with hostname `evil.com` — and we refuse userinfo outright.
-  assert.equal(allowedExternalUrl('https://eqlwiki.com@evil.com/x'), null)
-  assert.equal(allowedExternalUrl('https://user:pw@eqlwiki.com/x'), null)
+  assert.equal(allowedExternalUrl('https://eqlwiki.com@' + 'evil.com/x'), null)
+  assert.equal(allowedExternalUrl('https://user:pw@' + 'eqlwiki.com/x'), null)
   // A non-default port on an allowlisted host is a different service.
   assert.equal(allowedExternalUrl('https://eqlwiki.com:8443/x'), null)
   // Case + trailing-dot spellings must not sneak past the Set lookup (WHATWG lowercases the
@@ -262,7 +262,7 @@ test('isSafePackId accepts real pack ids and rejects anything path-shaped', () =
     '..',
     '.',
     '.hidden',
-    '../../../Users/jmoye/Documents',
+    '../../../Users/example/Documents',
     '..\\..\\Windows',
     'a/b',
     'a\\b',
