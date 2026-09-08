@@ -84,6 +84,7 @@ import { TextScaleStepper } from './TextScaleStepper'
 import { useOverlayModule } from './useOverlayModule'
 import { type OverlayChrome, useOverlayChrome } from './useOverlayChrome'
 import { xpOverlayView, type XpOverlayRow } from './xpRows'
+import { useOverlayPlayer } from './useOverlayPlayer'
 
 /** This window's accent — a cool blue, deliberately none of the three already in use (damage
  *  gold, healing green, debuff red). Two windows that look alike at a glance would be worse. */
@@ -456,6 +457,7 @@ export default function XpOverlay(): JSX.Element {
   // announcing the level of a class you are no longer running; your own `/who` row is what
   // corrects it, and it arrives here.
   const who = useOverlayModule<CharacterSnap>('character', NO_CHARACTER)
+  const player = useOverlayPlayer()
   const { locked, bgAlpha, textScale, hovering, config, patch, toggleLock, capture, dragRegion, noDrag } =
     useOverlayChrome()
   useSlowClock()
@@ -473,13 +475,14 @@ export default function XpOverlay(): JSX.Element {
   const { id, slice } = useXpSlice(prog, bounds, config, zoneScope)
   const visible = config?.xpRows
   const view = useMemo(
-    () => xpOverlayView({ snap: prog, loot, slice, visible, level: who.level, basis }),
-    [prog, loot, slice, visible, who.level, basis]
+    () => xpOverlayView({ snap: prog, loot, slice, visible, level: who.level, liveLevel: player?.level, basis }),
+    [prog, loot, slice, visible, who.level, player?.level, basis]
   )
 
   return (
     <div
       data-testid="xp-overlay"
+      data-level-source={view.levelCue === 'Live' ? 'live' : 'log'}
       style={{
         // 100%, NOT 100vw/100vh — a viewport unit inside the scaled content pane resolves against
         // the window and is then zoomed (overlayScale).

@@ -102,6 +102,8 @@ import { FOOTER_ROW, OverlayContent } from './overlayScale'
 import { TextScaleStepper } from './TextScaleStepper'
 import { useOverlayModule } from './useOverlayModule'
 import { type OverlayChrome, useOverlayChrome } from './useOverlayChrome'
+import { useOverlayPlayer } from './useOverlayPlayer'
+import { overlayCurrentZone } from './overlayCurrentData'
 
 /** This window's accent — a warm amber, deliberately none of the four already in use (damage gold,
  *  healing green, debuff red, XP blue). Two windows that look alike at a glance would be worse. */
@@ -413,6 +415,7 @@ function RespawnFooter({
 
 export default function RespawnOverlay(): JSX.Element {
   const snap = useOverlayModule<RespawnSnap>('respawn', EMPTY_RESPAWN_SNAP)
+  const zone = overlayCurrentZone(snap.zone, useOverlayPlayer())
   const { locked, bgAlpha, textScale, hovering, patch, toggleLock, capture, dragRegion, noDrag } =
     useOverlayChrome()
   const nowMs = useSecondsClock()
@@ -420,7 +423,7 @@ export default function RespawnOverlay(): JSX.Element {
   // not the one the fold last published: "soonest due" moves every second whether or not the log
   // does, and a list that only re-sorts on a death line would put a mob that came due a minute ago
   // below one that has ten minutes to run.
-  const rows = orderRespawnRows(respawnInZone(snap.rows, snap.zone), nowMs)
+  const rows = orderRespawnRows(respawnInZone(snap.rows, zone.zone), nowMs)
   /** Clocks the fold is holding for somewhere else. Counted so the empty state can say so. */
   const elsewhere = snap.rows.length - rows.length
   /** Fire-and-forget: the module answers with a delta, and a refusal is already described by it. */
@@ -435,6 +438,7 @@ export default function RespawnOverlay(): JSX.Element {
   return (
     <div
       data-testid="respawn-overlay"
+      data-zone-source={zone.source}
       style={{
         width: '100%',
         height: '100%',
@@ -451,7 +455,7 @@ export default function RespawnOverlay(): JSX.Element {
     >
       <OverlayHeader
         tag="RESP"
-        title={snap.zone.length > 0 ? snap.zone : 'Respawn'}
+        title={zone.zone.length > 0 ? zone.zone : 'Respawn'}
         titleColor={ACCENT}
         tail={rows.length > 0 ? String(rows.length) : undefined}
         // The two claims this window makes, on the count's hover (round 5). It used to be a
@@ -463,6 +467,7 @@ export default function RespawnOverlay(): JSX.Element {
       />
 
       <OverlayContent textScale={textScale} testId="respawn-overlay-rows" locked={locked} capture={capture}>
+        <div data-testid="respawn-zone-source" style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', padding: '3px 2px' }}>{zone.message}</div>
         {rows.length === 0 ? (
           // An empty window is a STATE, and it says WHICH one — this is the single most likely
           // thing a first-time user sees. Two different empties: nothing watched anywhere (go to

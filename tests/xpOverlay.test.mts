@@ -114,6 +114,27 @@ const valueOf = (v: ReturnType<typeof xpOverlayView>, id: string): string =>
 const labelOf = (v: ReturnType<typeof xpOverlayView>, id: string): string =>
   v.rows.find((r) => r.id === id)?.label ?? '<missing>'
 
+test('live level updates without a log event, preserves historical rates, and gates incompatible progress until an anchor agrees', () => {
+  const snap = farming({ pct: 0.1 })
+  ding(snap, HOUR, 5)
+  const before = structuredClone(snap)
+  const args = { snap, loot: [], slice: resolveSlice({ snap, bounds: dataBounds(snap, []), id: 'all' }), visible: undefined }
+  const logged = xpOverlayView(args)
+  const current = xpOverlayView({ ...args, liveLevel: 10 })
+  assert.equal(current.level, 10)
+  assert.equal(current.levelCue, 'Live')
+  assert.equal(valueOf(current, 'xp'), valueOf(logged, 'xp'))
+  assert.equal(valueOf(current, 'eta'), NONE)
+  assert.equal(current.rows.find((row) => row.id === 'eta')!.detail, 'awaiting progress at lvl 10')
+  assert.deepEqual(snap, before)
+  const compatible = xpOverlayView({ ...args, liveLevel: 5 })
+  assert.equal(valueOf(compatible, 'eta'), valueOf(logged, 'eta'))
+  assert.notEqual(valueOf(compatible, 'eta'), NONE)
+  const who = xpOverlayView({ ...args, liveLevel: 10, level: { level: 10, source: 'who', ts: snap.lastTs } })
+  assert.equal(valueOf(who, 'eta'), NONE, 'a matching who cannot replace the incompatible ding anchor')
+  assert.equal(xpOverlayView({ ...args, liveLevel: undefined }).level, 5)
+})
+
 // ---------------------------------------------------------------------------------------
 // THE CHECKLIST — the whole of this window's configurability
 // ---------------------------------------------------------------------------------------

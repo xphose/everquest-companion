@@ -20,6 +20,7 @@ import type { BuffAllowPrefs } from '../shared/buffAllow'
 import type { ToastPayload } from '../shared/toast'
 import type { AlertBannerPayload } from '../shared/alertBanner'
 import type { ConCardPayload } from '../shared/conCard'
+import type { PlayerLocationResult } from '../shared/playerLocation'
 
 export type { CombatSnapshot, SnapshotOpts, OverlayConfig, OverlayDrill, OverlayKind, MobKnowledge }
 
@@ -51,6 +52,9 @@ const KIND: OverlayKind = readKind()
 const overlayApi = {
   /** This overlay window's kind ('fight' | 'overall' | 'events'). */
   kind: KIND,
+  /** Current-character identity and the shared read-only native observation. */
+  getCharacter: (): Promise<CharacterRef | null> => ipcRenderer.invoke(IPC.getCharacter),
+  getPlayerLocation: (): Promise<PlayerLocationResult> => ipcRenderer.invoke(IPC.mapsPlayerLocation),
   /** Fetch a fresh combat snapshot (same engine + IPC the main app polls). */
   getCombatSnapshot: (opts: SnapshotOpts): Promise<CombatSnapshot> =>
     ipcRenderer.invoke(IPC.getCombatSnapshot, opts),
