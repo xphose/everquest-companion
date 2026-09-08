@@ -1,5 +1,6 @@
 import type { CharacterRef, CharacterSnap, LootEvent, ProgressState, TurnInEvent } from '../../shared/types'
 import type { ComboSnap } from '../../shared/classCombo'
+import type { PlayerLocationResult } from '../../shared/playerLocation'
 import type { QuestJournalCatalogEntry } from '../../shared/questJournal/catalog'
 import type {
   QuestJournalContext, QuestJournalDetailRequest, QuestJournalDetailResult,
@@ -11,6 +12,7 @@ import type { JournalFiles } from './files'
 import { detailJournal, queryJournal, type JournalModelInput } from './model'
 import { observedTaskId, supplementInventory } from './progress'
 import { applyMutation, record, safeId, sanitizeProgress, validateMutation } from './validate'
+import { journalLevel, liveJournalLevel } from './liveLevel'
 
 export interface JournalWorld {
   characterId: string | null
@@ -24,6 +26,7 @@ export interface JournalServiceDeps {
   catalog: () => readonly QuestJournalCatalogEntry[]
   files: (character: CharacterRef | null) => JournalFiles
   snapshot: (module: string) => Promise<unknown>
+  livePlayer?: () => Promise<PlayerLocationResult>
   getProgress: (characterId: string) => ProgressState
   setProgress: (characterId: string, progress: ProgressState) => void
   now: () => number
@@ -80,6 +83,7 @@ function detectedClasses(value: unknown): { classes: string[]; inferredClasses: 
 
 interface ObservationSet {
   character?: CharacterSnap
+  liveLevel?: number
   classes: string[]
   inferredClasses: string[]
   tasks: QuestJournalObservedTask[]
@@ -115,14 +119,15 @@ function arrayResult(result: PromiseSettledResult<unknown>): result is PromiseFu
   return result.status === 'fulfilled' && Array.isArray(result.value)
 }
 
-function profileContext(input: ObservationSet, stored: ProgressState): Pick<QuestJournalContext, 'classes' | 'inferredClasses' | 'level' | 'profileSource'> {
+function profileContext(input: ObservationSet, stored: ProgressState): Pick<QuestJournalContext, 'classes' | 'inferredClasses' | 'level' | 'levelSource' | 'profileSource'> {
   const profile = sanitizeProgress(stored.questJournal).profile
   const classes = profile?.classes.length ? profile.classes : input.classes
   const inferredClasses = profile?.classes.length ? [] : input.inferredClasses
-  const level = profile?.level ?? input.character?.level?.level
+  const level = journalLevel(profile?.level, input.liveLevel, input.character?.level?.level)
   const manual = hasManualProfile(stored)
-  const known = level !== undefined || classes.length > 0
-  return { classes, inferredClasses, level, profileSource: !known ? 'unknown' : manual ? 'manual' : 'detected' }
+  const known = level.level !== undefined || classes.length > 0
+  return { classes, inferredClasses, ...level,
+    profileSource: !known ? 'unknown' : manual ? 'manual' : 'detected' }
 }
 
 function hasManualProfile(stored: ProgressState): boolean {
@@ -138,8 +143,12 @@ function completedSky(stored: ProgressState): Set<string> {
 
 async function readModel(deps: JournalServiceDeps): Promise<{ input: JournalModelInput; world: JournalWorld }> {
   const world = deps.world()
-  const observed = await observations(deps, world)
+  const [observed, player] = await Promise.all([
+    observations(deps, world),
+    world.characterId ? deps.livePlayer?.().catch(() => undefined) : undefined
+  ])
   assertCurrent(deps, world)
+  observed.liveLevel = liveJournalLevel(player, world.character?.name, deps.now())
   const stored = world.characterId ? deps.getProgress(world.characterId) : { inventory: {}, completedQuests: [] }
   const files = deps.files(world.character)
   const context: QuestJournalContext = {

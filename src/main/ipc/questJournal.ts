@@ -12,6 +12,7 @@ import { installJournalImageReader } from '../questJournal/recovery/ocr'
 import { registerQuestRecoveryIpc } from './questRecovery'
 import { record, safeId } from '../questJournal/validate'
 import { journalSnapshots } from '../questJournal/snapshotCache'
+import { readActivePlayer } from '../playerLocation/active'
 import type { ItemDbFile } from '../itemsDb'
 import itemsJson from '../data/items.json'
 
@@ -26,6 +27,7 @@ function world(): JournalWorld {
 
 const journalDeps: JournalServiceDeps = {
   world, catalog: getQuestJournalCatalog, now: Date.now, getProgress, setProgress,
+  livePlayer: readActivePlayer,
   files: (character) => journalFiles(effectiveEqRoot(), character, itemsJson as unknown as ItemDbFile),
   snapshot: (module) => journalSnapshots.read(module, engineWorldToken(), async () => {
     const result = await engineRequest('module.snapshot', { module })

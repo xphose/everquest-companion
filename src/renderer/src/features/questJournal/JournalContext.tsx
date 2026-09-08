@@ -6,6 +6,12 @@ import { formatDateTime } from '../../lib/formatDate'
 import type { JournalAction } from './useQuestJournal'
 import { QuestRecovery } from './QuestRecovery'
 
+const LEVEL_SOURCE = {
+  live: 'Current character level; updates automatically while you play.',
+  log: 'Last level recorded in your game log.',
+  manual: 'Your saved level correction. Use detected profile to resume automatic updates.'
+}
+
 function ProfileCorrection({ context, mutate }: { context: QuestJournalContext; mutate: (action: JournalAction) => Promise<void> }): JSX.Element {
   // Untouched fields follow live observations. Drafts belong to the user until they explicitly
   // return to detection, so a background poll cannot overwrite a correction being typed.
@@ -14,7 +20,7 @@ function ProfileCorrection({ context, mutate }: { context: QuestJournalContext; 
   const level = levelDraft ?? context.level?.toString() ?? ''
   const classes = classesDraft ?? context.classes.join(', ')
   const save = (): void => {
-    const parsedLevel = Number(level)
+    const parsedLevel = levelDraft === null && context.levelSource !== 'manual' ? undefined : Number(level)
     void mutate({ action: 'profile', level: level && Number.isFinite(parsedLevel) ? parsedLevel : undefined,
       classes: classes.split(',').map((name) => name.trim()).filter(Boolean) })
   }
@@ -57,7 +63,9 @@ export function JournalContext({ context, refresh, mutate }: {
       <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
         <Typography variant="h5" sx={{ flexGrow: 1 }}>Quest journal</Typography>
         <Chip size="small" label={context.characterName ?? 'Browse quest catalog'} />
-        {context.level !== undefined && <Chip size="small" variant="outlined" label={`Level ${context.level}`} />}
+        {context.level !== undefined && <Chip size="small" variant="outlined" label={`Level ${context.level}`}
+          data-testid="quest-journal-level" data-source={context.levelSource}
+          title={context.levelSource ? LEVEL_SOURCE[context.levelSource] : 'Character level'} />}
         {context.classes.map((name) => <Chip key={name} size="small" variant="outlined"
           label={context.inferredClasses?.includes(name) ? `${name} · inferred` : name} />)}
         <QuestRecovery characterId={context.characterId} characterName={context.characterName} characterServer={context.characterServer} refresh={refresh} />

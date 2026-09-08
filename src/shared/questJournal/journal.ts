@@ -27,6 +27,8 @@ export interface QuestJournalContext {
   characterName?: string
   characterServer?: string
   level?: number
+  /** Where the character level came from; log observations may predate the current session. */
+  levelSource?: 'live' | 'log' | 'manual'
   classes: string[]
   /** Display names inferred from gameplay; /who and user statements are not estimates. */
   inferredClasses?: string[]
