@@ -24,6 +24,14 @@ export const LEGENDS_PROFILE = {
   profileListFirst: 0x08,
   profileListNext: 0x18,
   classMask: 0x2748,
+  // Verified spellbook export, profile serializer and gem assignment paths for this build.
+  spellbook: 0xb0,
+  spellbookSlots: 0x460,
+  memorizedSpells: 0x23b0,
+  memorizedSpellSlots: 0x12,
+  spellEntryBytes: 8,
+  spellManagerRva: 0xf92118n,
+  maximumSpellId: 0x64,
   // Verified against the in-game Ak'Anon map: native X is /loc NS, native Y is /loc EW.
   // The map's axis swap and negation are applied later by mapFromLoc, once.
   ns: 0x74,

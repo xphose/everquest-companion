@@ -32,3 +32,21 @@ test('location protocol accepts complete class sets and rejects malformed option
     assert.equal(parseLocationReply({ id: 3, result: { state: 'live', location: { ...LOCATION, classes } } }), null)
   }
 })
+
+test('spellbook and gem protocol accepts complete bounded arrays including empty capacity', () => {
+  const memorizedSpells = Array.from({ length: 18 }, () => null as number | null)
+  memorizedSpells[0] = 94
+  memorizedSpells[17] = 17
+  const reply = { id: 4, result: { state: 'live', location: { ...LOCATION, spellbook: [17, 94], memorizedSpells } } }
+  assert.deepEqual(parseLocationReply(reply), reply)
+  assert.ok(parseLocationReply({ id: 4, result: { state: 'live', location: { ...LOCATION, spellbook: [] } } }))
+})
+
+test('spell protocol rejects malformed IDs, duplicates, unbounded arrays and sparse slots', () => {
+  for (const spellbook of [[0], [-1], [1.5], [NaN], [Infinity], [0x80000000], [17, 17], [null], ['17'], new Array(1), Array.from({ length: 1121 }, (_, i) => i + 1)]) {
+    assert.equal(parseLocationReply({ id: 4, result: { state: 'live', location: { ...LOCATION, spellbook } } }), null)
+  }
+  for (const memorizedSpells of [[], new Array(18), Array.from({ length: 17 }, () => null), Array.from({ length: 19 }, () => null), Array.from({ length: 18 }, () => -1)]) {
+    assert.equal(parseLocationReply({ id: 4, result: { state: 'live', location: { ...LOCATION, memorizedSpells } } }), null)
+  }
+})

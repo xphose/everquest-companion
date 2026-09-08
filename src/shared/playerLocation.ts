@@ -13,6 +13,10 @@ export interface PlayerLocation {
   level?: number
   /** Complete active class set, ordered by native class ID rather than loadout slot. */
   classes?: ClassAbbr[]
+  /** Complete unique owned spellbook IDs; excludes disciplines and item effects. */
+  spellbook?: number[]
+  /** Eighteen native gem slots in order; null is empty capacity, not proof a slot is unlocked. */
+  memorizedSpells?: (number | null)[]
   sampledAt: number
 }
 

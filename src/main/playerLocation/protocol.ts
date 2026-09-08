@@ -30,14 +30,33 @@ function validLevel(value: unknown): boolean {
 
 function validClasses(value: unknown): boolean {
   return Array.isArray(value) && value.length >= 2 && value.length <= 3 &&
-    value.every(isClassAbbr) && new Set(value).size === value.length
+    Array.from(value).every(isClassAbbr) && new Set(value).size === value.length
+}
+
+function validSpellId(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 0x7fffffff
+}
+
+function validSpellbook(value: unknown): boolean {
+  return Array.isArray(value) && value.length <= 1120 && Array.from(value).every(validSpellId) &&
+    new Set(value).size === value.length
+}
+
+function validMemorizedSpells(value: unknown): boolean {
+  return Array.isArray(value) && value.length === 18 && Array.from(value).every(id => id === null || validSpellId(id))
+}
+
+function validOptionalObservations(value: Record<string, unknown>): boolean {
+  return (!('level' in value) || validLevel(value.level)) &&
+    (!('classes' in value) || validClasses(value.classes)) &&
+    (!('spellbook' in value) || validSpellbook(value.spellbook)) &&
+    (!('memorizedSpells' in value) || validMemorizedSpells(value.memorizedSpells))
 }
 
 function validLocation(value: unknown): value is PlayerLocation {
   if (!record(value)) return false
   return typeof value.characterName === 'string' && typeof value.zone === 'string' &&
-    (!('level' in value) || validLevel(value.level)) &&
-    (!('classes' in value) || validClasses(value.classes)) &&
+    validOptionalObservations(value) &&
     ['ns', 'ew', 'z', 'heading', 'sampledAt'].every(key =>
       typeof value[key] === 'number' && Number.isFinite(value[key]))
 }
