@@ -3,8 +3,20 @@ import test from 'node:test'
 import { readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createMacroService } from '../src/main/macros/service.ts'
-import { worldKey } from '../src/main/macros/settings.ts'
+import { emptyMacroSaved, worldKey } from '../src/main/macros/settings.ts'
+import { readMacroModel } from '../src/main/macros/model.ts'
 import { DAMAGE, macroFixture, ORIGINAL_INI, STOPPED } from './macroServiceFixture.mts'
+
+test('macro context includes the exact fresh native character name for ordinary client targeting', async (t) => {
+  const f = await macroFixture(t)
+  const player = f.live()
+  if (player.state !== 'live') throw new Error('Expected live fixture.')
+  player.location.characterName = 'EXample'
+  f.setPlayer(player)
+  const model = await readMacroModel(f.deps, f.world, emptyMacroSaved())
+  assert.deepEqual(model.input?.player, { characterName: 'EXample', classes: ['MAG', 'SHM', 'ENC'], level: 10,
+    spellbook: [94], memorizedSpells: [94, ...Array<null>(17).fill(null)] })
+})
 
 test('disabled service does no background native work; query observes without installing recommendations', async (t) => {
   const fixture = await macroFixture(t)

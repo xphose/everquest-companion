@@ -57,3 +57,19 @@ wins. A full spell name can still be ambiguous when another memorized spell name
 it. A compiler using names must check that ambiguity against occupied slots 1 through 14.
 Use unquoted full names; quoted-name handling was not established, and these handlers do not
 strip quotes themselves. No game input or cast was executed during this verification.
+
+## `/target` self-targeting uses the actual player name
+
+The same executable's `/target` command table entry at RVA `0xdc1220` points to handler
+`0x24df10`. Its only special argument branch compares the localized string numbered 6632,
+which the installed `eqstr_us.txt` defines as `Group`, then parses a group slot number. Its
+usage string, numbered 13267, documents a name or a numbered group member.
+
+Otherwise the handler tokenizes the argument and passes it to name lookup `0x332c30`.
+That function first calls exact-name hash lookup `0x327940`, whose equality check reads the
+entity name at +`0xb8`; a later fallback searches name prefixes. There is no `myself` keyword
+branch. The string `Target myself` in the client string table is a key-binding label, not a
+`/target` argument. Therefore self-targeting macro steps must use the validated full local
+player name from the fresh observation. Missing or unsafe names cannot produce a ready
+self-targeting sequence. This verification read only static client code and strings; it did
+not execute a targeting command or enumerate live entities.
