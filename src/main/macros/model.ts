@@ -24,7 +24,9 @@ function completePlayer(player: PlayerLocationResult, name: string, now: number)
   const location = currentPlayerLocation(player, name, now)
   const classes = currentPlayerClasses(player, name, now)
   if (!location || !classes || !location.spellbook || !location.memorizedSpells) return undefined
-  return { classes, level: location.level, spellbook: location.spellbook, memorizedSpells: location.memorizedSpells }
+  const profile = { characterName: location.characterName, classes, level: location.level,
+    spellbook: location.spellbook, memorizedSpells: location.memorizedSpells }
+  return profile
 }
 
 export async function readMacroModel(deps: MacroServiceDeps, world: MacroWorld, saved: MacroSaved): Promise<MacroModel> {
