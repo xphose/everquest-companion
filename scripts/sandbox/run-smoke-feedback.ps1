@@ -65,6 +65,10 @@ param(
   [string]$ResultsDirectory,
   # Generate the local configuration without VM or cloud operations.
   [switch]$ConfigurationOnly,
+  # Explicit source: a local installer, or the configured project's published release.
+  [string]$InstallerPath,
+  [string]$ReleaseOwner = $env:EQC_RELEASE_OWNER,
+  [string]$ReleaseRepo = $env:EQC_RELEASE_REPO,
   # Minimize instead of parking on a second monitor, even if one is available.
   [switch]$Minimize,
   # Give up on the VM half after this long (download + install + submit + the telemetry dwell).
@@ -90,6 +94,8 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'sandbox-config.ps1')
 $configuration = New-SandboxConfiguration -Kind 'smoke-feedback' -RepositoryRoot $RepositoryRoot -ResultsDirectory $ResultsDirectory
 if ($ConfigurationOnly) { Write-Output $configuration.Wsb; return }
+. (Join-Path $PSScriptRoot 'smoke-source.ps1')
+$source = Get-SmokeSource -InstallerPath $InstallerPath -ReleaseOwner $ReleaseOwner -ReleaseRepo $ReleaseRepo
 . (Join-Path $PSScriptRoot 'sandbox-lifecycle.ps1')
 
 $repoRoot = $configuration.RepositoryRoot
@@ -128,8 +134,9 @@ if (Stop-Sandbox) { Write-Host 'pre-flight: closed a stale Windows Sandbox insta
 if (-not (Test-Path -LiteralPath $resultsDir)) { New-Item -ItemType Directory -Path $resultsDir | Out-Null }
 # Clear stale smoke artifacts ONLY - results/.gitkeep is tracked and the tier-2 harness's
 # result.txt lives here too; don't nuke the folder.
-Get-ChildItem -LiteralPath $resultsDir -File -Filter 'smoke-*' -Exclude '*.wsb' -Force -ErrorAction SilentlyContinue |
+Get-ChildItem -LiteralPath $resultsDir -File -Filter 'smoke-*' -Exclude '*.wsb', '*.exe' -Force -ErrorAction SilentlyContinue |
   ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -Confirm:$false }
+Write-SmokeSource -Source $source -ResultsDirectory $resultsDir
 
 # --- 2. The nonce + the booby-trapped log --------------------------------------------
 # Uppercase alphanumerics only: it is grepped by PowerShell, matched by a regex in the guest,

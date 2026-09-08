@@ -64,7 +64,7 @@ test('allowedUploadUrl refuses credentials, non-default ports, query and fragmen
   const { virtualHost, pathHost } = uploadEndpoints(BUCKET, REGION)
   // Parses with hostname `evil.com`; the host test alone would catch it, and we also refuse
   // userinfo outright so we never SEND one.
-  assert.equal(ok(`https://${virtualHost}@evil.com/`), null)
+  assert.equal(ok(`https:maintainer@example.invalid/`), null)
   assert.equal(ok(`https://user:pw@${virtualHost}/`), null)
   assert.equal(ok(`https://${virtualHost}:8443/`), null)
   assert.equal(ok(`https://${pathHost}:8443/${BUCKET}`), null)
@@ -150,38 +150,15 @@ test('a malformed bucket or region can never produce a match', () => {
 
 // ---- THE SHIPPED CONSTANTS ---------------------------------------------------------------
 //
-// This build is LIT (wave F2 filled the three constants in from `terraform output`), so the
-// old "ships dark" pins are gone. What replaces them is the property that actually matters and
-// that survives a redeploy: the compiled endpoint is https, on OUR api and OUR region, and the
-// bound `allowedUploadUrl` accepts our bucket and NOTHING else. The api id is deliberately not
-// pinned literally — re-applying the root mints a new one, and a test that fails on a redeploy
-// teaches people to edit tests.
-
-test('the compiled endpoint is https on our own API, in our own region', () => {
-  assert.equal(feedbackEndpointConfigured(), true)
-  const u = new URL(net.FEEDBACK_API_URL)
-  assert.equal(u.protocol, 'https:')
-  assert.match(u.hostname, /^[a-z0-9]+\.execute-api\.us-east-1\.amazonaws\.com$/)
-  assert.equal(u.pathname, '/v1/feedback')
-  assert.equal(u.username, '')
-  assert.equal(u.search, '')
-  assert.equal(net.FEEDBACK_S3_REGION, 'us-east-1')
-  assert.match(net.FEEDBACK_S3_BUCKET, /^eqcompanion-logs-[0-9a-f]+$/)
-})
-
-test('the BOUND allowedUploadUrl accepts our bucket and refuses every other host', () => {
-  const { virtualHost, pathHost } = uploadEndpoints(net.FEEDBACK_S3_BUCKET, net.FEEDBACK_S3_REGION)
-  assert.equal(allowedUploadUrl(`https://${virtualHost}/`), `https://${virtualHost}/`)
-  assert.equal(
-    allowedUploadUrl(`https://${pathHost}/${net.FEEDBACK_S3_BUCKET}`),
-    `https://${pathHost}/${net.FEEDBACK_S3_BUCKET}`
-  )
-  // The suffix attack, against the REAL name this build ships with.
-  assert.equal(allowedUploadUrl(`https://${virtualHost}.evil.com/`), null)
-  assert.equal(allowedUploadUrl('https://eqcompanion-logs-9f3a2c17.s3.us-east-1.amazonaws.com/'), null)
+// Fork builds have no network destination unless the builder supplies one explicitly.
+test('unconfigured feedback is dark and its bound upload validator refuses all hosts', () => {
+  assert.equal(feedbackEndpointConfigured(), false)
+  assert.equal(net.FEEDBACK_API_URL, '')
+  assert.equal(net.FEEDBACK_S3_BUCKET, '')
+  assert.equal(net.FEEDBACK_S3_REGION, '')
+  assert.equal(allowedUploadUrl('https://sample-logs.s3.us-east-1.amazonaws.com/'), null)
   assert.equal(allowedUploadUrl('http://127.0.0.1:8477/devstack/upload/x'), null)
 })
-
 test('net.ts exposes NO endpoint override — an overridable ingest URL is an exfil primitive', () => {
   // §6.2 rejects a user-configurable endpoint explicitly. This is the tripwire that makes the
   // rejection structural: adding a setter/override to this module fails the suite.
@@ -189,7 +166,7 @@ test('net.ts exposes NO endpoint override — an overridable ingest URL is an ex
   assert.deepEqual(setters, [])
   // And the constants are constants: the module exports no mutable binding for them.
   assert.equal(typeof net.FEEDBACK_API_URL, 'string')
-  assert.equal(net.FEEDBACK_S3_REGION, 'us-east-1')
+  assert.equal(net.FEEDBACK_S3_REGION, '')
 })
 
 // ---- THE DEV GATE (scripts/dev-feedback-server.mts) --------------------------------------
@@ -326,7 +303,7 @@ test('IN A REAL PROCESS: setting EQ_FEEDBACK_URL changes nothing when the gate i
 //      a later refactor drops the call the way the first wave did.
 
 test('queueFlushEnabled: the drain runs only with an endpoint, and never under EQ_E2E', () => {
-  const url = 'https://pcy0z3xjp9.execute-api.us-east-1.amazonaws.com/v1/feedback'
+  const url = 'https://feedback.example.invalid/v1/feedback'
   assert.equal(net.queueFlushEnabled(false, url), true)
   // A DARK build (§6.2: the constant ships empty until the stack is deployed) has nowhere to
   // send, so it must not spin timers that could only ever no-op.

@@ -7,10 +7,9 @@
  *     a genuinely fresh userData.
  *   - "Opt out persists" is a claim about a FILE surviving a process, so it is asserted the
  *     only way that means anything: two launches against the same userData dir.
- *   - "this run sends nothing" is now a property of the HARNESS rather than of the build: the
- *     endpoint is lit (`endpointConfigured:true`), and `EQ_E2E=1` is what keeps this spec
- *     silent. The running app is where that is observable end to end — a batch was never sent,
- *     so the pane says "Nothing has been sent yet" and `lastBatch` is null.
+ *   - "this run sends nothing" holds for dark builds and configured releases: `EQ_E2E=1`
+ *     keeps this spec silent independently of its build-time endpoint. The pane explains
+ *     whether an endpoint exists, and `lastBatch` remains null in both cases.
  *   - "the schema cannot carry a name" is asserted against the REAL buffer this session filled
  *     by switching tabs, not against a constructed sample.
  *
@@ -335,13 +334,11 @@ async function stepPane(page: Page): Promise<void> {
   const off = await page.evaluate((sel) => (document.querySelector(sel) as HTMLInputElement | null)?.checked, SWITCH)
   check('the switch reflects the stored answer (off)', off === false, String(off))
 
-  // THE LIT BUILD, as the user meets it: not an empty box to interpret, a sentence. This run
-  // never sent (EQ_E2E=1 shuts the gate), so the pane must say exactly that — and NOT the
-  // dark-build sentence, which stopped being true when the endpoint was compiled in.
+  const configured = (await payload(page)).endpointConfigured
   const empty = (await textOf(page, '[data-testid="telemetry-last-batch-empty"]')).replace(/\s+/g, ' ')
   check(
-    'the pane says, in words, that nothing has been sent yet from this install',
-    /nothing has been sent yet/i.test(empty) && !/no analytics endpoint compiled in/i.test(empty),
+    'the pane accurately explains whether this build has an analytics destination',
+    configured ? /nothing has been sent yet/i.test(empty) : /no analytics endpoint compiled in/i.test(empty),
     empty.slice(0, 120)
   )
 }
@@ -451,15 +448,7 @@ async function stepCollects(page: Page): Promise<void> {
     [...new Set(p.buffered.map((r) => String(r.ev.t)))].join(', ')
   )
 
-  // THE LIT BUILD, AND THE E2E LAW TOGETHER: the endpoint IS compiled in (that is the whole
-  // change this spec was updated for) and this run STILL sent nothing, because `EQ_E2E=1` shuts
-  // the flush gate on its own (plan T7). A `lastBatch` here would mean the harness had reached
-  // the live ingest API behind the test's back.
-  check(
-    'the running build HAS a telemetry endpoint — the client is lit',
-    p.endpointConfigured === true,
-    `endpointConfigured=${String(p.endpointConfigured)}`
-  )
+  // Configured and dark builds both remain offline under the E2E guard.
   check(
     '…and this e2e run still sent nothing: no batch ever left the harness',
     p.lastBatch === null,

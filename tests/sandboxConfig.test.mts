@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,7 +19,8 @@ function powershell(source: string, values: Record<string, string>, cwd: string)
     Buffer.from(`$ErrorActionPreference = 'Stop'; ${source}`, 'utf16le').toString('base64')
   ], { encoding: 'utf8', cwd, env: { ...process.env, SANDBOX_SCRIPTS: sandbox, ...values } })
   // Do not expose a local account path if configuration fails.
-  assert.equal(result.status, 0, 'PowerShell configuration verification must succeed')
+  const errorId = /<S S="Error">([^<]*?)(?:_x000D_|<)/.exec(result.stderr)?.[1] ?? ''
+  assert.equal(result.status, 0, `PowerShell configuration verification must succeed: ${errorId.replace(/[A-Z]:\\[^ ]*/gi, '<path>')}`)
   return result.stdout.trim()
 }
 
@@ -103,5 +105,31 @@ test('sandbox scripts parse and reject a drive root results directory before wri
       'verified'
     `, { CONFIG_REPO: checkout }, directory)
     assert.equal(verdict, 'verified')
+  })
+})
+
+test('smoke installer sources are explicit and local staging preserves exact bytes and checksum', { skip: !windows }, () => {
+  fixture((directory) => {
+    const installer = join(directory, "Example & Setup' [test].exe")
+    writeFileSync(installer, 'inert synthetic installer bytes; never execute')
+    const verdict = powershell(`
+      . (Join-Path $env:SANDBOX_SCRIPTS 'smoke-source.ps1')
+      try { Get-SmokeSource; throw 'Implicit source accepted' }
+      catch { if ($_.Exception.Message -notlike 'Supply InstallerPath*') { throw } }
+      $release = Get-SmokeSource -ReleaseOwner example-project -ReleaseRepo companion
+      if ($release.ReleaseBase -ne 'https://github.com/example-project/companion/releases/latest/download') { throw 'Wrong release' }
+      try { Get-SmokeSource -ReleaseOwner '../invalid' -ReleaseRepo companion; throw 'Invalid source accepted' }
+      catch { if ($_.Exception.Message -notlike 'Supply InstallerPath*') { throw } }
+      $local = Get-SmokeSource -InstallerPath $env:CONFIG_INSTALLER
+      Write-SmokeSource -Source $local -ResultsDirectory $env:CONFIG_RESULTS
+      $config = Get-Content -LiteralPath (Join-Path $env:CONFIG_RESULTS 'smoke-source.json') -Raw | ConvertFrom-Json
+      if ($config.mode -ne 'local' -or $config.releaseBase -ne '') { throw 'Local source changed' }
+      if ($config.sha256 -cne $env:EXPECTED_HASH) { throw 'Staged installer checksum changed' }
+      'verified'
+    `, { CONFIG_INSTALLER: installer, CONFIG_RESULTS: directory,
+      EXPECTED_HASH: createHash('sha256').update(readFileSync(installer)).digest('hex') }, directory)
+    assert.equal(verdict, 'verified')
+    assert.equal(readFileSync(join(directory, 'installer-source.exe'), 'utf8'), readFileSync(installer, 'utf8'))
+    assert.doesNotMatch(readFileSync(join(directory, 'smoke-source.json'), 'utf8'), /InstallerPath|[A-Z]:\\/)
   })
 })

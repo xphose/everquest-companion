@@ -17,12 +17,10 @@
 # THE AWS PROVIDER IS PINNED TO 6.x BECAUSE `aws_dsql_cluster` NEEDS IT. Do not
 # relax it back to 5.x without checking that the resource still resolves.
 #
-# STATE BACKEND. Bootstrapped by hand in the sub-account before the first init
-# (bucket + lock table; see README.md). The values below are physical names, not
-# secrets: no account id and no profile name appears in any committed file. The
-# deploy profile is supplied at run time, e.g.
+# STATE BACKEND. Supply private physical resource names through an ignored backend
+# configuration or init flags, for example:
 #
-#     AWS_PROFILE=<your-profile> terraform init
+#     terraform init -backend-config=backend.local.hcl
 #
 # LOCAL/CI VALIDATION never touches the backend:
 #
@@ -52,11 +50,7 @@ terraform {
   # (one commit that moves the pin, the backend and the README bootstrap
   # together), not a drive-by edit inside a store migration.
   backend "s3" {
-    bucket         = "eqcompanion-tf-state-dae027bf"
-    key            = "eqcompanion/feedback"
-    region         = "us-east-1"
-    dynamodb_table = "eqcompanion-tf-lock"
-    encrypt        = true
+    encrypt = true
   }
 }
 

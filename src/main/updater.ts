@@ -141,6 +141,8 @@
 
 import { app, ipcMain, powerMonitor, type BrowserWindow } from 'electron'
 import electronUpdater from 'electron-updater'
+import { updatesConfigured } from '../shared/deployment'
+import { DEPLOYMENT } from './deployment'
 import { IPC } from '../shared/ipc'
 import type { UpdateChannel, UpdateStatus } from '../shared/types'
 import {
@@ -581,7 +583,7 @@ export function initUpdater(
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion())
   ipcMain.handle(IPC.getUpdateStatus, () => lastStatus)
 
-  if (!app.isPackaged) {
+  if (!app.isPackaged || !updatesConfigured(DEPLOYMENT)) {
     // Say so in the status itself: without the flag the chip renders "not checked yet"
     // forever (dev never checks), which reads as a broken updater rather than an absent one.
     // No checkedAt — a stamp inherited from the store would claim a check this process
@@ -589,7 +591,7 @@ export function initUpdater(
     lastStatus = { state: 'idle', disabled: true }
     ipcMain.handle(IPC.installUpdate, noInstallInDev)
     ipcMain.handle(IPC.checkForUpdates, () => lastStatus)
-    logInfo('[everquest-companion] Auto-update disabled (dev / not packaged).')
+    logInfo('[everquest-companion] Auto-update disabled (development or deployment not configured).')
     return
   }
 
@@ -630,6 +632,7 @@ export function initUpdater(
   // reads. Assigned HERE rather than above the dev guard because that guard is what keeps the
   // machinery off in dev: nothing runs to narrate.
   autoUpdater.logger = LIBRARY_LOGGER
+  autoUpdater.setFeedURL({ provider: 'github', owner: DEPLOYMENT.releaseOwner, repo: DEPLOYMENT.releaseRepo })
   autoUpdater.autoDownload = false
   // THE load-bearing flag for "transparent": a staged update is applied when the
   // app quits, with no window, no prompt and no UAC (it spawns `--updated /S`).

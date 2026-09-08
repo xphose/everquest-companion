@@ -95,6 +95,12 @@ Generated `*.generated.wsb` files contain resolved local paths and must remain u
 The feedback smoke test is still an explicit post-release operation against the configured
 live service; configuration-only verification does not run it.
 
+The feedback wrapper requires an explicit installer source: `-InstallerPath <local.exe>`
+or `-ReleaseOwner <owner> -ReleaseRepo <repo>`. The latter also reads `EQC_RELEASE_OWNER`
+and `EQC_RELEASE_REPO` from the build environment. A local installer is staged with a SHA-256
+checksum; a release download still verifies its published `SHA256SUMS.txt` before installation.
+The installer must itself have the intended feedback/telemetry deployment compiled in.
+
 ### Windows containers — file-level verification (`scripts/docker/`)
 
 `Dockerfile` (Server Core) silent-installs and asserts the app exe + uninstaller are
