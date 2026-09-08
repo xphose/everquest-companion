@@ -130,3 +130,15 @@ test('a proposed assignment does not create installable commands until the actua
   assert.deepEqual(recipe(config, 'damage', [1]).lines, ['/pause 22, /cast 3'])
   assert.equal(plan(config, [recipe(config, 'damage', [1])]).state, 'ready')
 })
+test('loadout messages use singular and plural spell and slot counts', () => {
+  const config = input([1, 2])
+  assert.match(plan(config, [recipe(config, 'damage', [1])]).message, /Memorize 1 spell as shown/u)
+  assert.match(plan(config, [recipe(config, 'damage', [1, 2])]).message, /Memorize 2 spells as shown/u)
+  config.player.unlockedSpellSlots = [1]
+  assert.equal(plan(config, [recipe(config, 'damage', [1, 2])]).message,
+    'The selected macros need 2 distinct spells but only 1 castable slot is unlocked. 1 additional slot is needed.')
+  config.player.unlockedSpellSlots = []
+  assert.equal(plan(config, [recipe(config, 'damage', [1])]).message,
+    'The selected macros need 1 distinct spell but only 0 castable slots are unlocked. 1 additional slot is needed.')
+  assert.match(plan(config, [recipe(config, 'damage', [1, 2])]).message, /2 additional slots are needed\./u)
+})
