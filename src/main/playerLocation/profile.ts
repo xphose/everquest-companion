@@ -32,6 +32,12 @@ export const LEGENDS_PROFILE = {
   spellEntryBytes: 8,
   spellManagerRva: 0xf92118n,
   maximumSpellId: 0x64,
+  // Native current-profile effects and both player buff windows; see docs/research/native-player-buffs.md.
+  effectsHeader: 0xa0,
+  effectsCount: 93,
+  effectBytes: 0xa0,
+  effectSpellId: 0x6c,
+  effectRemainingTicks: 0x78,
   // Actual gem entitlement: the same effect-cache check gates UI visibility and memorization.
   characterZone: 0x2810,
   characterZoneDescriptorRva: 0x9a8970n,

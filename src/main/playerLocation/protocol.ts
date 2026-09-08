@@ -1,5 +1,6 @@
 import type { PlayerLocation, PlayerLocationResult } from '../../shared/playerLocation'
 import { isClassAbbr } from '../../shared/classCombo'
+import { isPlayerActiveBuffs } from '../../shared/playerBuffs'
 
 export const LOCATION_UNAVAILABLE: PlayerLocationResult = {
   state: 'unavailable', reason: 'The game location is temporarily unavailable. The game may be loading or closing.'
@@ -56,7 +57,8 @@ function validOptionalObservations(value: Record<string, unknown>): boolean {
     (!('classes' in value) || validClasses(value.classes)) &&
     (!('spellbook' in value) || validSpellbook(value.spellbook)) &&
     (!('memorizedSpells' in value) || validMemorizedSpells(value.memorizedSpells)) &&
-    (!('unlockedSpellSlots' in value) || validUnlockedSlots(value.unlockedSpellSlots))
+    (!('unlockedSpellSlots' in value) || validUnlockedSlots(value.unlockedSpellSlots)) &&
+    (!('activeBuffs' in value) || isPlayerActiveBuffs(value.activeBuffs))
 }
 
 function validLocation(value: unknown): value is PlayerLocation {

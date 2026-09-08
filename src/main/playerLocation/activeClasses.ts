@@ -3,6 +3,7 @@ import type { PlayerLocation } from '../../shared/playerLocation'
 import { LEGENDS_PROFILE as P, exactRead, pointerAt, readableAddress, type MemoryRead } from './profile'
 import { readProfileSpells } from './spells'
 import { observeUnlockedSpellSlots } from './unlockedSpells'
+import { readProfileBuffs } from './buffs'
 
 // Native IDs 1..16, independently confirmed by this build's class-name table. Bit zero is unused.
 const CLASS_IDS: readonly ClassAbbr[] = [
@@ -74,7 +75,7 @@ function sameProfile(initial: ActiveProfile, final: ActiveProfile | null): boole
  * It is not the learned-class table or a saved loadout. The chain is bounded and resolved twice;
  * any loading/swap race omits classes while the independent location read can remain useful.
  */
-export function readActivePlayerProfile(read: MemoryRead, base: bigint): Pick<PlayerLocation, 'classes' | 'spellbook' | 'memorizedSpells' | 'unlockedSpellSlots'> {
+export function readActivePlayerProfile(read: MemoryRead, base: bigint): Pick<PlayerLocation, 'classes' | 'spellbook' | 'memorizedSpells' | 'unlockedSpellSlots' | 'activeBuffs'> {
   try {
     const initial = activeProfile(read, base)
     if (!initial) return {}
@@ -82,9 +83,10 @@ export function readActivePlayerProfile(read: MemoryRead, base: bigint): Pick<Pl
     if (!classes) return {}
     const slots = observeUnlockedSpellSlots(read, base, initial.owner, initial.profile)
     const spells = readProfileSpells(read, base, initial.profile)
+    const buffs = readProfileBuffs(read, base, initial.profile)
     const entitlement = slots?.unchanged() ? { unlockedSpellSlots: slots.slots } : {}
     if (!sameProfile(initial, activeProfile(read, base))) return {}
-    return pointerAt(read, base + P.characterRva) === initial.owner ? { classes, ...spells, ...entitlement } : {}
+    return pointerAt(read, base + P.characterRva) === initial.owner ? { classes, ...spells, ...entitlement, ...buffs } : {}
   } catch {
     return {}
   }
