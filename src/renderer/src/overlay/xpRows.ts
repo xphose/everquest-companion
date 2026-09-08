@@ -370,6 +370,8 @@ export interface XpRowsArgs {
   visible: XpRowId[] | undefined
   /** `CharacterSnap.level` — the stated level fact. Absent ⇒ the ding tail stands in. */
   level?: LevelStatement | null
+  /** Fresh, identity-checked native level; used only for the current display and projection gate. */
+  liveLevel?: number
   /** WHICH HOUR the rates are per (JOS-288). Absent ⇒ `RATE_BASIS_DEFAULT`, which is `elapsed`. */
   basis?: RateBasis
 }
@@ -380,7 +382,7 @@ export interface XpRowsArgs {
  * measured over a different stretch than the caption claims.
  */
 export function xpOverlayView(args: XpRowsArgs): XpOverlayView {
-  const { snap, loot, slice, visible, level } = args
+  const { snap, loot, slice, visible } = args
   // BOTH halves of the zone membership travel (JOS-130 / JOS-291) — the tier key is null unless
   // the window is on `this tier`, so the default is the read this window has always given.
   const stats = rangeStats({
@@ -396,17 +398,37 @@ export function xpOverlayView(args: XpRowsArgs): XpOverlayView {
   const basis = basisRead(args.basis ?? RATE_BASIS_DEFAULT, stats)
   const rows: XpOverlayRow[] = []
   if (xpRowVisible('xp', visible)) rows.push(...paceRows(stats, capped, basis))
-  if (xpRowVisible('eta', visible)) rows.push(etaRow(snap, stats, level, basis))
+  if (xpRowVisible('eta', visible)) rows.push(currentEtaRow(args, stats, basis))
   if (xpRowVisible('motes', visible)) rows.push(...moteRows(loot, slice, stats, basis))
-  const read = currentLevelRead(level, snap)
   return {
     rows,
     span: basisSpanText(basis),
     basis: basis.basis,
     measurable: basis.measurable,
-    level: read?.level ?? null,
-    levelCue: read?.cue ?? '',
-    levelTitle: read?.title ?? '',
+    ...currentLevelHeader(args),
     atCap: capped
   }
+}
+
+function currentLevelHeader(args: XpRowsArgs): Pick<XpOverlayView, 'level' | 'levelCue' | 'levelTitle'> {
+  const live = validLiveLevel(args.liveLevel)
+  if (live !== null) return { level: live, levelCue: 'Live', levelTitle: 'Current level read from the active game character.' }
+  const read = currentLevelRead(args.level, args.snap)
+  return { level: read?.level ?? null, levelCue: read?.cue ?? '', levelTitle: read?.title ?? '' }
+}
+
+function validLiveLevel(level: number | undefined): number | null {
+  return level !== undefined && Number.isInteger(level) && level > 0 && level <= 255 ? level : null
+}
+
+/** A native observation has no XP fraction or timestamped ding. Never synthesize either. */
+function currentEtaRow(args: XpRowsArgs, stats: RangeStats, basis: BasisRead): XpOverlayRow {
+  const live = validLiveLevel(args.liveLevel)
+  const stated = currentLevelRead(args.level, args.snap)?.level
+  const anchor = args.snap.levelValue.at(-1)
+  if (live !== null && (live !== stated || live !== anchor)) {
+    return { id: 'eta', row: 'eta', label: 'Next level', value: NONE, unit: '',
+      detail: `awaiting progress at lvl ${live}`, inferred: false }
+  }
+  return etaRow(args.snap, stats, args.level, basis)
 }
