@@ -8,7 +8,7 @@ import type { PlayerLocationReader } from './client'
 
 let reader: PlayerLocationReader | undefined
 
-/** Maps and journal share one worker. No native polling runs when neither view requests data. */
+/** Maps, Gear, and journal share one worker. Native reads run only when a mounted view asks. */
 export async function readActivePlayer(): Promise<PlayerLocationResult> {
   if (!reader) {
     reader = createPlayerLocationReader()

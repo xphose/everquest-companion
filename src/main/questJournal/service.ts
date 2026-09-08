@@ -1,6 +1,7 @@
 import type { CharacterRef, CharacterSnap, LootEvent, ProgressState, TurnInEvent } from '../../shared/types'
 import type { ComboSnap } from '../../shared/classCombo'
 import type { PlayerLocationResult } from '../../shared/playerLocation'
+import { currentPlayerClasses } from '../../shared/currentPlayer'
 import type { QuestJournalCatalogEntry } from '../../shared/questJournal/catalog'
 import type {
   QuestJournalContext, QuestJournalDetailRequest, QuestJournalDetailResult,
@@ -141,6 +142,15 @@ function completedSky(stored: ProgressState): Set<string> {
   return new Set([...keys].map((key) => `posky:${key}`))
 }
 
+function applyLiveProfile(observed: ObservationSet, player: PlayerLocationResult | undefined, name: string | undefined, now: number): void {
+  observed.liveLevel = liveJournalLevel(player, name, now)
+  const classes = currentPlayerClasses(player, name, now)
+  if (classes) {
+    observed.classes = classes.map(classDisplayName)
+    observed.inferredClasses = []
+  }
+}
+
 async function readModel(deps: JournalServiceDeps): Promise<{ input: JournalModelInput; world: JournalWorld }> {
   const world = deps.world()
   const [observed, player] = await Promise.all([
@@ -148,7 +158,7 @@ async function readModel(deps: JournalServiceDeps): Promise<{ input: JournalMode
     world.characterId ? deps.livePlayer?.().catch(() => undefined) : undefined
   ])
   assertCurrent(deps, world)
-  observed.liveLevel = liveJournalLevel(player, world.character?.name, deps.now())
+  applyLiveProfile(observed, player, world.character?.name, deps.now())
   const stored = world.characterId ? deps.getProgress(world.characterId) : { inventory: {}, completedQuests: [] }
   const files = deps.files(world.character)
   const context: QuestJournalContext = {

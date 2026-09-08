@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import type { ComboSnap, ComboSlot } from '../src/shared/classCombo'
 import type { ProgressState } from '../src/shared/types'
+import type { PlayerLocationResult } from '../src/shared/playerLocation'
 import { createQuestJournalService } from '../src/main/questJournal/service'
 import { interval, slot } from './comboFixtures.mjs'
 
@@ -10,10 +11,12 @@ import { interval, slot } from './comboFixtures.mjs'
 function harness(slots: ComboSlot[]) {
   let stored: ProgressState = { inventory: {}, completedQuests: [] }
   let combo: ComboSnap = { ready: true, intervals: [], current: interval('ci1', 1, null, { slots }) }
+  let native: PlayerLocationResult = { state: 'unavailable', reason: 'not running' }
   const character = { name: 'Ada', server: 'test', logPath: 'eqlog_Ada_test.txt' }
   const service = createQuestJournalService({
     world: () => ({ characterId: 'Ada@test', character, token: '1:1', readiness: 'ready' }),
     catalog: () => [], now: () => 100,
+    livePlayer: async () => native,
     files: () => ({ inventoryStatus: { state: 'missing' }, achievementsStatus: { state: 'missing' }, inventory: null, claims: [], worn: [] }),
     getProgress: () => stored, setProgress: (_id, value) => { stored = value },
     snapshot: async (module) => {
@@ -23,6 +26,7 @@ function harness(slots: ComboSlot[]) {
     }
   })
   return { service, context: async () => (await service.query({})).context,
+    setNative: (next: PlayerLocationResult) => { native = next },
     setSlots: (next: ComboSlot[]) => { combo = { ...combo, current: interval('ci2', 2, null, { slots: next }) } } }
 }
 
@@ -33,6 +37,34 @@ test('journal automatically includes resolved gameplay classes and labels only i
   assert.deepEqual(context.inferredClasses, context.classes)
   assert.equal(context.profileSource, 'detected')
   assert.equal(context.level, 15)
+})
+
+function nativeClasses(classes: string[], changes = {}): PlayerLocationResult {
+  return { state: 'live', location: { characterName: 'Ada', zone: 'qeynos2', ns: 1, ew: 2, z: 3,
+    heading: 0, sampledAt: 100, ...{ classes }, ...changes } }
+}
+
+test('journal current classes prefer the live complete selection while preserving manual corrections', async () => {
+  const h = harness([slot(['MAG']), slot(['SHM'])])
+  h.setNative(nativeClasses(['MAG', 'SHM', 'ENC']))
+  assert.deepEqual((await h.context()).classes, ['Magician', 'Shaman', 'Enchanter'])
+  assert.deepEqual((await h.context()).inferredClasses, [])
+  h.setNative(nativeClasses(['PAL', 'MNK', 'ENC']))
+  assert.deepEqual((await h.context()).classes, ['Paladin', 'Monk', 'Enchanter'])
+  assert.equal((await h.service.mutate({ characterId: 'Ada@test', action: 'profile', classes: ['WIZ'] })).ok, true)
+  assert.deepEqual((await h.context()).classes, ['Wizard'])
+  assert.equal((await h.service.mutate({ characterId: 'Ada@test', action: 'profile', classes: [] })).ok, true)
+  assert.deepEqual((await h.context()).classes, ['Paladin', 'Monk', 'Enchanter'])
+})
+
+test('journal falls back to log classes when native observations are stale, invalid, or for another character', async () => {
+  const h = harness([slot(['MAG']), slot(['SHM'])])
+  for (const sample of [nativeClasses(['ENC', 'WIZ'], { characterName: 'Bob' }), nativeClasses(['ENC', 'WIZ'], { sampledAt: -2000 }),
+    nativeClasses(['ENC', 'WIZ'], { sampledAt: 101 }), nativeClasses(['ENC', 'unknown']), { state: 'unavailable', reason: 'loading' } as const]) {
+    h.setNative(sample)
+    assert.deepEqual((await h.context()).classes, ['Magician', 'Shaman'])
+    assert.deepEqual((await h.context()).inferredClasses, ['Magician', 'Shaman'])
+  }
 })
 
 test('who and user class statements stay authoritative in a mixed profile', async () => {

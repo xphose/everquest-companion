@@ -90,6 +90,7 @@ function ToggleChip({
       size="small"
       label={label}
       data-testid={testId}
+      aria-pressed={on}
       title={hint}
       color={on ? 'primary' : 'default'}
       variant={on ? 'filled' : 'outlined'}
@@ -169,6 +170,22 @@ function SelectRow({ filters, setFilters, visible }: Pick<GearFilterBarProps, 'f
   )
 }
 
+function ClassControls({ classes }: Pick<GearFilterBarProps, 'classes'>): JSX.Element {
+  return <>
+    <ChipMultiSelect options={CLASS_ABBRS} value={classes.classes} onChange={classes.set}
+      label="Classes" placeholder="every class" optionLabel={classDisplayName} minWidth={190} testId="gear-classes" />
+    <ToggleChip label="Auto classes" testId="gear-auto-classes" on={classes.following}
+      onToggle={classes.toggleFollowing}
+      hint="Follow your current character's classes automatically. Choosing classes by hand switches to a manual browsing filter." />
+    {classes.offer !== null && <Chip size="small" color="warning" variant="outlined"
+      label={`detected: ${classes.offer.map(classDisplayName).join(', ')}`} data-testid="gear-class-offer"
+      title={classes.source === 'live'
+        ? 'Your current character selection. Click to follow class changes automatically.'
+        : 'Classes detected from your log. Click to follow class changes automatically.'}
+      onClick={classes.adopt} sx={{ flexShrink: 0 }} />}
+  </>
+}
+
 /** WHICH ITEMS: name, slot, classes, effect kind, era. Search is always drawn — see the header. */
 function IdentityRow({ filters, setFilters, text, setText, classes, visible }: Omit<GearFilterBarProps, 'upgrade'>): JSX.Element {
   return (
@@ -188,18 +205,7 @@ function IdentityRow({ filters, setFilters, text, setText, classes, visible }: O
           the same one the Sky tracker and the exaltation board use for exactly this question.
           SINCE JOS-302 IT NARROWS (see the header): no companion toggle, no chip on the rows it
           removes. The placeholder is what says an empty pick is no filter at all. */}
-      {visible.has('classes') && (
-        <ChipMultiSelect
-          options={CLASS_ABBRS}
-          value={classes.classes}
-          onChange={classes.set}
-          label="Classes"
-          placeholder="every class"
-          optionLabel={classDisplayName}
-          minWidth={190}
-          testId="gear-classes"
-        />
-      )}
+      {visible.has('classes') && <ClassControls classes={classes} />}
 
       {visible.has('era') && (
         <ToggleChip
@@ -225,18 +231,6 @@ function IdentityRow({ filters, setFilters, text, setText, classes, visible }: O
         />
       )}
 
-      {visible.has('classes') && classes.offer !== null && (
-        <Chip
-          size="small"
-          color="warning"
-          variant="outlined"
-          label={`detected: ${classes.offer.map(classDisplayName).join(', ')}`}
-          data-testid="gear-class-offer"
-          title="What the app currently infers you are running. Click to read the table for it."
-          onClick={classes.adopt}
-          sx={{ flexShrink: 0 }}
-        />
-      )}
     </Stack>
   )
 }
