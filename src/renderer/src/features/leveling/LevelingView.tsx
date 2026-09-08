@@ -5,7 +5,8 @@ import { aaPace, type AaPace } from '@shared/aaPace'
 // "What level am I" is the STATED fact now (JOS-192) — the later of your last ding and your own
 // `/who` row — not the tail of the dings. `peakLevel`/`swapCount` still read the ding series,
 // because those two really are questions about the level-up record.
-import { useStatedLevel } from './useStatedLevel'
+import { useCurrentLevelingProfile } from './useCurrentLevelingProfile'
+import { LevelingCurrentClasses } from './currentLevelingProfile'
 import { useModule } from '../../lib/useModule'
 import { peakLevel, swapCount, type LevelSegment } from './levelSeries'
 // Every fold over the `leveling` snapshot — see that file's header for why they left this one.
@@ -480,7 +481,8 @@ export default function LevelingView({
   // The THIRD module, through its own hook: `character`, for the stated level fact (JOS-192). It
   // is the only one carrying your own `/who` row's number, which is what corrects the level after
   // a loadout swap the log never announced.
-  const stated = useStatedLevel(prog)
+  const current = useCurrentLevelingProfile(prog)
+  const stated = current.level
 
   // EVERY FOLD OVER THE `leveling` SNAPSHOT, ONCE, in its own file (useLevelingSeries.ts) — the
   // sorted series, the segments, the cumulative AA curve, the uncut feed, the bounds' extra
@@ -531,7 +533,7 @@ export default function LevelingView({
   // THE SECOND REASON THE RIGHT COLUMN EXISTS (JOS-445) — one gate, two placements, the `chartedOf`
   // arrangement: the panel decides whether it can say anything and the column asks the same
   // question before drawing a band around it.
-  const bestSpells = useBestSpellsVisible()
+  const bestSpells = useBestSpellsVisible() || Boolean(current.classes)
   // One props object, two placements (see both call sites): the panel is the same surface in the
   // charted and the chart-less state, and spelling its props twice is how they drift.
   //
@@ -558,7 +560,8 @@ export default function LevelingView({
     // view now takes its honest height and `[data-testid="app-content"]` — the app shell's
     // `overflow: auto` box — scrolls it, which is the SAME rule as before read the other way
     // round: there is exactly one scroller between a panel and the window, and it is not here.
-    <Stack spacing={2} data-testid="leveling-view">
+    <LevelingCurrentClasses.Provider value={current.classes}>
+    <Stack spacing={2} data-testid="leveling-view" data-level-source={stated.cue === 'Live' ? 'live' : 'log'}>
       {/* THE FOUR HEROES DO NOT FOLLOW THE SCOPE, and that is a decision rather than an
           omission (JOS-75). Character level is your level RIGHT NOW — a level "as of an hour
           ago" is a different fact wearing this one's label. The three AA figures are the
@@ -657,5 +660,6 @@ export default function LevelingView({
         />
       </Stack>
     </Stack>
+    </LevelingCurrentClasses.Provider>
   )
 }

@@ -48,7 +48,7 @@
 // and pulses its edge for two seconds on arrival — on EVERY link, including a repeat of the same
 // level, and on no plain tab switch at all.
 
-import { type JSX, useMemo, useState } from 'react'
+import { type JSX, useContext, useMemo, useState } from 'react'
 import { Box, Paper, Stack, Typography, Chip } from '@mui/material'
 import { comboClassSet, unlocksAtLevel } from '@shared/levelUnlocks'
 import { tokenizeSpellQuery } from '@shared/spellSearch'
@@ -61,6 +61,7 @@ import { UnlockList } from './UnlockList'
 import { UnlockSearchField, UnlockSearchResultsList } from './NewAtLevelSearch'
 import { LANDING_PULSE_SX, useFocusLanding } from './useFocusLanding'
 import { useCurrentComboClasses, useLevelUnlocks } from './useLevelUnlocks'
+import { LevelingCurrentClasses } from './currentLevelingProfile'
 import { useSpellSets } from './useSpellSets'
 // THE LEVEL IS THE TAB'S SINCE JOS-445, not this panel's: the best-spells readout in the other
 // column reads the same number. The STEPPER became shared too (owner ask 2026-08-23) — one
@@ -132,6 +133,7 @@ export function NewAtLevelPanel({
   const { level, picked, pick: onPick } = viewed
   const data = useLevelUnlocks()
   const combo = useCurrentComboClasses()
+  const live = useContext(LevelingCurrentClasses)
   // The live spell bar (JOS-391) — read here rather than inside the row so one subscription
   // serves both lists, and so a list with no spell rows costs nothing.
   const sets = useSpellSets()
@@ -222,7 +224,8 @@ export function NewAtLevelPanel({
         )}
         <Box sx={{ flexGrow: 1 }} />
         <ComboChips classes={classes} resolved={resolved} ambiguous={combo.ambiguous} />
-        {known && current && <ProvenanceChip interval={current} />}
+        {live ? <Chip size="small" label="Live" variant="outlined" sx={{ height: 18, fontSize: 10 }} />
+          : known && current && <ProvenanceChip interval={current} />}
       </Stack>
 
       <UnlockSearchField query={query} onChange={setQuery} />
