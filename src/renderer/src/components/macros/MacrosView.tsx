@@ -9,6 +9,7 @@ import { MacroNotification } from './MacroStatus'
 import { MacroLoadout } from './MacroLoadout'
 import { MacroRecipeCard } from './MacroRecipeCard'
 import { MacroExisting } from './MacroExisting'
+import { MacroPreparation } from './MacroPreparation'
 import { changeSelection, starterSelections, recipePresentation, MACRO_SELECTION_LIMIT } from '@shared/macros/presentation'
 import { useMacroAssistant } from './useMacroAssistant'
 import type { View } from '../../appViews'
@@ -20,7 +21,7 @@ export function MacrosDestination({ view, viewKey }: { view: View; viewKey: stri
 
 export default function MacrosView(): JSX.Element {
   const assistant = useMacroAssistant()
-  const { snapshot, busy, busyAction, notice, error, mutate, refresh, dismissNotice } = assistant
+  const { snapshot, busy, busyAction, notice, error, mutate, prepare, refresh, dismissNotice } = assistant
   const [filter, setFilter] = useState('all')
   const { all: recipes, selected, ready, displayed } = useMemo(() =>
     recipePresentation(snapshot?.recipes ?? [], snapshot?.settings.selections ?? [], filter), [snapshot, filter])
@@ -32,6 +33,7 @@ export default function MacrosView(): JSX.Element {
   return <Stack spacing={2} data-testid="macros-view" data-character-id={snapshot.characterId ?? ''} sx={{ minWidth: 0, pb: 2 }}>
     <MacroContext snapshot={snapshot} busy={busy} onStyle={(style) => mutate({ style })} />
     {error && <Alert severity="error" action={<Button disabled={busy} onClick={refresh}>Retry</Button>}>{error}</Alert>}
+    {snapshot.preparation && <MacroPreparation key={snapshot.characterId} preparation={snapshot.preparation} busy={busy} prepare={prepare} />}
     <MacroInstallation snapshot={snapshot} busy={busy} busyAction={busyAction} configure={mutate} action={mutate} />
     <MacroNotification notice={notice} dismiss={dismissNotice} />
     <MacroLoadout snapshot={snapshot} />

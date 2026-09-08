@@ -1,4 +1,5 @@
 import type { MacroAssistantSnapshot } from '../../../../shared/macroAssistant'
+import type { MacroPreparationSnapshot } from '../../../../shared/macroPreparation'
 
 export interface MacroFeedback {
   title: string
@@ -8,6 +9,18 @@ export interface MacroFeedback {
   timestamp?: { label: string; value: string }
 }
 export interface MacroNotice { id: number; feedback: MacroFeedback }
+
+export function preparationFeedback(preparation: MacroPreparationSnapshot): MacroFeedback {
+  const installation = preparation.installation
+  if (!installation) return { title: 'Preparation needs attention', message: preparation.message, severity: 'warning' }
+  const destination = installation.destination
+  const detail = destination ? `Hotbar ${destination.bar} · Page ${destination.page}` : undefined
+  if (installation.state === 'pending') return { title: 'Preparation queued, not written yet', severity: 'info', detail,
+    message: 'Keep the companion open. Fully exit EverQuest, wait for Preparation saved, then launch the game to load the buttons.' }
+  if (installation.state === 'conflict') return { title: 'Preparation needs attention', severity: 'warning', message: installation.message, detail }
+  return { title: 'Preparation saved', severity: 'success', message: 'Start or restart EverQuest to load the saved preparation buttons.', detail,
+    ...(installation.at ? { timestamp: { label: 'Saved', value: installation.at } } : {}) }
+}
 
 /** Present typed outcomes. A legacy appliedAt can describe an older write, so it is never
  * substituted for a missing completion record or used to claim that a no-op wrote the file. */
