@@ -69,10 +69,10 @@ function allocate(slots: MacroLoadoutSlot[], missing: MacroSpell[]): MacroLoadou
 function verdict(plan: MacroLoadoutPlan): void {
   if (plan.overflow) {
     plan.state = 'over-capacity'
-    plan.message = `The selected macros need ${plan.requiredSpellCount} distinct spells but only ${plan.availableSlots} castable slots are unlocked. ${plan.overflow} additional slots are needed.`
+    plan.message = `The selected macros need ${plan.requiredSpellCount} distinct spell${plan.requiredSpellCount === 1 ? '' : 's'} but only ${plan.availableSlots} castable slot${plan.availableSlots === 1 ? ' is' : 's are'} unlocked. ${plan.overflow} additional slot${plan.overflow === 1 ? ' is' : 's are'} needed.`
   } else if (plan.missingSpellCount) {
     plan.state = 'needs-memorizing'
-    plan.message = `The selected spells fit. Memorize ${plan.missingSpellCount} spells as shown; these changes are recommendations only.`
+    plan.message = `The selected spells fit. Memorize ${plan.missingSpellCount} spell${plan.missingSpellCount === 1 ? '' : 's'} as shown; these changes are recommendations only.`
   } else {
     plan.state = 'ready'
     plan.message = plan.requiredSpellCount ? 'Every spell needed by the selected macros is already in an unlocked castable slot.' : 'The selected macros do not require spell gems.'
