@@ -73,6 +73,7 @@ export default defineConfig({
           index: resolve(__dirname, 'src/main/index.ts'),
           speechWorker: resolve(__dirname, 'src/main/speech/worker.ts'),
           presenceWorker: resolve(__dirname, 'src/main/presenceWorker.ts'),
+          playerLocationWorker: resolve(__dirname, 'src/main/playerLocation/worker.ts'),
           perfProbeWorker: resolve(__dirname, 'src/main/perfProbeWorker.ts'),
           resistTableWorker: resolve(__dirname, 'src/main/resistTableWorker.ts')
         }

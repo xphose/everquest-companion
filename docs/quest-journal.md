@@ -23,7 +23,10 @@ trades update ingredient estimates after an export. Export inventory again after
 selling or giving away items, combining gear, or when the displayed export is old.
 Export achievements again to refresh historical evidence.
 
-Level and classes come from the character log when available. **Character details
+Level and classes come from the character log when available. Classes recognized
+from spells and abilities appear automatically with an **inferred** label; a
+character's `/who` row confirms the stated classes. Ambiguous slots stay unknown.
+**Character details
 and profile correction** supplies an optional fallback; **Use detected profile**
 returns to automatic detection. Filters change what you browse, not your character.
 

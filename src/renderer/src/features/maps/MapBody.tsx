@@ -25,11 +25,13 @@ import { useCallback, useEffect, useMemo, useState, type JSX, type ReactNode, ty
 import { Box, IconButton, Stack } from '@mui/material'
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar'
 import type { MapData, ZoneShort } from '@shared/maps'
+import type { PlayerLocation } from '@shared/playerLocation'
 import type { JumpTarget } from './crossZone'
 import { MapCanvas } from './MapCanvas'
 import { MapPointsLayer, labelPosition } from './MapPointsLayer'
 import { MapMobPins } from './MapMobPins'
 import { MapLocMarker } from './MapLocMarker'
+import { MapPlayerMarker } from './MapPlayerMarker'
 import MapMobPane from './MapMobPane'
 import { paneOverlay, type PaneOverlay, type ZonePaneState } from './useMapPane'
 import { mapFromLoc, type EqLoc, type LayerMask } from './mapGeometry'
@@ -163,6 +165,8 @@ function MapSurface({
   floor,
   marker,
   locMarker,
+  playerLocation,
+  onExplore,
   pane
 }: {
   data: MapData
@@ -174,6 +178,8 @@ function MapSurface({
   marker: Marker | null
   /** The `/loc` the user typed for THIS zone, still in the game's own axes (JOS-98). */
   locMarker: EqLoc | null
+  playerLocation: PlayerLocation | null
+  onExplore: () => void
   /** The sidebar's contribution, or null when it is closed and draws nothing. */
   pane: PaneOverlay | null
 }): JSX.Element {
@@ -193,6 +199,7 @@ function MapSurface({
       onPointerDown={vp.onPointerDown}
       onPointerMove={vp.onPointerMove}
       onPointerUp={vp.onPointerUp}
+      onWheelCapture={onExplore}
       sx={{
         position: 'relative',
         flexGrow: 1,
@@ -212,6 +219,7 @@ function MapSurface({
       {/* THE ONE SEAM, AGAIN: the typed reading reaches the screen through `mapFromLoc` and then
           the same `project` every other mark uses. Nothing here knows which way north is. */}
       {locMarker != null && <MapLocMarker at={mapFromLoc(locMarker)} loc={locMarker} vp={vp} />}
+      {playerLocation != null && <MapPlayerMarker location={playerLocation} vp={vp} />}
     </Box>
   )
 }
@@ -256,6 +264,8 @@ export interface MapBodyProps {
   marker: Marker | null
   /** This zone's typed-/loc marker, or null. Persistent, unlike `marker` above it. */
   locMarker: EqLoc | null
+  playerLocation: PlayerLocation | null
+  onExplore: () => void
   /** A cross-zone hit was clicked — `useSearchJump`'s handler, which changes zone first. */
   onJump: (to: JumpTarget) => void
 }
@@ -275,6 +285,8 @@ export default function MapBody(props: MapBodyProps): JSX.Element {
           floor={floor}
           marker={marker}
           locMarker={locMarker}
+          playerLocation={props.playerLocation}
+          onExplore={props.onExplore}
           pane={paneOverlay(pane)}
         />
       ) : (

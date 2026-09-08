@@ -513,6 +513,8 @@ labels w/ collision declutter, floor slicing). Pure fns + goldens all over.
   SOUTH — JOS-65). Wiki mob pins and the user's typed-/loc marker (JOS-98,
   `eq.maps.loc`, per zone) both go through it and then through `project`;
   a second copy of those negations is the bug this repo already shipped once.
+  Live self-position is authorized in this fork (2026-09-08). `docs/live-map.md`
+  defines version checks, bounded read-only access, stale-position handling, and user controls.
 Renderer: `useView(descriptor)` — subscribe, take the reset, ride the diffs, and drop everything on
 an epoch bump (resume is always re-query). `useModule` was its predecessor and went with the fold.
 Overlay = second renderer entry (overlay.html) with a minimal `eqOverlay` bridge (transparent

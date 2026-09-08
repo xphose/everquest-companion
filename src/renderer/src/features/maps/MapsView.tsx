@@ -24,14 +24,9 @@
 // own labels, every other installed map AND the bestiary of every other zone (JOS-135) — so a
 // name you half-remember is findable from wherever you happen to be standing.
 //
-// WHAT THIS VIEW CANNOT DO, AND THE HALF OF IT THE USER CAN (JOS-98). There is no AUTOMATIC "you
-// are here" marker and there cannot be: `Your Location` appears ZERO times in the log — re-measured
-// across the owner's whole 116.8 MB of it for this ticket — because /loc answers in the game window
-// and is never written to the file the app tails. What the viewer can do is take the answer from
-// you: the toolbar's `/loc marker` field accepts the line the game printed, drops a crosshair where
-// it says, and keeps it there per zone until you replace it or clear it. The caption states exactly
-// that pair, because a user hunting for a dot that does not exist is a worse outcome than one quiet
-// line saying so (§10) — and a user who does not know they can place one is the report we got.
+// Live player position comes from a version-checked, read-only game-memory reader. Its zone
+// takes precedence over the log while fresh; manual map picks still pin. The separate typed
+// /loc marker remains a saved reference point and never substitutes for an unavailable player.
 //
 // TWO DENSITY CONTROLS LIVE HERE AND BOTH ARE HONEST ABOUT WHAT THEY ARE. Labels declutter
 // themselves (`labelLayout.ts`) — a label that loses its space becomes a dot and hover raises the
@@ -58,6 +53,10 @@ import MapToolbar from './MapToolbar'
 import { zoneLabel } from './zoneOptions'
 import { loadPackPrefs, savePackPrefs, useMapData, useMapPacks } from './useMapData'
 import { useLocMarker } from './useLocMarker'
+import { MapLiveControls } from './MapLiveControls'
+import { useMapPlayer, usePlayerCentering } from './useMapPlayer'
+import { locationOnMap } from './playerLocationState'
+import type { JumpTarget } from './crossZone'
 import {
   loadZoneSelection,
   onCharacterZone,
@@ -122,17 +121,17 @@ function zoneLongName(zone: ZoneShort | null, raw: string | undefined): string |
  * clears the map and says which name it could not place (law 1); the toolbar's selector is still
  * right there, so it is a question, not a dead end.
  */
-function useZoneSelection(raw: string | undefined): {
+function useZoneSelection(raw: string | undefined, liveZone?: string): {
   zone: ZoneShort | null
   auto: ZoneShort | null
   mode: ZoneMode
   pick: (zone: ZoneShort) => void
   followCurrent: () => void
 } {
-  const auto = zoneShortName(raw)
+  const auto = liveZone ?? zoneShortName(raw)
   // Has the log said where the character is AT ALL? A fresh log (or a replay that has not reached
   // a zone line yet) is not a zone change, and must never overwrite what was remembered.
-  const stated = raw != null && raw !== ''
+  const stated = liveZone !== undefined || (raw != null && raw !== '')
   const [sel, setSel] = useState<ZoneSelection>(loadZoneSelection)
   useEffect(() => {
     saveZoneSelection(sel)
@@ -237,11 +236,6 @@ function MapsHeader({
           )}
         </Box>
       </Stack>
-      <Typography variant="caption" color="text.disabled">
-        The log states the zone you entered and nothing else positional - so there is no automatic
-        “you are here”. Type <code>/loc</code> in game and paste the line into the toolbar to mark
-        where you are; the mark stays with this zone until you replace or clear it.
-      </Typography>
     </Stack>
   )
 }
@@ -356,16 +350,27 @@ function useMapOpenTracking(data: MapData | null): void {
   }, [loaded])
 }
 
+function useMapIdentity() {
+  const character = useModule<CharacterSnap>('character')
+  const raw = character?.zone
+  const player = useMapPlayer(character?.character?.name)
+  const selection = useZoneSelection(raw, player.location?.zone)
+  return { raw, player, ...selection }
+}
+
+function useSelectedMap(zone: ZoneShort | null, prefs: MapPackPrefs) {
+  const map = useMapData(zone, prefs)
+  // A previous zone must not remain drawn under the new zone's name while its files load.
+  return { ...map, data: map.data?.zone === zone ? map.data : null }
+}
+
 export default function MapsView(props: MapFocusProps): JSX.Element {
-  // WHERE YOU ARE. The character module owns the raw display zone off the `zone` log event; it
-  // is undefined until the log prints one, and that absence is a state this view renders.
-  const raw = useModule<CharacterSnap>('character')?.zone
-  const { zone, auto, mode, pick, followCurrent } = useZoneSelection(raw)
+  const { raw, player, zone, auto, mode, pick, followCurrent } = useMapIdentity()
   const [prefs, setPrefs] = useState<MapPackPrefs>(loadPackPrefs)
   const [layers, setLayers] = useState<LayerMask>(DEFAULT_LAYERS)
 
   const { packs, zones, ready } = useMapPacks()
-  const { data, error, loading } = useMapData(zone, prefs)
+  const { data, error, loading } = useSelectedMap(zone, prefs)
 
   // Does the chrome that describes a map hold its space? See `mapPossible` above (JOS-205).
   const reserve = mapPossible({ zones, ready })
@@ -385,7 +390,14 @@ export default function MapsView(props: MapFocusProps): JSX.Element {
 
   const hostRef = useRef<HTMLDivElement>(null)
   const vp = useMapViewport({ bounds: data?.bounds ?? EMPTY_BOUNDS, id: data?.zone ?? '', hostRef })
-  const { marker, onJump } = useSearchJump({ vp, zone: data?.zone, pick })
+  const playerLocation = locationOnMap(player.location, data?.zone)
+  usePlayerCentering(playerLocation, player, vp)
+  const { marker, onJump: jump } = useSearchJump({ vp, zone: data?.zone, pick })
+  const releaseCenter = player.setCentered
+  const onJump = useCallback((target: JumpTarget) => {
+    releaseCenter(false)
+    jump(target)
+  }, [releaseCenter, jump])
   const focus = useMapFocusArrival(props, onJump)
   // THE POSITION YOU TOLD IT (JOS-98). Keyed on the zone actually DRAWN, never the one being
   // fetched: a marker attributed to a map that has not loaded would be drawn against the previous
@@ -401,12 +413,14 @@ export default function MapsView(props: MapFocusProps): JSX.Element {
     <Stack spacing={1.5} sx={{ height: '100%' }}>
       <MapFocusArrival nav={props.nav} focus={focus} zone={zone} />
       <MapsHeader title={headerTitle(zone, raw)} zone={zone} data={data} />
+      <MapLiveControls {...player} onEnabled={player.setEnabled} onCentered={player.setCentered}
+        onCenter={() => { player.center(); followCurrent() }} />
       {/* ALWAYS RENDERED, because the Zone selector inside it is how you leave the map you are
           on. Everything else in the bar is gated on `hasMap`. */}
       <MapToolbar
         zones={zones}
         zone={zone}
-        onPick={pick}
+        onPick={(next) => { player.setCentered(false); pick(next) }}
         mode={mode}
         onFollowCurrent={followCurrent}
         hasMap={data != null}
@@ -425,12 +439,12 @@ export default function MapsView(props: MapFocusProps): JSX.Element {
           savePackPrefs(p)
         }}
         locMarker={loc.marker}
-        onPlaceLoc={loc.place}
-        onShowLoc={loc.show}
+        onPlaceLoc={(value) => { player.setCentered(false); loc.place(value) }}
+        onShowLoc={() => { player.setCentered(false); loc.show() }}
         onClearLoc={loc.clear}
         zoomedIn={vp.zoomedIn}
         onZoom={vp.zoomBy}
-        onFit={vp.fit}
+        onFit={() => { player.setCentered(false); vp.fit() }}
       />
       <MapBody
         data={data}
@@ -439,7 +453,10 @@ export default function MapsView(props: MapFocusProps): JSX.Element {
         empty={
           ready && !loading && <MapsEmpty raw={raw} auto={auto} zones={zones} zone={zone} error={error} />
         }
-        vp={vp}
+        vp={{ ...vp, onPointerDown: (event) => {
+          if (event.button === 0) player.setCentered(false)
+          vp.onPointerDown(event)
+        } }}
         hostRef={hostRef}
         layers={layers}
         bands={bands}
@@ -448,6 +465,8 @@ export default function MapsView(props: MapFocusProps): JSX.Element {
         zoneName={zoneName}
         marker={marker}
         locMarker={loc.marker}
+        playerLocation={playerLocation}
+        onExplore={() => player.setCentered(false)}
         onJump={onJump}
       />
       {/* Reserved for the same reason and on the same condition as the toolbar's row (JOS-205). */}

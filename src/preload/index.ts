@@ -50,6 +50,7 @@ import type { ClassAbbr, ComboDelta, ComboSnap } from '../shared/classCombo'
 // The level-unlock and planner types moved with their methods: knowledge.ts (JOS-293) carries
 // the spell/item/mob/unlock lookups, planner.ts (JOS-285) the exaltation + gear reads.
 import type { CharacterSheet } from '../shared/characterSheet'
+import type { PlayerLocationResult } from '../shared/playerLocation'
 // The `/outputfile` registry's one IPC shape (JOS-44) — command, why-clause, and the dump's own
 // mtime, per kind. Every surface fed by an export command reads this and nothing else.
 import type { OutputFileStatus } from '../shared/outputs/kinds'
@@ -477,6 +478,7 @@ const api = {
   // STEM ('airplane'), not the log's long name — fold that through `shared/zones.ts` first.
   /** The installed map packs. Empty list + `error` prose on a machine with no EQ maps dir. */
   listMapPacks: (): Promise<MapPackListResult> => ipcRenderer.invoke(IPC.mapsListPacks),
+  getPlayerLocation: (): Promise<PlayerLocationResult> => ipcRenderer.invoke(IPC.mapsPlayerLocation),
   /** Zone stems, ascending — across every pack, or within one when `packId` is given. */
   listMapZones: (packId?: string): Promise<ZoneShort[]> =>
     ipcRenderer.invoke(IPC.mapsListZones, packId),

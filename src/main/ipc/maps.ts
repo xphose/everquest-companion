@@ -21,6 +21,7 @@ import { IPC } from '../../shared/ipc'
 import { mapLibrary } from '../maps'
 import { isSafePackId } from '../security'
 import type { MapGetResult, MapPackPrefs, MapSearchOpts } from '../../shared/maps'
+import { registerPlayerLocationIpc } from './playerLocation'
 
 /** Narrow the renderer's `prefs` to validated pack ids. `false` = something unsafe was sent. */
 function safePrefs(raw: unknown): MapPackPrefs | false {
@@ -36,6 +37,7 @@ function safePrefs(raw: unknown): MapPackPrefs | false {
 }
 
 export function registerMapsIpc(): void {
+  registerPlayerLocationIpc()
   ipcMain.handle(IPC.mapsListPacks, () => {
     const packs = mapLibrary().packs()
     // No packs is the fresh-machine state (no EQ install, or an install without `maps\`), and

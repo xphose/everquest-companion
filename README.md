@@ -4,9 +4,11 @@ A Windows desktop companion for **EverQuest Legends**. It reads the log file the
 already writes and turns it into live, useful views — a DPS meter, floating overlays,
 quest and loot tracking, alerts.
 
-**It reads game logs and character exports.** Nothing is injected into EverQuest,
-no game files are changed, no memory is read, and nothing is played for you.
-Live tracking needs logging; the offline quest directory can be browsed without it.
+**It reads game logs, character exports, and your live map position.** The Maps tab
+uses read-only process access for your own character's position on supported game
+versions. Nothing is injected, no game files or memory are changed, and nothing is
+played for you. Turn off **Live location** in Maps to stop position reads.
+Log-based tracking needs logging; the offline quest directory can be browsed without it.
 
 ## What it does
 
@@ -21,6 +23,9 @@ Live tracking needs logging; the offline quest directory can be browsed without 
   monster locations, turn-in guides, and reward comparisons for your character.
   Progress follows readable game evidence automatically. See the
   [journal guide](docs/quest-journal.md) for setup and coverage.
+- **Live map navigation** — a moving player marker, automatic current-zone maps,
+  and optional centering while you travel. Manual map picks stay pinned until you
+  choose **Current zone** or **Center on me**. See the [map guide](docs/live-map.md).
 - **Loot + item knowledge** — a running history of what you looted, and what each item
   is actually *for*: which quests use it, what it turns in for, which recipes consume it.
 - **Leveling & AA** — XP and AA progress per character, with history.

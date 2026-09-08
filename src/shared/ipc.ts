@@ -641,6 +641,7 @@ export const IPC = {
   // renderer -> main: fuzzy label search — one zone (opts.zone) or the whole corpus.
   // Args: (query, opts?). Returns MapSearchHit[].
   mapsSearch: 'maps:search',
+  mapsPlayerLocation: 'maps:playerLocation',
 
   // ---- settings / alert sharing ("profiles" — src/shared/profiles.ts) ----
   // Every call carries the renderer's whitelisted localStorage prefs (UI_PREF_SPECS): main
