@@ -36,7 +36,7 @@ function snapshotNotice(previous: MacroAssistantSnapshot | null, next: MacroAssi
   if (preparation || preparationStopped(previous, next)) return preparation
   const completed = previous?.installation.state === 'pending' && next.installation.state !== 'pending' &&
     (next.installation.completion !== undefined || next.installation.state === 'conflict')
-  return action === 'queue' || completed ? installationFeedback(next) : undefined
+  return action === 'queue' || action === 'repair' || completed ? installationFeedback(next) : undefined
 }
 
 /** One request at a time. A queued edit invalidates a pending poll before waiting for it.

@@ -2,6 +2,7 @@ import type { MacroSaved, MacroServiceDeps, MacroWorld } from './types'
 import { assertMacroWorld } from './settings'
 import { bytesHash, encodeCharacterFile, readBackup, readCharacterFile, readMacroDefaults, replaceCharacterFile } from './files'
 import { installationPlan, rememberPreparation, restorePreparationOwnership, unchangedDefaults } from './preparationInstall'
+import { rememberRepairs } from './repairOwnership'
 import type { QueuedMacros } from './types'
 
 async function exited(deps: MacroServiceDeps, world: MacroWorld): Promise<void> {
@@ -44,10 +45,12 @@ export async function applyQueuedMacros(deps: MacroServiceDeps, world: MacroWorl
     const backup = await replaceCharacterFile({ root, name: queue.targetFile, original: file.bytes,
       updated, backupDir: deps.backupDir, guard })
     saved.applied = { targetFile: queue.targetFile, hash: bytesHash(updated), backup,
-      previousManaged: previous, previousSetManaged: saved.setManaged?.[queue.targetFile],
+      previousManaged: previous, previousRepairs: saved.repairs?.[queue.targetFile], previousSetManaged: saved.setManaged?.[queue.targetFile],
       previousPreparation: saved.preparations?.[queue.targetFile], at }
     saved.managed[queue.targetFile] = plan.managed
   } else await guard()
+  if (queue.repairs?.length) saved.managed[queue.targetFile] = plan.managed
+  rememberRepairs(saved, queue)
   rememberPreparation(saved, queue, plan.setManaged, { at, changed: plan.changed })
   saved.lastSignature = queue.signature
   saved.queued = undefined
@@ -64,6 +67,7 @@ export async function restoreMacros(deps: MacroServiceDeps, world: MacroWorld, s
   await replaceCharacterFile({ root: world.root, name: applied.targetFile, original: file.bytes,
     updated: original, backupDir: deps.backupDir, guard: () => exited(deps, world) })
   saved.managed[applied.targetFile] = applied.previousManaged
+  if (saved.repairs) saved.repairs[applied.targetFile] = applied.previousRepairs ?? []
   restorePreparationOwnership(saved, applied)
   saved.applied = undefined
   saved.restoreRequested = false

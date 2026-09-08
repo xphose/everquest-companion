@@ -6,6 +6,7 @@ import { planMacroLoadout } from '../../shared/macros/loadout'
 import { castableMacroSlots } from '../../shared/macros/slots'
 import { auditMacro } from '../../shared/macros/audit'
 import { macroBindings } from '../../shared/macros/bindings'
+import { includeRepairs, repairOffer } from './repair'
 import { currentPlayerLocation, currentPlayerClasses } from '../../shared/currentPlayer'
 import type { PlayerLocationResult } from '../../shared/playerLocation'
 import type { MacroSaved, MacroServiceDeps, MacroWorld, QueuedMacros } from './types'
@@ -88,7 +89,7 @@ export function trustedQueue(model: MacroModel, source: QueuedMacros['source'], 
     color: 0, lines: recipe.lines, hotbar: { ...model.saved.settings.destination } }))
   const signature = JSON.stringify([model.target, requests, problems])
   const queue = { targetFile: model.target, requests, problems, signature, source }
-  return includePrepared ? includePreparation(model, queue) : queue
+  return includeRepairs(model, includePrepared ? includePreparation(model, queue) : queue)
 }
 
 async function existingSocials(model: MacroModel): Promise<MacroAssistantSnapshot['existing']> {
@@ -99,6 +100,7 @@ async function existingSocials(model: MacroModel): Promise<MacroAssistantSnapsho
   return readSocials(file.text).map((social) => ({ page: social.page, button: social.button, name: social.name, lines: [...social.lines],
     managed: managed.some((item) => item.page === social.page && item.button === social.button),
     ...(model.input ? { bindings: macroBindings(social.lines, model.input) } : {}),
+    repair: repairOffer(model, file.text, social),
     issues: [...auditMacro(social.name, [...social.lines], input), ...social.ambiguous ? [{ severity: 'error' as const,
       code: 'ambiguous-settings', message: 'Duplicate or ambiguous social fields need to be corrected in game before this slot can be managed.' }] : []] }))
 }

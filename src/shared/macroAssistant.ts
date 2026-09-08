@@ -21,6 +21,7 @@ export interface MacroExistingSocial {
   issues: MacroAuditIssue[]
   /** Present only when resolved against a fresh observed player profile. */
   bindings?: MacroCastBinding[]
+  repair?: { fingerprint: string; recipeId: string; lines: string[] }
 }
 
 export interface MacroInstallCompletion {
@@ -70,6 +71,7 @@ export interface MacroAssistantSnapshot {
 export type MacroAssistantMutation =
   | { characterId: string; action: 'configure'; settings: Partial<MacroAssistantSettings> }
   | { characterId: string; action: 'queue' | 'restore' }
+  | { characterId: string; action: 'repair'; targetFile: string; page: number; button: number; fingerprint: string; recipeId: string }
   | { characterId: string; action: 'prepare'; spellIds: number[]; destination: { bar: number; page: number } }
 
 export interface MacroAssistantMutationResult {

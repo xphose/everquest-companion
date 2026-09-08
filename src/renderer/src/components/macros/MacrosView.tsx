@@ -21,7 +21,7 @@ export function MacrosDestination({ view, viewKey }: { view: View; viewKey: stri
 
 export default function MacrosView(): JSX.Element {
   const assistant = useMacroAssistant()
-  const { snapshot, busy, busyAction, notice, error, mutate, prepare, refresh, dismissNotice } = assistant
+  const { snapshot, busy, busyAction, notice, error, mutate, prepare, repair, refresh, dismissNotice } = assistant
   const [filter, setFilter] = useState('all')
   const { all: recipes, selected, ready, displayed } = useMemo(() =>
     recipePresentation(snapshot?.recipes ?? [], snapshot?.settings.selections ?? [], filter), [snapshot, filter])
@@ -60,6 +60,6 @@ export default function MacrosView(): JSX.Element {
     <Alert severity="info" icon={false} sx={{ py: 0.5 }}>
       <Typography variant="body2"><strong>Macro tip:</strong> A /pause value is in tenths of a second. On a combined line, the command runs first and the pause follows. Spells still need mana, a valid target and any required reagents.</Typography>
     </Alert>
-    <MacroExisting socials={snapshot.existing} live={snapshot.context.live} />
+    <MacroExisting socials={snapshot.existing} live={snapshot.context.live} busy={busy} onRepair={repair} />
   </Stack>
 }
