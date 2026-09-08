@@ -101,3 +101,41 @@ crash.*.log
 # any log slice `triage-feedback show` downloads. Those slices are a user's own
 # game log; they are read locally and never enter git or a public issue.
 .triage/
+
+# Local credentials, configuration and privacy terms. Public examples and reproducibility locks stay tracked.
+.env
+.env.*
+.envrc
+!.env.example
+!.env.sample
+!.env.template
+credentials
+credentials.*
+local.config
+local.config.*
+*.local.json
+*.local.yaml
+*.local.yml
+*.local.toml
+*.local.ini
+!credentials.example.*
+!credentials.sample.*
+!credentials.template.*
+!local.config.example.*
+!local.config.sample.*
+!local.config.template.*
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*.key
+*.p12
+*.pfx
+*.keystore
+.privacy-terms*
+.privacy-audit/
+*.dmp
+*.core
+.worktrees/
+.aws/
+.ssh/
