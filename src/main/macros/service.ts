@@ -4,7 +4,7 @@ import type { MacroSaved, MacroServiceDeps, MacroWorld } from './types'
 import { assertMacroWorld, emptyMacroSaved, macroMutation, worldKey } from './settings'
 import { currentRecipes, macroSnapshot, readMacroModel, selectedTarget, trustedQueue, type MacroModel } from './model'
 import { applyQueuedMacros, restoreMacros } from './installation'
-import { failedPreparation, freezeCombatPlan, observePreparation } from './preparationState'
+import { cancelQueuedPreparation, failedPreparation, freezeCombatPlan, observePreparation } from './preparationState'
 import { queuePreparation } from './preparationQueue'
 
 function message(error: unknown): string { return error instanceof Error ? error.message : 'Unable to update macros.' }
@@ -13,7 +13,7 @@ function configure(model: MacroModel, mutation: Extract<MacroAssistantMutation, 
   const patch = mutation.settings
   if (patch.targetFile && !model.files.includes(patch.targetFile)) throw new Error('Choose one of the observed character settings filenames.')
   model.saved.settings = { ...model.saved.settings, ...patch }
-  model.saved.queued = undefined
+  cancelQueuedPreparation(model)
   model.saved.restoreRequested = false
   model.saved.lastSignature = undefined
   model.saved.status = undefined
@@ -117,7 +117,7 @@ export function createMacroService(deps: MacroServiceDeps): MacroService {
         }
         else {
           model.saved.settings.autoUpdate = false
-          model.saved.queued = undefined
+          cancelQueuedPreparation(model, true)
           model.saved.restoreRequested = Boolean(model.saved.applied)
           if (!model.saved.applied) throw new Error('There is no saved change to restore.')
         }
