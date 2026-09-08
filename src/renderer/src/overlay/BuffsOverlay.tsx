@@ -32,12 +32,13 @@
 // bar and a `+` before its time is counting UP because nobody states one. The overlay never
 // renders a remaining it had to invent — see buffTimerBars.tsx.
 //
-// WHY IT TICKS ITSELF: the module deltas arrive when the LOG moves, and a buff running out is
+// WHY IT TICKS ITSELF: the module cursors arrive when the LOG moves, and a buff running out is
 // precisely the moment the log is silent. A 1 Hz local clock re-reads rows the renderer already
 // holds; it asks main for nothing.
 
 import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { MODULE_WORLD_CHANGED, type BuffsSnap, type ModuleChanged } from '@shared/types'
+import type { BuffsSnap } from '@shared/types'
+import { useOverlayModuleState } from './useOverlayModule'
 import {
   type BuffTimerRow,
   type BuffTimersSnap,
@@ -126,87 +127,6 @@ const SURFACE: Record<
   }
 }
 
-/**
- * Hydrate one whole-snapshot module and ride its deltas. Both modules here ship their ENTIRE
- * state on every flush (`BuffsDelta = BuffsSnap`, `BuffTimersDelta = BuffTimersSnap`), so
- * applying a delta is a replace and there is nothing to accumulate.
- *
- * A `log:character` rebuild resets a module and its seq restarts low, so a delta whose seq went
- * BACKWARDS re-hydrates rather than being dropped forever — the same rule `useModule` enforces in
- * the app and `EventLogOverlay` enforces here.
- *
- * …AND THE REBUILD SIGNAL ITSELF, SINCE JOS-172. Riding deltas was never enough on its own: a
- * historical fold pushes NOTHING (the registry discards what it accumulated), so a window that
- * hydrated part-way through one — which is every overlay that was already open when the app
- * started — waited for a live event to touch this module before it could learn what the fold had
- * rebuilt. For a long debuff on a mob (a charm, an Ensnare) that event may never come. `onCharacter`
- * is main saying the world was rebuilt, and it is the same signal, on the same channel, that the
- * main window's `useModule` has always re-hydrated on.
- *
- * IT ALSO REPORTS HOW MANY TIMES IT HAS HYDRATED, because a row set that changed because we asked
- * again is not the same event as a row set that changed because the model moved — see
- * `useDropFlash`.
- */
-function useWholeSnapshot<S>(moduleId: string, empty: S): { state: S; hydrations: number } {
-  const [state, setState] = useState<S>(empty)
-  const [hydrations, setHydrations] = useState(0)
-  const seqRef = useRef(-1)
-
-  useEffect(() => {
-    let alive = true
-    /**
-     * `rebuilt` SAYS WHICH KIND OF READ THIS IS, and getting it wrong costs the drop flash (JOS-499).
-     *
-     * EVERY CHANGE IS A RE-READ NOW. Before the fold was deleted this hook rode `module:delta` for
-     * increments and re-hydrated only when the WORLD changed, so "we asked again" and "the model
-     * moved" were two different code paths and `hydrations` could simply count the former. With one
-     * channel they are the same call, and a counter that bumped on all of them told `useDropFlash`
-     * that every change was a rebuild — so `timerDrops` said nothing, every time, and a buff
-     * dropping never flashed. MEASURED: `buffs-overlay.e2e.mts` caught it on the first run.
-     *
-     * So the DISTINCTION MOVES INTO THE CALL rather than being inferred from the fact of a read:
-     * a cursor is the engine saying THE MODEL MOVED (the increment, in its new shape) and must not
-     * count; `MODULE_WORLD_CHANGED` and `onCharacter` are the two real rebuilds and must.
-     */
-    const hydrate = (rebuilt: boolean): void => {
-      void window.eqOverlay.getModuleSnapshot<S>(moduleId).then((snap) => {
-        if (!alive || !snap) return
-        seqRef.current = snap.seq
-        setState(snap.state)
-        if (rebuilt) setHydrations((n) => n + 1)
-      })
-    }
-    // The FIRST read is a rebuild by definition: nothing was held before it.
-    hydrate(true)
-    // THE INCREMENT IS A CURSOR NOW (JOS-499 item 7), not a delta. Main's own fold is deleted, so
-    // there is no `module:delta` to ride: `module:changed` carries a name and a revision and no
-    // state at all, and the answer to it is the read above. This module is a WHOLE-SNAPSHOT one, so
-    // the change is smaller than it looks — a delta here was already a replace.
-    const off = window.eqOverlay.onModuleChanged((c: ModuleChanged) => {
-      // The world that answers reads changed hands: nothing held is trustworthy, ask again.
-      if (c.moduleId === MODULE_WORLD_CHANGED) {
-        hydrate(true)
-        return
-      }
-      if (c.moduleId !== moduleId) return
-      if (c.seq <= seqRef.current) return
-      // A CURSOR IS THE MODEL MOVING, not a rebuild — see `hydrate`. This is the read whose result
-      // the drop flash is entitled to compare against what it was holding.
-      hydrate(false)
-    })
-    const offChar = window.eqOverlay.onCharacter(() => {
-      hydrate(true)
-    })
-    return () => {
-      alive = false
-      off()
-      offChar()
-    }
-  }, [moduleId])
-
-  return { state, hydrations }
-}
-
 /** A local 1 Hz clock. A timer must recede while the log is idle, which is exactly when no delta
  *  is coming; every row already carries its own `startedTs`, so this costs one render a second
  *  and zero IPC. */
@@ -232,7 +152,7 @@ function useSecondsClock(): number {
  *
  * `epoch` is the JOS-172 guard, and it is why the rebuilt-world signal above is safe to add: it
  * changes exactly when the row set changed for a reason that is NOT a removal the model believed.
- * Two things do that. A fresh SNAPSHOT (rather than a delta) — on a cold start with this window
+ * Two things do that. A world reset or recovery (rather than an ordinary live update) — on a cold start with this window
  * already open, the mid-fold hydrate and the post-fold one differ by whatever wore off during the
  * months in between, every one of which would otherwise flash. And, since JOS-203, a DISMISSAL —
  * the user clearing a bar is not that buff dropping, and announcing "X dropped" at the instant they
@@ -509,8 +429,8 @@ export default function BuffsOverlay({ kind }: { kind: TimerOverlayKind }): JSX.
   const surface = SURFACE[kind]
   // BOTH kinds read BOTH modules. The window is a view; the model is not sliced per window, and
   // `rowsForSurface` below is the only thing that knows these are two windows at all.
-  const { state: buffs, hydrations: buffsHydrations } = useWholeSnapshot<BuffsSnap>('buffs', EMPTY_BUFFS)
-  const { state: timers, hydrations: timersHydrations } = useWholeSnapshot<BuffTimersSnap>(
+  const { state: buffs, hydrations: buffsHydrations } = useOverlayModuleState<BuffsSnap>('buffs', EMPTY_BUFFS)
+  const { state: timers, hydrations: timersHydrations } = useOverlayModuleState<BuffTimersSnap>(
     'buffTimers',
     EMPTY_TIMERS
   )

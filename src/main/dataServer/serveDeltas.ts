@@ -76,7 +76,7 @@
 
 import { IPC } from '../../shared/ipc'
 import { MODULE_WORLD_CHANGED, type ModuleChanged } from '../../shared/types'
-import { sendToModuleOverlays } from '../worldRebuilt'
+import { sendToCombatOverlays, sendToModuleOverlays } from '../worldRebuilt'
 import { sendToMain } from '../windows'
 import { noteTailLine } from '../switchNudge'
 import { noteEventKind } from '../telemetry/breadcrumbs'
@@ -150,19 +150,23 @@ export function pushModuleChanged(moduleId: string, seq: number): void {
 const COMBAT_ACTIVITY_THROTTLE_MS = 250
 let combatActivityLast = 0
 let combatActivityTimer: ReturnType<typeof setTimeout> | null = null
+function sendCombatActivity(): void {
+  sendToMain(IPC.onCombatActivity)
+  sendToCombatOverlays(IPC.onCombatActivity)
+}
 function notifyCombatActivity(): void {
   const now = Date.now()
   const since = now - combatActivityLast
   if (since >= COMBAT_ACTIVITY_THROTTLE_MS) {
     combatActivityLast = now
-    sendToMain(IPC.onCombatActivity)
+    sendCombatActivity()
     return
   }
   if (combatActivityTimer) return
   combatActivityTimer = setTimeout(() => {
     combatActivityTimer = null
     combatActivityLast = Date.now()
-    sendToMain(IPC.onCombatActivity)
+    sendCombatActivity()
   }, COMBAT_ACTIVITY_THROTTLE_MS - since)
   combatActivityTimer.unref?.()
 }
@@ -183,4 +187,5 @@ function notifyCombatActivity(): void {
 export function pushWorldChanged(): void {
   if (!SERVE_ASKED) return
   push({ moduleId: MODULE_WORLD_CHANGED, seq: -1 })
+  sendToCombatOverlays(IPC.onModuleChanged, { moduleId: MODULE_WORLD_CHANGED, seq: -1 })
 }

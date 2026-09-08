@@ -72,7 +72,7 @@ const code = (rel: string): string =>
 // the claims are identical, and the second column is the point: the store had to inherit every one
 // of them, and a rewrite that quietly dropped the racing-cursor buffer would compile and ship.
 
-/** The OVERLAY's folding hook, still doing its own per-instance bookkeeping. Untouched. */
+/** Overlay bridge wiring. Deferred-response behavior is covered by overlaySnapshotReader.test. */
 const OVERLAY_HOOK = '../src/renderer/src/overlay/useOverlayModule.ts'
 /** The MAIN window's arm, since JOS-510: one store behind a four-line hook. */
 const APP_STORE = '../src/renderer/src/lib/moduleStore.ts'
@@ -121,9 +121,7 @@ test('a cursor that raced the hydrate is remembered, not dropped', () => {
   // dropped — the reply it raced may have been taken from the engine BEFORE that cursor moved,
   // and no later frame restates a cursor already reported. It terminates because a re-fetch
   // answers at or past the cursor that provoked it.
-  const overlay = code(OVERLAY_HOOK)
-  assert.match(overlay, /pendingSeq/)
-  assert.match(overlay, /if \(pendingSeq > knownSeq\) hydrate\(\)/)
+  // Overlay cursor coalescing is exercised behaviorally in overlaySnapshotReader.test.mts.
 
   // The same buffer, per ENTRY rather than per hook instance, and the re-ask arms the frame flush
   // instead of fetching inline — which is a batching change, not a change to this rule.
@@ -139,7 +137,7 @@ test('a cursor that raced the hydrate is remembered, not dropped', () => {
 test('a world change re-hydrates unconditionally — it is the one frame with no cursor to compare', () => {
   assert.match(
     code(OVERLAY_HOOK),
-    /if \(c\.moduleId === MODULE_WORLD_CHANGED\) \{\s*hydrate\(\)/,
+    /if \(change\.moduleId === MODULE_WORLD_CHANGED\) reader\.reset\(\)/,
     `${OVERLAY_HOOK}: a world change is filtered by moduleId like an ordinary cursor`
   )
   // The store answers the same frame for EVERY module it is holding rather than for the one it is
@@ -155,7 +153,7 @@ test('a world change re-hydrates unconditionally — it is the one frame with no
 
 test('every subscription is unsubscribed — an arm that leaked one would fold a dead module', () => {
   const overlay = code(OVERLAY_HOOK)
-  assert.match(overlay, /const offChanged = window\.eqOverlay\.onModuleChanged\(/, OVERLAY_HOOK)
+  assert.match(overlay, /const offChanged = bridge\.onModuleChanged\(/, OVERLAY_HOOK)
   assert.match(overlay, /offChanged\(\)/, `${OVERLAY_HOOK}: the cursor subscription is never released`)
 
   const store = code(APP_STORE)
@@ -355,4 +353,16 @@ test('the suppression and the Preferences switch stay app-side, in ONE place for
   assert.equal((card.match(/conCardSuppressed\(closedAt\.get\(key\), now\)/g) ?? []).length, 1)
   assert.equal((card.match(/getOverlayConfig\('conCard'\)\.open/g) ?? []).length, 1)
   assert.match(card, /return openCard\(payload, card\.id, now\)/)
+})
+
+test('all four combat meters receive activity and reset signals without subscribing to unrelated module cursors', () => {
+  const fanout = code('../src/main/worldRebuilt.ts')
+  const list = /COMBAT_READING_OVERLAYS: OverlayKind\[\] = \[([^\]]+)\]/.exec(fanout)
+  assert.ok(list)
+  assert.deepEqual([...list[1].matchAll(/'([^']+)'/g)].map((match) => match[1]), ['fight', 'overall', 'heal-fight', 'heal-overall'])
+  assert.match(fanout, /sendToCombatOverlays\(IPC\.onCharacter, character\)/)
+  const pushes = code('../src/main/dataServer/serveDeltas.ts')
+  assert.match(pushes, /sendToCombatOverlays\(IPC\.onCombatActivity\)/)
+  assert.match(pushes, /sendToCombatOverlays\(IPC\.onModuleChanged, \{ moduleId: MODULE_WORLD_CHANGED/)
+  assert.doesNotMatch(pushes, /sendToCombatOverlays\(IPC\.onModuleChanged, frame\)/)
 })
