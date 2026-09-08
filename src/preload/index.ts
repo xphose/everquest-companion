@@ -3,6 +3,7 @@ import { IPC } from '../shared/ipc'
 import { windowsApi } from './windows'
 import { plannerApi } from './planner'
 import { questJournalBridge } from './questJournal'
+import { macroAssistantBridge } from './macros'
 import { rosterApi } from './roster'
 import { soundsBridge } from './sounds'
 // "What IS this" — the spell/item/mob lookups, split out at the 400-line ceiling (preload/knowledge.ts).
@@ -454,6 +455,7 @@ const api = {
   // (The item/mob lookups live in knowledge.ts beside the spell lookups — JOS-293's split.)
   ...plannerApi,
   ...questJournalBridge,
+  ...macroAssistantBridge,
 
   // ---- character sheet (JOS-45) ----
   /** The armory grid, the gear sum and the carry-all ledger for the active character, from their
