@@ -1,5 +1,7 @@
 import type { ClassAbbr } from '../../shared/classCombo'
+import type { PlayerLocation } from '../../shared/playerLocation'
 import { LEGENDS_PROFILE as P, exactRead, pointerAt, readableAddress, type MemoryRead } from './profile'
+import { readProfileSpells } from './spells'
 
 // Native IDs 1..16, independently confirmed by this build's class-name table. Bit zero is unused.
 const CLASS_IDS: readonly ClassAbbr[] = [
@@ -71,14 +73,20 @@ function sameProfile(initial: ActiveProfile, final: ActiveProfile | null): boole
  * It is not the learned-class table or a saved loadout. The chain is bounded and resolved twice;
  * any loading/swap race omits classes while the independent location read can remain useful.
  */
-export function readActiveClasses(read: MemoryRead, base: bigint): ClassAbbr[] | undefined {
+export function readActivePlayerProfile(read: MemoryRead, base: bigint): Pick<PlayerLocation, 'classes' | 'spellbook' | 'memorizedSpells'> {
   try {
     const initial = activeProfile(read, base)
-    if (!initial) return undefined
+    if (!initial) return {}
     const classes = classesFromMask(initial.mask)
-    if (!classes || !sameProfile(initial, activeProfile(read, base))) return undefined
-    return pointerAt(read, base + P.characterRva) === initial.owner ? classes : undefined
+    if (!classes) return {}
+    const spells = readProfileSpells(read, base, initial.profile)
+    if (!sameProfile(initial, activeProfile(read, base))) return {}
+    return pointerAt(read, base + P.characterRva) === initial.owner ? { classes, ...spells } : {}
   } catch {
-    return undefined
+    return {}
   }
+}
+
+export function readActiveClasses(read: MemoryRead, base: bigint): ClassAbbr[] | undefined {
+  return readActivePlayerProfile(read, base).classes
 }

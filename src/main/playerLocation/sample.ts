@@ -1,6 +1,6 @@
 import type { PlayerLocation, PlayerLocationResult } from '../../shared/playerLocation'
 import { LEGENDS_PROFILE as P, exactRead, pointerAt, readableAddress, type MemoryRead } from './profile'
-import { readActiveClasses } from './activeClasses'
+import { readActivePlayerProfile } from './activeClasses'
 
 const NOT_IN_WORLD: PlayerLocationResult = {
   state: 'not-in-world', reason: 'Waiting for a stable player location in the game world.'
@@ -90,7 +90,7 @@ export function samplePlayer(read: MemoryRead, base: bigint, now: () => number =
   const zone = zoneName(zoneBytes.subarray(P.zoneShortName - P.zoneEntryId))
   if (!zone || zoneBytes.readUInt32LE() !== identity.zoneId) return NOT_IN_WORLD
   const level = readLevel(read, identity.player)
-  const classes = readActiveClasses(read, base)
+  const profile = readActivePlayerProfile(read, base)
   const freshName = playerName(exactRead(read, identity.player + BigInt(P.name), 64))
   const freshType = exactRead(read, identity.player + BigInt(P.type), 1)[0]
   if (freshName !== position.characterName || freshType !== 0) return NOT_IN_WORLD
@@ -98,6 +98,6 @@ export function samplePlayer(read: MemoryRead, base: bigint, now: () => number =
   return {
     state: 'live',
     location: { ...position, zone, ...(level === undefined ? {} : { level }),
-      ...(classes === undefined ? {} : { classes }), sampledAt: now() }
+      ...profile, sampledAt: now() }
   }
 }
