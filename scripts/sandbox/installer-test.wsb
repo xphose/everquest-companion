@@ -4,8 +4,7 @@
 
     Requires Windows Sandbox (Windows 11 Pro/Enterprise): enable once with
       Enable-WindowsOptionalFeature -Online -FeatureName 'Containers-DisposableClientVM' -All
-    then reboot. (Not currently enabled on this dev machine — this harness is
-    ready-to-run once it is.)
+    then reboot.
 
     What it does: maps this repo's release/ folder read-only into the sandbox and
     a results/ folder read-write, then on logon runs installer-test.ps1 which
@@ -23,22 +22,22 @@
 
     Read: scripts\sandbox\results\result.txt after it finishes.
 
-    NOTE: HostFolder paths must be ABSOLUTE. They're written for this repo's
-    location (C:\Users\jmoye\everquest-companion); adjust if the repo moves.
+    HostFolder placeholders are resolved by the wrapper into a local generated configuration.
+    Use -RepositoryRoot or -ResultsDirectory to override its portable defaults.
   -->
   <MappedFolders>
     <MappedFolder>
-      <HostFolder>C:\Users\jmoye\everquest-companion\release</HostFolder>
+      <HostFolder>{{RELEASE_DIR}}</HostFolder>
       <SandboxFolder>C:\release</SandboxFolder>
       <ReadOnly>true</ReadOnly>
     </MappedFolder>
     <MappedFolder>
-      <HostFolder>C:\Users\jmoye\everquest-companion\scripts\sandbox</HostFolder>
+      <HostFolder>{{HARNESS_DIR}}</HostFolder>
       <SandboxFolder>C:\harness</SandboxFolder>
       <ReadOnly>true</ReadOnly>
     </MappedFolder>
     <MappedFolder>
-      <HostFolder>C:\Users\jmoye\everquest-companion\scripts\sandbox\results</HostFolder>
+      <HostFolder>{{RESULTS_DIR}}</HostFolder>
       <SandboxFolder>C:\results</SandboxFolder>
       <ReadOnly>false</ReadOnly>
     </MappedFolder>

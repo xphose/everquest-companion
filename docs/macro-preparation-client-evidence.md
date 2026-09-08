@@ -1,5 +1,7 @@
 # Utility spell preparation: supported client evidence
 
+Character names in this document are anonymized as `Samplehero`.
+
 Read-only analysis on 2026-09-08 of the installed EverQuest Legends client with
 SHA-256 `f1c6ab2f07a5d08e62bb936061fd01049fa7b64ce8ddac50c57009162088a9f9`.
 Addresses below are module-relative RVAs. No command was executed to establish
