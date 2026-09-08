@@ -1,6 +1,6 @@
 import type { CharacterRef } from './types'
 import type { ClassAbbr } from './classCombo'
-import type { MacroAuditIssue, MacroRecipe, MacroSelection, MacroStyle } from './macros'
+import type { MacroAuditIssue, MacroLoadoutPlan, MacroRecipe, MacroSelection, MacroStyle } from './macros'
 
 export interface MacroAssistantSettings {
   autoUpdate: boolean
@@ -29,10 +29,16 @@ export interface MacroAssistantSnapshot {
     classes: ClassAbbr[]
     level?: number
     knownSpells?: number
+    /** All occupied native gem entries; some may be locked or beyond /cast's range. */
     memorizedSpells?: number
+    /** Verified unlocked gem positions usable through /cast, restricted to 1 through 14. */
+    availableSpellSlots?: number
+    filledSpellSlots?: number
+    emptySpellSlots?: number
   }
   settings: MacroAssistantSettings
   recipes: MacroRecipe[]
+  loadout?: MacroLoadoutPlan
   existing: MacroExistingSocial[]
   installation: {
     state: 'off' | 'ready' | 'pending' | 'applied' | 'conflict' | 'unavailable'

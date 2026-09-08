@@ -1,4 +1,5 @@
 import type { MacroAssistantMutation, MacroAssistantMutationResult, MacroAssistantSnapshot } from '../../shared/macroAssistant'
+import { castableMacroSlots } from '../../shared/macros/slots'
 import type { MacroSaved, MacroServiceDeps, MacroWorld } from './types'
 import { assertMacroWorld, emptyMacroSaved, macroMutation, worldKey } from './settings'
 import { currentRecipes, macroSnapshot, readMacroModel, selectedTarget, trustedQueue, type MacroModel } from './model'
@@ -18,7 +19,7 @@ function configure(model: MacroModel, mutation: Extract<MacroAssistantMutation, 
 }
 
 function rememberPlan(model: MacroModel): void {
-  if (!model.input) return
+  if (!model.input || castableMacroSlots(model.input.player) === null) return
   model.saved.recipes = currentRecipes(model)
   model.saved.classes = model.input.player.classes
   model.saved.level = model.input.player.level
@@ -26,6 +27,8 @@ function rememberPlan(model: MacroModel): void {
 
 function refreshAutoQueue(model: MacroModel): void {
   if (!model.input || !model.target || !model.saved.settings.autoUpdate || model.saved.restoreRequested) return
+  // Unknown capacity is an incomplete observation, never an instruction to retire spell macros.
+  if (castableMacroSlots(model.input.player) === null) return
   if (!model.saved.settings.selections.length && !Object.values(model.saved.managed).some((items) => items.length)) return
   const queue = trustedQueue(model, 'auto')
   if (queue.signature !== model.saved.lastSignature && queue.signature !== model.saved.queued?.signature) model.saved.queued = queue

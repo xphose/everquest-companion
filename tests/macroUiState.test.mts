@@ -16,7 +16,7 @@ Object.assign(globalThis, { React })
 
 function snapshot(characterId = 'Example@server'): MacroAssistantSnapshot {
   return { character: { name: 'Example', server: 'server', logPath: 'fixture.log' }, characterId,
-    context: { live: true, message: 'Current character', classes: ['MAG'], level: 10 },
+    context: { live: true, message: 'Current character', classes: ['MAG'], level: 10, availableSpellSlots: 8, emptySpellSlots: 7 },
     settings: { autoUpdate: false, style: 'solo', selections: [], destination: { bar: 4, page: 1 } }, recipes: [], existing: [],
     installation: { state: 'ready', message: 'Ready', targetFiles: ['Example_server_LO1.ini'], pendingCount: 0, canRestore: false, conflicts: [] } }
 }
