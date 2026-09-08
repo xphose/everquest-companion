@@ -43,6 +43,14 @@ export async function readCharacterFile(root: string, name: string): Promise<Cha
   } finally { await file.close() }
 }
 
+/** The client inherits missing spell-set keys from this file. It is observed, never edited. */
+export async function readMacroDefaults(root: string): Promise<CharacterFile | undefined> {
+  try { return await readCharacterFile(root, 'defaults.ini') } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    throw error
+  }
+}
+
 export function encodeCharacterFile(file: CharacterFile, text: string): Buffer {
   const content = Buffer.from(text, 'latin1')
   return file.bom ? Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), content]) : content

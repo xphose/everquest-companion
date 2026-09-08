@@ -4,6 +4,8 @@ import type { MacroSaved, MacroServiceDeps, MacroWorld } from './types'
 import { assertMacroWorld, emptyMacroSaved, macroMutation, worldKey } from './settings'
 import { currentRecipes, macroSnapshot, readMacroModel, selectedTarget, trustedQueue, type MacroModel } from './model'
 import { applyQueuedMacros, restoreMacros } from './installation'
+import { failedPreparation, freezeCombatPlan, observePreparation } from './preparationState'
+import { queuePreparation } from './preparationQueue'
 
 function message(error: unknown): string { return error instanceof Error ? error.message : 'Unable to update macros.' }
 
@@ -19,7 +21,7 @@ function configure(model: MacroModel, mutation: Extract<MacroAssistantMutation, 
 }
 
 function rememberPlan(model: MacroModel): void {
-  if (!model.input || castableMacroSlots(model.input.player) === null) return
+  if (!model.input || castableMacroSlots(model.input.player) === null || freezeCombatPlan(model)) return
   model.saved.recipes = currentRecipes(model)
   model.saved.classes = model.input.player.classes
   model.saved.level = model.input.player.level
@@ -29,6 +31,7 @@ function refreshAutoQueue(model: MacroModel): void {
   if (!model.input || !model.target || !model.saved.settings.autoUpdate || model.saved.restoreRequested) return
   // Unknown capacity is an incomplete observation, never an instruction to retire spell macros.
   if (castableMacroSlots(model.input.player) === null) return
+  if (freezeCombatPlan(model)) return
   if (!model.saved.settings.selections.length && !Object.values(model.saved.managed).some((items) => items.length)) return
   const queue = trustedQueue(model, 'auto')
   if (queue.signature !== model.saved.lastSignature && queue.signature !== model.saved.queued?.signature) model.saved.queued = queue
@@ -45,6 +48,8 @@ async function processPending(deps: MacroServiceDeps, model: MacroModel): Promis
     }
   } catch (error) {
     saved.status = { state: 'conflict', message: message(error), conflicts: [message(error)] }
+    failedPreparation(model, message(error))
+    saved.lastSignature = saved.queued?.signature
     // A refused apply is reviewable and never silently retries a conflict on every timer tick.
     saved.queued = undefined
     saved.restoreRequested = false
@@ -77,6 +82,7 @@ export function createMacroService(deps: MacroServiceDeps): MacroService {
     return readMacroModel(deps, world, saved)
   }
   const finish = async (model: MacroModel): Promise<MacroAssistantSnapshot> => {
+    observePreparation(model, deps.now())
     rememberPlan(model)
     refreshAutoQueue(model)
     await processPending(deps, model)
@@ -100,6 +106,11 @@ export function createMacroService(deps: MacroServiceDeps): MacroService {
         const model = await read()
         if (!model.world.characterId || mutation.characterId !== model.world.characterId) throw new Error('The active character changed. Refresh Macros.')
         if (mutation.action === 'configure') configure(model, mutation)
+        else if (mutation.action === 'prepare') {
+          model.saved.queued = await queuePreparation(deps, model, mutation, trustedQueue(model, 'prepare', false))
+          model.saved.restoreRequested = false
+          model.saved.status = undefined
+        }
         else if (mutation.action === 'queue') {
           model.saved.queued = trustedQueue(model, 'manual')
           model.saved.restoreRequested = false

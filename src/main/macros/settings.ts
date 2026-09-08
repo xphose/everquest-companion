@@ -32,10 +32,18 @@ function validDestination(value: unknown): boolean {
   const dest = object(value)
   return Boolean(dest && Object.keys(dest).length === 2 && slot(dest.bar) && slot(dest.page))
 }
+function preparationMutation(value: Record<string, unknown>): MacroAssistantMutation | null {
+  const ids = value.spellIds
+  if (Object.keys(value).some((key) => !['characterId', 'action', 'spellIds', 'destination'].includes(key))) return null
+  if (!Array.isArray(ids) || ids.length < 1 || ids.length > 4 || !Array.from(ids).every((id) => typeof id === 'number' && Number.isInteger(id) && id > 0 && id <= 0x7fffffff)) return null
+  if (new Set(ids).size !== ids.length || !validDestination(value.destination)) return null
+  return value as unknown as MacroAssistantMutation
+}
 export function macroMutation(raw: unknown): MacroAssistantMutation | null {
   const value = object(raw)
   if (!value || typeof value.characterId !== 'string' || value.characterId.length > 200) return null
   if (value.action === 'queue' || value.action === 'restore') return value as unknown as MacroAssistantMutation
+  if (value.action === 'prepare') return preparationMutation(value)
   if (value.action !== 'configure') return null
   const settings = settingsPatch(value.settings)
   return settings ? { characterId: value.characterId, action: 'configure', settings } : null

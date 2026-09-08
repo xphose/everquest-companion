@@ -4,6 +4,21 @@ import type { MacroAssistantSettings, MacroAssistantSnapshot } from '../../share
 import type { MacroRecipe, MacroSpell } from '../../shared/macros'
 import type { PlayerLocationResult } from '../../shared/playerLocation'
 import type { ManagedSocial, SocialRequest } from './socialIni'
+import type { MacroPreparationPlan } from '../../shared/macroPreparation'
+import type { ManagedSpellLoadout, SpellLoadoutRequest } from './spellLoadoutIni'
+
+export interface PreparedMacros {
+  targetFile: string
+  plan: MacroPreparationPlan
+  destination: { bar: number; page: number }
+  sets: SpellLoadoutRequest[]
+  requests: SocialRequest[]
+  createdAt: string
+  installedAt?: string
+  unchanged?: boolean
+  invalidated?: string
+  retired?: boolean
+}
 
 export interface MacroWorld {
   characterId: string | null
@@ -16,18 +31,23 @@ export interface QueuedMacros {
   requests: SocialRequest[]
   problems: string[]
   signature: string
-  source: 'auto' | 'manual'
+  source: 'auto' | 'manual' | 'prepare'
+  preparation?: PreparedMacros
 }
 export interface MacroApplied {
   targetFile: string
   hash: string
   backup: string
   previousManaged: ManagedSocial[]
+  previousSetManaged?: ManagedSpellLoadout[]
+  previousPreparation?: PreparedMacros
   at: string
 }
 export interface MacroSaved {
   settings: MacroAssistantSettings
   managed: Record<string, ManagedSocial[]>
+  setManaged?: Record<string, ManagedSpellLoadout[]>
+  preparations?: Record<string, PreparedMacros>
   queued?: QueuedMacros
   applied?: MacroApplied
   restoreRequested?: boolean

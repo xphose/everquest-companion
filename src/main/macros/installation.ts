@@ -1,7 +1,8 @@
 import type { MacroSaved, MacroServiceDeps, MacroWorld } from './types'
 import { assertMacroWorld } from './settings'
-import { bytesHash, encodeCharacterFile, readBackup, readCharacterFile, replaceCharacterFile } from './files'
-import { planSocialIni } from './socialIni'
+import { bytesHash, encodeCharacterFile, readBackup, readCharacterFile, readMacroDefaults, replaceCharacterFile } from './files'
+import { installationPlan, rememberPreparation, unchangedDefaults } from './preparationInstall'
+import type { QueuedMacros } from './types'
 
 async function exited(deps: MacroServiceDeps, world: MacroWorld): Promise<void> {
   assertMacroWorld(world, deps.world())
@@ -10,29 +11,41 @@ async function exited(deps: MacroServiceDeps, world: MacroWorld): Promise<void> 
   if (player.state !== 'not-running') throw new Error('Waiting for EverQuest to exit before changing character settings.')
 }
 
-export async function applyQueuedMacros(deps: MacroServiceDeps, world: MacroWorld, saved: MacroSaved): Promise<void> {
-  const queue = saved.queued
-  if (!queue || !world.root) return
-  await exited(deps, world)
-  const file = await readCharacterFile(world.root, queue.targetFile)
-  const previous = saved.managed[queue.targetFile] ?? []
-  const plan = planSocialIni(file.text, queue.requests, previous, { retireMissing: true })
-  const conflicts = [...queue.problems, ...plan.conflicts.map((problem) => problem.reason)]
-  if (plan.changed) {
-    const updated = encodeCharacterFile(file, plan.text)
-    const backup = await replaceCharacterFile({ root: world.root, name: queue.targetFile, original: file.bytes,
-      updated, backupDir: deps.backupDir, guard: () => exited(deps, world) })
-    saved.applied = { targetFile: queue.targetFile, hash: bytesHash(updated), backup,
-      previousManaged: previous, at: new Date(deps.now()).toISOString() }
-    saved.managed[queue.targetFile] = plan.managed
-  }
-  saved.lastSignature = queue.signature
-  saved.queued = undefined
+function completedStatus(saved: MacroSaved, queue: QueuedMacros, plan: ReturnType<typeof installationPlan>, at: string): void {
+  const { changed, conflicts } = plan
   saved.status = conflicts.length
     ? { state: 'conflict', message: 'Some selected macros need attention. Existing edits were preserved.', conflicts }
-    : { state: 'applied', message: plan.changed ? 'Managed hotbuttons saved. They will load next time you enter the game.' : 'The managed hotbuttons already match this plan.', conflicts: [],
-      completion: { kind: plan.changed ? 'written' : 'unchanged', at: plan.changed && saved.applied ? saved.applied.at : new Date(deps.now()).toISOString(),
-        targetFile: queue.targetFile, destination: { ...saved.settings.destination } } }
+    : { state: 'applied', message: changed ? 'Managed hotbuttons saved. They will load next time you enter the game.' : 'The managed hotbuttons already match this plan.', conflicts: [],
+      completion: { kind: changed ? 'written' : 'unchanged', at, targetFile: queue.targetFile, destination: { ...saved.settings.destination } } }
+}
+
+export async function applyQueuedMacros(deps: MacroServiceDeps, world: MacroWorld, saved: MacroSaved): Promise<void> {
+  const queue = saved.queued
+  const root = world.root
+  if (!queue || !root) return
+  await exited(deps, world)
+  const file = await readCharacterFile(root, queue.targetFile)
+  const defaults = queue.preparation ? await readMacroDefaults(root) : undefined
+  const previous = saved.managed[queue.targetFile] ?? []
+  const plan = installationPlan(file, defaults, queue, saved)
+  const guard = async (): Promise<void> => {
+    await exited(deps, world)
+    if (queue.preparation) await unchangedDefaults(root, defaults)
+  }
+  const at = new Date(deps.now()).toISOString()
+  if (plan.changed) {
+    const updated = encodeCharacterFile(file, plan.text)
+    const backup = await replaceCharacterFile({ root, name: queue.targetFile, original: file.bytes,
+      updated, backupDir: deps.backupDir, guard })
+    saved.applied = { targetFile: queue.targetFile, hash: bytesHash(updated), backup,
+      previousManaged: previous, previousSetManaged: saved.setManaged?.[queue.targetFile],
+      previousPreparation: saved.preparations?.[queue.targetFile], at }
+    saved.managed[queue.targetFile] = plan.managed
+  } else await guard()
+  rememberPreparation(saved, queue, plan.setManaged, { at, changed: plan.changed })
+  saved.lastSignature = queue.signature
+  saved.queued = undefined
+  completedStatus(saved, queue, plan, at)
 }
 
 export async function restoreMacros(deps: MacroServiceDeps, world: MacroWorld, saved: MacroSaved): Promise<void> {
@@ -45,6 +58,11 @@ export async function restoreMacros(deps: MacroServiceDeps, world: MacroWorld, s
   await replaceCharacterFile({ root: world.root, name: applied.targetFile, original: file.bytes,
     updated: original, backupDir: deps.backupDir, guard: () => exited(deps, world) })
   saved.managed[applied.targetFile] = applied.previousManaged
+  if (saved.setManaged) saved.setManaged[applied.targetFile] = applied.previousSetManaged ?? []
+  if (saved.preparations) {
+    if (applied.previousPreparation) saved.preparations[applied.targetFile] = applied.previousPreparation
+    else saved.preparations = Object.fromEntries(Object.entries(saved.preparations).filter(([name]) => name !== applied.targetFile))
+  }
   saved.applied = undefined
   saved.restoreRequested = false
   saved.status = { state: 'off', message: 'The previous character settings were restored. Automatic updates are off.', conflicts: [],
