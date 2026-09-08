@@ -3,6 +3,7 @@ import { Alert, Box, Button, Checkbox, Chip, FormControlLabel, Paper, Stack, Typ
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import UpgradeIcon from '@mui/icons-material/Upgrade'
 import type { MacroRecipe } from '@shared/macros'
+import { MacroBindings } from './MacroBindings'
 import { copyText } from '../../lib/clipboard'
 
 export function MacroCommands({ lines }: { lines: readonly string[] }): JSX.Element {
@@ -43,8 +44,8 @@ function RecipeInformation({ recipe }: { recipe: MacroRecipe }): JSX.Element {
   </>
 }
 
-export function MacroRecipeCard({ recipe, selected, busy, selectionFull = false, onSelect }: {
-  recipe: MacroRecipe; selected: boolean; busy: boolean; selectionFull?: boolean; onSelect: (checked: boolean) => void
+export function MacroRecipeCard({ recipe, selected, busy, live, selectionFull = false, onSelect }: {
+  recipe: MacroRecipe; selected: boolean; busy: boolean; live: boolean; selectionFull?: boolean; onSelect: (checked: boolean) => void
 }): JSX.Element {
   const label = recipe.ready ? 'Ready' : recipe.status === 'needs-memorizing' ? 'Needs memorizing' : 'Unavailable'
   return <Paper variant="outlined" data-testid={`macros-recipe-${recipe.id}`} sx={{ p: 1.5, minWidth: 0,
@@ -54,6 +55,7 @@ export function MacroRecipeCard({ recipe, selected, busy, selectionFull = false,
       <Chip size="small" variant="outlined" color={recipe.ready ? 'success' : 'default'} label={label} sx={{ flexShrink: 0 }} />
     </Stack>
     <RecipeInformation recipe={recipe} />
+    {recipe.requiredSpellIds.length > 0 && <MacroBindings bindings={recipe.bindings} live={live} />}
     {recipe.lines.length > 0 && <MacroCommands lines={recipe.lines} />}
     <Stack direction="row" spacing={1.5} sx={{ mt: 'auto' }}>
       <Typography variant="caption" color="text.secondary">{recipe.mana} mana</Typography>

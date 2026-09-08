@@ -1,5 +1,6 @@
 import type { CompiledMacro, MacroPlanInput, MacroSpell, MacroStep } from '../macros'
 import { MACRO_CAST_GEMS } from '../macros'
+import { macroBindings } from './bindings'
 import { eligibleSpell } from './spells'
 import { castableMacroSlots, spellGem } from './slots'
 export { spellGem } from './slots'
@@ -101,5 +102,6 @@ export function compileMacro(name: string, steps: MacroStep[], input: MacroPlanI
   out.status = out.ready ? 'ready' : out.missingSpellIds.length && out.missingSpellIds.length === out.reasons.length ? 'needs-memorizing' : 'unavailable'
   // A blocked recipe must not offer an executable-looking partial sequence.
   if (!out.ready) out.lines = []
+  out.bindings = macroBindings(out.lines, input)
   return out
 }

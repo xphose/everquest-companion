@@ -1,11 +1,13 @@
 import type { JSX } from 'react'
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Chip, Stack, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import type { MacroCastBinding } from '@shared/macros'
+import { MacroBindings } from './MacroBindings'
 import type { MacroExistingSocial } from '@shared/macroAssistant'
 import { auditIssueCount } from '@shared/macros/presentation'
 import { MacroCommands } from './MacroRecipeCard'
 
-function ExistingSocial({ social }: { social: MacroExistingSocial }): JSX.Element {
+function ExistingSocial({ social, live }: { social: MacroExistingSocial & { bindings?: MacroCastBinding[] }; live: boolean }): JSX.Element {
   return <Accordion disableGutters variant="outlined" sx={{ '&:before': { display: 'none' } }}>
     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
@@ -17,6 +19,7 @@ function ExistingSocial({ social }: { social: MacroExistingSocial }): JSX.Elemen
     </AccordionSummary>
     <AccordionDetails><Stack spacing={1}>
       <MacroCommands lines={social.lines} />
+      <MacroBindings bindings={social.bindings} live={live} />
       {social.issues.length === 0 && <Typography variant="caption" color="text.secondary">No syntax issues found with the available spell information.</Typography>}
       {social.issues.map((issue, index) => <Alert key={index} severity={issue.severity} sx={{ py: 0.25 }}>
         <Typography variant="body2">{issue.line ? `Line ${issue.line}: ` : ''}{issue.message}</Typography>
@@ -26,7 +29,7 @@ function ExistingSocial({ social }: { social: MacroExistingSocial }): JSX.Elemen
   </Accordion>
 }
 
-export function MacroExisting({ socials }: { socials: MacroExistingSocial[] }): JSX.Element {
+export function MacroExisting({ socials, live }: { socials: MacroExistingSocial[]; live: boolean }): JSX.Element {
   const issues = auditIssueCount(socials)
   return <Box data-testid="macros-existing">
     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
@@ -38,6 +41,6 @@ export function MacroExisting({ socials }: { socials: MacroExistingSocial[] }): 
       Open a social to review its commands and suggestions. Personal macros stay yours; only the set you select above is managed.
     </Typography>
     {socials.length === 0 ? <Typography variant="body2" color="text.secondary">No saved socials found in the selected character file.</Typography>
-      : <Stack spacing={0.75}>{socials.map((social) => <ExistingSocial key={`${social.page}:${social.button}`} social={social} />)}</Stack>}
+      : <Stack spacing={0.75}>{socials.map((social) => <ExistingSocial key={`${social.page}:${social.button}`} social={social} live={live} />)}</Stack>}
   </Box>
 }

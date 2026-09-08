@@ -54,12 +54,12 @@ export default function MacrosView(): JSX.Element {
     {displayed.length === 0 && <Alert severity="info">{filter === 'selected' ? 'Choose a macro or add the starter set to begin.' : 'No suggestions in this group yet. Your active classes and learned spells will fill it in.'}</Alert>}
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5 }}>
       {displayed.map((recipe) => <MacroRecipeCard key={recipe.id} recipe={recipe} selected={selected.has(macroSelectionKey(recipe.selection))}
-        selectionFull={selected.size >= MACRO_SELECTION_LIMIT}
+        live={snapshot.context.live} selectionFull={selected.size >= MACRO_SELECTION_LIMIT}
         busy={busy || !snapshot.characterId} onSelect={(checked) => mutate({ selections: changeSelection(snapshot.settings.selections, recipe.selection, checked) })} />)}
     </Box>
     <Alert severity="info" icon={false} sx={{ py: 0.5 }}>
       <Typography variant="body2"><strong>Macro tip:</strong> A /pause value is in tenths of a second. On a combined line, the command runs first and the pause follows. Spells still need mana, a valid target and any required reagents.</Typography>
     </Alert>
-    <MacroExisting socials={snapshot.existing} />
+    <MacroExisting socials={snapshot.existing} live={snapshot.context.live} />
   </Stack>
 }

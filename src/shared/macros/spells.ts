@@ -34,12 +34,25 @@ export function spellRoles(spell: MacroSpell): MacroRole[] {
     spell.effects.some((slot) => slot.effect === id && test(slot.base))
   const damage = effect(0, (base) => base < 0)
   const heal = !damage && (effect(0, (base) => base > 0) || effect(100, (base) => base > 0))
+  roles.push(...directDamageRoles(spell))
   if (spell.targetType === 5) roles.push(...singleTargetRoles(spell, { heal, damage }))
   if (heal) roles.push(...FRIENDLY_HEALS[spell.targetType] ?? [])
   // EQEmu names effect 106 SummonBSTPet; warders use the verified self target.
   if (effect(33) || effect(71) || spell.targetType === 6 && effect(106)) roles.push('summon-pet')
   if (beneficialBuff(spell, damage)) roles.push('buff')
   return roles
+}
+
+function directDamageRoles(spell: MacroSpell): MacroRole[] {
+  if (!directDamage(spell)) return []
+  return spell.targetType === 1 ? ['damage', 'finisher'] : ['finisher']
+}
+
+/** Target 1 is a targeted projectile (EQEmu ST_TargetOptional), not an area effect.
+ * Unknown duration cannot establish an instant hit for a finisher. */
+export function directDamage(spell: MacroSpell): boolean {
+  return [1, 5].includes(spell.targetType) && spell.durationTicks === 0 &&
+    spell.effects.some((slot) => slot.effect === 0 && Number.isFinite(slot.base) && slot.base < 0)
 }
 
 function singleTargetRoles(spell: MacroSpell, hp: { heal: boolean; damage: boolean }): MacroRole[] {
@@ -64,7 +77,8 @@ function buffEffect(slot: MacroSpell['effects'][number]): boolean {
   return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 46, 47, 48, 49, 50, 69].includes(slot.effect) && slot.base > 0
 }
 
-/** Families are ordered by readiness, then a stable name. Rank comparison is ONLY within a line. */
+/** Finishers follow current gem order; other families use readiness, then a stable name.
+ * Rank comparison is ONLY within a line. */
 export function roleFamilies(input: MacroPlanInput, role: MacroRole): MacroSpell[][] {
   const memorized = memorizedMacroSpellIds(input.player)
   const lines = new Map<string, MacroSpell[]>()
@@ -74,9 +88,16 @@ export function roleFamilies(input: MacroPlanInput, role: MacroRole): MacroSpell
     family.push(spell)
     lines.set(key, family)
   }
-  return [...lines.values()].map((line) => line.sort(compareRanks)).sort((a, b) =>
+  const families = [...lines.values()].map((line) => line.sort(compareRanks))
+  // A finisher follows the player's actual gem order, never spell IDs or alphabetic names.
+  if (role === 'finisher') return families.sort((a, b) => familyGem(a, memorized) - familyGem(b, memorized))
+  return families.sort((a, b) =>
     Number(b.some((s) => memorized?.includes(s.id))) -
     Number(a.some((s) => memorized?.includes(s.id))) || a[0].name.localeCompare(b[0].name))
+}
+function familyGem(family: MacroSpell[], memorized: number[]): number {
+  const position = memorized.findIndex((id) => family.some((spell) => spell.id === id))
+  return position < 0 ? Infinity : position
 }
 function compareRanks(a: MacroSpell, b: MacroSpell): number {
   return parseSpellRank(b.name).rank - parseSpellRank(a.name).rank || a.name.localeCompare(b.name)
