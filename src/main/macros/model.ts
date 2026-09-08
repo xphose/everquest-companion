@@ -11,6 +11,7 @@ import type { MacroSaved, MacroServiceDeps, MacroWorld, QueuedMacros } from './t
 import { assertMacroWorld } from './settings'
 import { characterFiles, readCharacterFile } from './files'
 import { readSocials } from './socialIni'
+import { includePreparation, preparationSnapshot } from './preparationState'
 
 export interface MacroModel {
   world: MacroWorld
@@ -71,7 +72,7 @@ export function currentRecipes(model: MacroModel): MacroRecipe[] {
   return planMacros(model.input, model.saved.settings.selections)
 }
 
-export function trustedQueue(model: MacroModel, source: QueuedMacros['source']): QueuedMacros {
+export function trustedQueue(model: MacroModel, source: QueuedMacros['source'], includePrepared = true): QueuedMacros {
   if (!model.input) throw new Error('Wait for a fresh observation of this character’s classes, spellbook, and gems.')
   if (castableMacroSlots(model.input.player) === null) throw new Error('Wait for a verified observation of unlocked spell slots before queuing a new macro plan.')
   if (!model.target) throw new Error(model.files.length > 1 ? 'Choose the character settings file to update.' : 'No matching character settings file is available.')
@@ -83,7 +84,8 @@ export function trustedQueue(model: MacroModel, source: QueuedMacros['source']):
   const requests = wanted.filter((recipe) => recipe.ready).map((recipe) => ({ id: recipe.id, name: recipe.name,
     color: 0, lines: recipe.lines, hotbar: { ...model.saved.settings.destination } }))
   const signature = JSON.stringify([model.target, requests, problems])
-  return { targetFile: model.target, requests, problems, signature, source }
+  const queue = { targetFile: model.target, requests, problems, signature, source }
+  return includePrepared ? includePreparation(model, queue) : queue
 }
 
 async function existingSocials(model: MacroModel): Promise<MacroAssistantSnapshot['existing']> {
@@ -137,5 +139,5 @@ export async function macroSnapshot(model: MacroModel): Promise<MacroAssistantSn
   const loadout = model.input ? planMacroLoadout(model.input, recipes, model.saved.settings.selections) : undefined
   return { character: model.world.character, characterId: model.world.characterId,
     context: playerContext(model),
-    settings: model.saved.settings, recipes, loadout, existing, installation: installation(model) }
+    settings: model.saved.settings, recipes, loadout, preparation: preparationSnapshot(model), existing, installation: installation(model) }
 }
