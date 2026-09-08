@@ -1,4 +1,4 @@
-import type { MacroSaved, QueuedMacros } from './types'
+import type { MacroApplied, MacroSaved, QueuedMacros } from './types'
 import { readMacroDefaults, type CharacterFile } from './files'
 import { planSpellLoadoutIni, type ManagedSpellLoadout } from './spellLoadoutIni'
 import { planSocialIni } from './socialIni'
@@ -27,6 +27,17 @@ export function installationPlan(file: CharacterFile, defaults: CharacterFile | 
   if (prepared && packageConflicts.length) throw new Error(packageConflicts.join(' '))
   return { text: socials.text, changed: socials.text !== file.text, managed: socials.managed, setManaged: sets?.managed,
     conflicts: [...queue.problems, ...packageConflicts] }
+}
+
+export function restorePreparationOwnership(saved: MacroSaved, applied: MacroApplied): void {
+  if (saved.setManaged) saved.setManaged[applied.targetFile] = applied.previousSetManaged ?? []
+  if (!saved.preparations) return
+  const retained = saved.preparations[applied.targetFile]
+  if (retained?.preserveBaseline) {
+    saved.preparations[applied.targetFile] = { ...retained, retired: true, sets: [], requests: [],
+      invalidated: 'Character settings were restored. Restore the captured combat gems manually before rebuilding preparation.' }
+  } else if (applied.previousPreparation) saved.preparations[applied.targetFile] = applied.previousPreparation
+  else saved.preparations = Object.fromEntries(Object.entries(saved.preparations).filter(([name]) => name !== applied.targetFile))
 }
 
 export function rememberPreparation(saved: MacroSaved, queue: QueuedMacros, sets: ManagedSpellLoadout[] | undefined, receipt: { at: string; changed: boolean }): void {

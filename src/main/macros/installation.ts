@@ -1,7 +1,7 @@
 import type { MacroSaved, MacroServiceDeps, MacroWorld } from './types'
 import { assertMacroWorld } from './settings'
 import { bytesHash, encodeCharacterFile, readBackup, readCharacterFile, readMacroDefaults, replaceCharacterFile } from './files'
-import { installationPlan, rememberPreparation, unchangedDefaults } from './preparationInstall'
+import { installationPlan, rememberPreparation, restorePreparationOwnership, unchangedDefaults } from './preparationInstall'
 import type { QueuedMacros } from './types'
 
 async function exited(deps: MacroServiceDeps, world: MacroWorld): Promise<void> {
@@ -64,11 +64,7 @@ export async function restoreMacros(deps: MacroServiceDeps, world: MacroWorld, s
   await replaceCharacterFile({ root: world.root, name: applied.targetFile, original: file.bytes,
     updated: original, backupDir: deps.backupDir, guard: () => exited(deps, world) })
   saved.managed[applied.targetFile] = applied.previousManaged
-  if (saved.setManaged) saved.setManaged[applied.targetFile] = applied.previousSetManaged ?? []
-  if (saved.preparations) {
-    if (applied.previousPreparation) saved.preparations[applied.targetFile] = applied.previousPreparation
-    else saved.preparations = Object.fromEntries(Object.entries(saved.preparations).filter(([name]) => name !== applied.targetFile))
-  }
+  restorePreparationOwnership(saved, applied)
   saved.applied = undefined
   saved.restoreRequested = false
   saved.status = { state: 'off', message: 'The previous character settings were restored. Automatic updates are off.', conflicts: [],

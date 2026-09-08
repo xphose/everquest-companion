@@ -10,6 +10,9 @@ import type { ManagedSpellLoadout, SpellLoadoutRequest } from './spellLoadoutIni
 export interface PreparedMacros {
   packageId?: string
   completion?: MacroPreparationCompletion
+  /** Last verified temporary-gem state; an unavailable observation does not clear it. */
+  temporaryGems?: boolean
+  preserveBaseline?: boolean
   targetFile: string
   plan: MacroPreparationPlan
   destination: { bar: number; page: number }

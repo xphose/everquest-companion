@@ -30,6 +30,27 @@ export function temporaryPreparationGems(model: MacroModel, prepared: PreparedMa
   return entries.some(({ item, id }) => id === null || id === item.spellId)
 }
 
+/** Cancel file work without losing the return layout of temporary gems already observed in game. */
+export function cancelQueuedPreparation(model: MacroModel, restoring = false): void {
+  const prepared = restoring ? currentPreparation(model) : model.saved.queued?.preparation
+  if (prepared && (temporaryPreparationGems(model, prepared) ?? prepared.temporaryGems) === true) {
+    const previous = model.saved.preparations?.[prepared.targetFile]
+    if (restoring || !previous || JSON.stringify(previous.plan) !== JSON.stringify(prepared.plan)) {
+      model.saved.preparations ??= {}
+      model.saved.preparations[prepared.targetFile] = { ...structuredClone(prepared), preserveBaseline: true,
+        invalidated: 'The preparation update was canceled while temporary gems were active. Restore the captured combat gems before rebuilding preparation.' }
+    }
+  }
+  model.saved.queued = undefined
+}
+
+function observeTemporaryGems(model: MacroModel, prepared: PreparedMacros): void {
+  const temporary = temporaryPreparationGems(model, prepared)
+  if (temporary === undefined) return
+  prepared.temporaryGems = temporary
+  if (!temporary) prepared.preserveBaseline = false
+}
+
 function observedClassesChanged(model: MacroModel, prepared: PreparedMacros, now: number): boolean {
   const name = model.world.character?.name ?? ''
   const location = currentPlayerLocation(model.player, name, now)
@@ -42,6 +63,7 @@ function observedClassesChanged(model: MacroModel, prepared: PreparedMacros, now
 export function observePreparation(model: MacroModel, now: number): void {
   const prepared = currentPreparation(model)
   if (!prepared) return
+  observeTemporaryGems(model, prepared)
   const phase = currentPreparationPhase(model, prepared)
   let invalid = phase.phase === 'changed' ? phase.message : undefined
   if (observedClassesChanged(model, prepared, now)) invalid = 'Your active classes changed. Rebuild adventure preparation for this class combination.'
