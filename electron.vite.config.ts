@@ -2,7 +2,7 @@ import { resolve } from 'path'
 import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   main: {
     // `include` EXTERNALIZES four devDependencies that would otherwise be BUNDLED.
     //
@@ -31,6 +31,9 @@ export default defineConfig({
     // startup parse the day items.json (6.8 MB raw) landed.
     json: { stringify: true },
     build: {
+      // A second watch build can start while Electron or a worker loads the previous bundle.
+      // Keep its hashed chunks until a normal production/e2e build cleans the output again.
+      emptyOutDir: command === 'serve' ? false : undefined,
       // ---- SOURCEMAPS (JOS-100) --------------------------------------------------------
       // ON FOR ALL THREE BUNDLES, so an `errorReport`'s `out/…:line:col` frames can be turned
       // back into source terms by `scripts/symbolicate.mts`. Without them a frame names a
@@ -85,6 +88,8 @@ export default defineConfig({
     // No `externalizeDeps` line: electron-vite 5 defaults it to true, which is exactly what
     // the old bare `externalizeDepsPlugin()` did here.
     build: {
+      // Preload rebuilds can overlap a renderer reload in the same way as main startup.
+      emptyOutDir: command === 'serve' ? false : undefined,
       // Sourcemaps, for the reason spelled out on the main bundle above.
       sourcemap: true,
       rollupOptions: {
@@ -148,4 +153,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))
