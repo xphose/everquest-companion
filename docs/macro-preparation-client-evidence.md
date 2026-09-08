@@ -61,11 +61,20 @@ filename initialization `0x64b94`, string RVA `0x974958`; getters `0x5d6ea0`,
 including partial or inactive personal records. Matching a name is not ownership.
 The native UI may reuse an exact matching name, otherwise the first free record;
 managed definitions need independent field ownership and conflict detection.
+The native save skips records without the dirty flag (`0x2bf5d1`, `0x2c1765`)
+and writes only `inuse` for an inactive record (`0x2bf600`–`0x2bf608`,
+`0x2c179a`). It does not manufacture sixty canonical empty records. Inactive
+records can retain old names and slot fields and are not automatically reclaimed.
 
 The loader scans these fields directly; no additional registration or checksum
 was found. INI data is cached, so file definitions are written while the client
-is fully stopped and are loaded on its next launch. File-based definitions have
-not yet been exercised by pressing their generated buttons in the live game.
+is fully stopped and are loaded on its next launch. The real Samplehero settings
+recorded a preparation installation at 2026-09-08 19:29:42 UTC. A subsequent
+game screenshot showed all five buttons on Hotbar 3, page 1: Load Prep,
+Make Supplies, Make Drink, Make Food, and Restore Combat. The current live gems
+still matched the captured combat baseline. The agent did not press these
+buttons; their native execution remains separate from the verified file and
+visible-button installation.
 
 ## Spell selection evidence
 
@@ -80,3 +89,14 @@ Temporary gem observations must not replace the saved combat baseline or cause
 the normal combat macro updater to retire bindings. Restoring the baseline is a
 separate operation from restoring an INI backup: the former is an in-game spell
 set button, the latter reverses a companion file installation while EQ is closed.
+
+## Verification
+
+The integrated macro changes passed type checking, lint, 4,532 unit tests
+(one additional test skipped), and both the existing macro and new preparation
+end-to-end workflows. The preparation E2E exercises temporary/partial gems,
+class invalidation, captured-baseline retention, queued versus written receipts,
+atomic spell-set/social writes, personal/default record preservation, and an
+exact backup restoration. A read-only live check used Samplehero's level 10,
+SHM/MAG/ENC classes, 62 owned spells and 12 unlocked gems; its in-process
+temporary layout and return matched exactly without changing game files.

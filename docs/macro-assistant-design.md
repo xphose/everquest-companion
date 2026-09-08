@@ -37,6 +37,15 @@ class can receive location and inventory-export utilities without invented abili
 Pet actions require an owned eligible summon/charm effect, and their descriptions state that
 the player needs an existing pet. The planner does not claim a pet is currently present.
 
+Utility recommendations retain every eligible spell family: choosing Summon Food does not
+hide Summon Drink, and choosing one cure does not hide other cure families. Item summons
+cast once and then attempt `/autoinventory`. Additional verified roles include cures,
+root, snare, lull, invisibility, vision, water breathing, levitation, Gate and runes.
+Beastlord warders use the separately identified summon effect 106. Classification follows
+actual owned spells and class-level eligibility for any observed class combination, with
+whole-effect checks for new utility roles. Unsupported target/effect combinations remain
+unclassified; this does not implement Bard twisting or assume unavailable melee/AA skills.
+
 The pet opener combines `/pet attack` with one selected damage family. Self buffs select up to
 four distinct memorized, eligible buff families that target self or single target, preceded
 by targeting yourself. Individual buff families are also offered independently. Spell target
@@ -85,6 +94,46 @@ the writer. Blocked recipes return no executable-looking partial command sequenc
 Readiness means verified bindings and compilable text. It does not imply the character currently
 has enough mana, reagents, a valid target, or an expired cooldown. The recipe reports total mana,
 planned waits, required spells, missing memorization, and reasons for any blocked state.
+
+## Adventure preparation
+
+Preparation is a separate package compiled against an explicitly proposed temporary layout.
+The user chooses up to four owned self-usable utility spells; a Food and Drink preset selects
+the two independent summon families when available. Already memorized utilities retain their
+gems. Missing utilities replace occupied unlocked gems, starting at the highest available
+position, and record the original spell IDs for restoration. Empty gems are deliberately
+excluded from replacements because native spell sets cannot restore emptiness with `-1`.
+
+The package uses one native batch button to load the changed gems, an individual utility
+button for each spell, and one batch button to restore the changed gems. If all chosen spells
+are already memorized, only the utility buttons are needed. Untouched positions remain `-1`
+in both set requests. Utility buttons use uniquely verified full spell names across both
+layouts; a numeric fallback would cast a different combat spell if pressed before loading.
+Ordinary unmemorized macro readiness is not relaxed to enable this separate package.
+When Food and Drink are both selected, a Make Supplies shortcut joins their two cast/stow
+sequences into four lines. Individual food and drink buttons remain available for restocking
+one item. Four selected utility spells plus the optional shortcut and two swap buttons need
+at most seven hotbuttons.
+
+The captured combat baseline remains stable through intermediate empty gems and temporary
+utility observations. Current class, ownership, level, entitlement and spell metadata changes
+invalidate incompatible preparation. The companion observes readiness but does not press
+Load, Use or Restore, and does not guess a memorization pause. See
+[the native command and persistence evidence](macro-preparation-client-evidence.md).
+
+Preparation is queued for the observed character settings file and a separate configurable
+hotbar/page (default 3/1). The runtime allocates spell sets and socials together, preserves
+personal records, and writes a backed-up atomic package only after the game is fully stopped.
+Existing combat macro selections are included without being replaced by temporary bindings.
+The user keeps the companion open, exits EverQuest, waits for Saved, then relaunches.
+An unchanged package receives an Already up to date receipt instead of a new-save or restart
+claim. Receipts identify the captured package so canceling a pending replacement cannot be
+reported as successfully installing it. The last write time and last check time are distinct.
+
+Recommendations are recalculated from current class, level, spellbook and unlocked-gem
+observations. A captured preparation package requires explicit rebuilding after incompatible
+changes, and temporary gems cannot be captured as a new combat baseline. This keeps class
+changes automatic in the suggestions while retaining the player's known return setup.
 
 The audit preserves personal macro text and returns line-numbered advice: missing command
 slashes (including the observed `/pause 30, cast 1` shape), internal empty lines, invalid pause
