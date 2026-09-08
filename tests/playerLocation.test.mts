@@ -3,13 +3,31 @@ import assert from 'node:assert/strict'
 import { samplePlayer } from '../src/main/playerLocation/sample.ts'
 import { matchesMappedImage, exactRead, MemoryReadError, readableAddress } from '../src/main/playerLocation/profile.ts'
 import { locationFixture } from './playerLocationFixture.mts'
+import { mapFromLoc } from '../src/renderer/src/features/maps/mapGeometry.ts'
+
+test('native Ak\'Anon coordinates match the observed in-game marker within the map bounds', () => {
+  const fixture = locationFixture()
+  // Literal memory offsets preserve the independent game-map observation: X=1138, Y=-969.
+  // Constructing these writes from the profile would let a transposed profile validate itself.
+  fixture.playerBytes.writeFloatLE(1138, 0x74)
+  fixture.playerBytes.writeFloatLE(-969, 0x78)
+  const result = samplePlayer(fixture.read, fixture.base)
+  assert.equal(result.state, 'live')
+  if (result.state !== 'live') return
+  assert.equal(result.location.ns, 1138)
+  assert.equal(result.location.ew, -969)
+  const marker = mapFromLoc(result.location)
+  assert.deepEqual(marker, { x: 969, y: -1138, z: 30.9375 })
+  assert.ok(marker.x >= -209.91 && marker.x <= 1049.59)
+  assert.ok(marker.y >= -2255.09 && marker.y <= 83.97)
+})
 
 test('the verified profile reads /loc axes, heading and the zone short name', () => {
   const fixture = locationFixture()
   assert.equal(matchesMappedImage(fixture.read, fixture.base), true)
   assert.deepEqual(samplePlayer(fixture.read, fixture.base, () => 1234), {
-    state: 'live', location: { characterName: 'Wayfinder', zone: 'akanon', ns: -963.25,
-      ew: 1109.5, z: 30.9375, heading: 450.375, sampledAt: 1234 }
+    state: 'live', location: { characterName: 'Wayfinder', zone: 'akanon', ns: 1109.5,
+      ew: -963.25, z: 30.9375, heading: 450.375, sampledAt: 1234 }
   })
   assert.ok(fixture.reads.every(value => value.size <= 4096))
 })
@@ -97,8 +115,8 @@ test('movement during a sample is allowed; a new read observes the new position'
   assert.equal(first.state, 'live')
   assert.equal(next.state, 'live')
   if (first.state === 'live' && next.state === 'live') {
-    assert.equal(first.location.ns, -963.25)
-    assert.equal(next.location.ns, -970)
+    assert.equal(first.location.ew, -963.25)
+    assert.equal(next.location.ew, -970)
   }
 })
 

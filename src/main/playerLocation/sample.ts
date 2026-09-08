@@ -56,13 +56,14 @@ function stillSameWorld(read: MemoryRead, base: bigint, initial: WorldIdentity):
 }
 
 function readPosition(read: MemoryRead, player: bigint): Omit<PlayerLocation, 'zone' | 'sampledAt'> | null {
-  const bytes = exactRead(read, player + BigInt(P.ew), P.type - P.ew + 1)
-  const name = playerName(bytes.subarray(P.name - P.ew, P.name - P.ew + 64))
-  if (!name || bytes[P.type - P.ew] !== 0) return null
-  const ew = bytes.readFloatLE(0)
-  const ns = bytes.readFloatLE(P.ns - P.ew)
-  const z = bytes.readFloatLE(P.z - P.ew)
-  const heading = bytes.readFloatLE(P.heading - P.ew)
+  const start = P.ns
+  const bytes = exactRead(read, player + BigInt(start), P.type - start + 1)
+  const name = playerName(bytes.subarray(P.name - start, P.name - start + 64))
+  if (!name || bytes[P.type - start] !== 0) return null
+  const ns = bytes.readFloatLE(0)
+  const ew = bytes.readFloatLE(P.ew - start)
+  const z = bytes.readFloatLE(P.z - start)
+  const heading = bytes.readFloatLE(P.heading - start)
   if (![ns, ew, z].every(value => Number.isFinite(value) && Math.abs(value) <= 1_000_000)) return null
   if (!Number.isFinite(heading) || heading < 0 || heading >= 512) return null
   return { characterName: name, ns, ew, z, heading }
