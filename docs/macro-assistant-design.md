@@ -7,13 +7,18 @@ same-character observations; stale memory must not be passed as a current `Macro
 `src/shared/macros.ts` contains the public types and bounded selection validators.
 `macros/planner.ts` exports `planMacros(input, selections)`, `macros/compiler.ts` exports
 `compileMacro(name, steps, input)`, and `macros/audit.ts` exports
-`auditMacro(name, lines, input)`.
+`auditMacro(name, lines, input)`. `macros/loadout.ts` exports
+`planMacroLoadout(input, recipes, selections)` for read-only memorization guidance.
 
 ## Evidence and selection
 
 - A spell must occur in the observed spellbook and the runtime client table. A selected
   class must be able to use it at the observed level. Catalog presence alone proves neither
   ownership nor access. Undefined spellbook/gems mean unavailable; empty arrays mean known empty.
+- `unlockedSpellSlots` is an optional independent observation of one-based gem indices.
+  The castable set is its intersection with the verified client command bound, 1–14.
+  Empty unlocked gems contribute capacity; occupied locked gems do not contribute
+  readiness. Missing or malformed entitlement never falls back to occupied counts.
 - `spellLineKey` and `parseSpellRank` define families and rank order. Numerical spell IDs
   never rank power. Across unrelated families the default prefers a castable memorized
   family, then a stable name; this is not a claim that an alphabetically first spell is stronger.
@@ -50,6 +55,25 @@ The inspected Legends client accepts numeric `/cast` bindings only for gems 1–
 uses the first matching gem. Name mode therefore requires known metadata for every occupied
 castable gem and one unique prefix match; otherwise compilation uses the actual numeric gem.
 Names containing command punctuation or unsupported text also use a numeric binding.
+All binding, family-choice and readiness decisions also require independently verified
+slot entitlement. Name lookup remains conservative about prefix collisions with other
+occupied controls, including locked ones, and falls back to an unlocked numeric gem.
+
+## Spell-loadout budget
+
+The loadout planner deduplicates required spell IDs across selected macros. It preserves
+already memorized requirements at their exact unlocked positions, allocates missing
+requirements to unlocked empty slots first, then explicitly proposes replacements of
+non-required spells. Remaining current spells stay in place. This produces at most one
+assignment per available castable gem, with no compressed indices or invented slots.
+
+A plan that exceeds capacity reports its required count, shortfall and omitted spells;
+it never labels the whole selection ready. Unknown entitlement or unsupported selected
+requirements produce an unavailable plan. A proposed assignment does not grant macro
+readiness, enqueue commands for a future layout, or memorize a spell. Actual gem changes
+must arrive through the normal fresh same-character observation before commands update.
+
+## Timing and readiness
 
 A combined `/pause N, /cast ...` line pauses **after** its cast. The compiler rounds cast time
 plus recovery plus a stated 0.2-second scheduling margin up to tenths. Repeated uses of the same

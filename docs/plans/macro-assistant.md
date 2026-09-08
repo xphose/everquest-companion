@@ -7,10 +7,13 @@ them; it does not run rotations or send game commands.
 
 ## Experience
 
-- A live character strip shows level, selected classes, known spells and filled gems.
+- A live character strip shows level, selected classes, known spells, filled gems and
+  independently verified available spell slots. Empty unlocked slots count toward the
+  budget; occupied locked slots never make a cast ready.
 - Solo, Group and Pet support presets order the same evidence-backed suggestions.
 - Recommended macros explain their purpose and show the exact five-or-fewer lines.
-  Ready macros can join the managed set. Learned spells that need memorizing say so.
+  Ready macros can join the managed set. Learned spells that need memorizing can be
+  selected for planning, but their commands are only generated after memorization.
 - Useful roles include direct damage, self/target/pet healing, pet control, crowd
   control, debuffs, buffs, summoning and basic navigation/character-export utilities.
   A pet opener combines pet attack with damage. Self Buffs combines up to four
@@ -24,14 +27,21 @@ them; it does not run rotations or send game commands.
   pending/applied/conflict status and a reversible last-application backup.
   Starter selections follow a role across class and gem changes; individual spell
   choices retain their selected family. Up to twelve macros fit on a hotbar page.
+- A spell-loadout plan shows the gem budget for the selected macros. Several macros
+  can share one spell slot. It keeps required spells in their current unlocked gems,
+  uses empty unlocked gems first, and names any non-required spell a suggestion would
+  replace. If the required spells exceed available slots, it reports the shortfall.
+  The player memorizes the suggested spells in game; the companion detects the result.
 
 ## Evidence and application
 
 The supported client exposes a current-profile spellbook and memorized gem array.
 Both are optional read-only observations behind the same executable guard as live
-position/classes. Only occupied gems 1 through 14 are verified `/cast` bindings;
-the native array's eighteen slots include capacity beyond that command's range.
-Empty capacity does not prove that a gem slot is unlocked. Full-name casting uses
+position/classes. The native array's eighteen slots include capacity beyond the
+verified `/cast` command range of 1 through 14. A separate read of the client slot
+entitlement supplies `unlockedSpellSlots`; a usable binding must be in both sets.
+Neither occupancy nor array length establishes entitlement. Unknown entitlement
+blocks cast readiness and speculative loadout assignments. Full-name casting uses
 unquoted names, with numeric fallback when prefix matching would be ambiguous.
 Self-target sequences use the observed character name. This client does not accept
 `myself` as a `/target` keyword; missing character identity blocks those sequences.
@@ -60,7 +70,8 @@ default: Hotbar 4, page 1) and never move or replace an occupied personal button
 ## Validation
 
 Pure tests cover spell ownership, classes, level, rank changes, gem reorder,
-five-line limits, pauses, incomplete observations, INI preservation, duplicates,
+unlocked/locked/empty slots, shared-spell budgets, loadout shortfalls, five-line limits,
+pauses, incomplete observations, INI preservation, duplicates,
 managed conflicts, retirement and idempotence. Service tests cover active-character
 changes, queued latest-plan replacement, no writes while running/uncertain, closed
 client application, backups and restore conflicts. End-to-end tests use isolated
@@ -72,8 +83,22 @@ observed in installed healing and buff rows and corroborated by the wiki's
 [Strengthen](https://eqlwiki.com/Strengthen) and
 [Minor Healing](https://eqlwiki.com/Minor_Healing) target descriptions.
 
-Merged verification on 2026-09-08: typecheck and lint passed; 4,419 unit tests
-passed with one skipped. The macros, gear-auto-classes, maps-player and
-quest-journal-level E2E specs passed. The macro spec covers the full native-to-file
-path, a queued rank/gem update while the view is unmounted, uncertain process
+The slot-aware feature passed merged typecheck, lint and 4,456 unit tests on
+2026-09-08, with one skipped. The macro E2E covers unlocked empty slots, an occupied
+locked slot, a new unlock, unknown entitlement, a visible missing-spell assignment,
+shared-spell budgeting and an exact capacity shortfall, followed by the full
+native-to-file flow: queued rank/gem changes while unmounted, uncertain process
 states, post-exit application, preservation of personal fields, and exact restore.
+The final serial run passed all four E2E specs: macros, gear-auto-classes,
+maps-player and quest-journal-level (191.7 seconds).
+
+A read-only check of the supported installed client verified 12 unlocked slots,
+12 filled slots and eight distinct required spells for eight selected macros.
+All required spells were already memorized; the proposed loadout preserved every
+current gem. Character configuration hashes were unchanged by the check.
+
+Development restart regression: overlapping watch builds could clear a hashed
+chunk before the newly restarted Electron process loaded it. Main/preload output
+now survives subsequent `serve` builds. Actual Vite bundle tests verify retention
+between generations and ordinary production cleanup; a fresh dev launch also
+includes the spell metadata worker and starts without the missing-module error.

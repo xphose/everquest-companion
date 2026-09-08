@@ -7,6 +7,7 @@ import { buildIfStale, check, dumpArtifacts, failures, reportRun, settle } from 
 import { mainWindow, makeUserData, removeUserData } from './appWindow.mjs'
 import { launchOnFixture, stageFixture, type FixtureLog } from './logFixture.mjs'
 import { CHARACTER_INI, PERSONAL_INI, controlMacroWorker, macroReads, publishMacroPlayer, stageMacros } from './macroFixture.mjs'
+import { verifyMacroSlots } from './macroSlots.mjs'
 
 interface Bridge {
   getMacroAssistant(): Promise<MacroAssistantSnapshot>
@@ -104,6 +105,7 @@ async function session(log: FixtureLog, userData: string, file: string): Promise
     const notice = page.locator('[data-testid="telemetry-notice-off"]')
     if (await notice.count()) await notice.click()
     await liveSuggestions(launched.app, page)
+    await verifyMacroSlots(launched.app, page)
     await dumpArtifacts(page, 'macros-ready')
     await queueInUi(page, file)
     await backgroundInstall(launched.app, page, file)
