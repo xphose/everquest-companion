@@ -47,8 +47,10 @@ export function observePreparation(model: MacroModel, now: number): void {
   if (observedClassesChanged(model, prepared, now)) invalid = 'Your active classes changed. Rebuild adventure preparation for this class combination.'
   if (!invalid) return
   prepared.invalidated = invalid
-  const installed = model.saved.preparations?.[prepared.targetFile]
-  if (installed) installed.invalidated = invalid
+  // This may be the first captured package, with no installed predecessor. Keep its combat
+  // baseline before dropping the unsafe queue so temporary gems can never become a new baseline.
+  model.saved.preparations ??= {}
+  model.saved.preparations[prepared.targetFile] = prepared
   const queue = model.saved.queued
   if (queue?.targetFile === prepared.targetFile && (!queue.preparation?.retired || temporaryPreparationGems(model, prepared) === true)) model.saved.queued = undefined
   model.saved.status = { state: 'conflict', message: invalid, conflicts: [invalid] }
@@ -92,6 +94,7 @@ function preparationInstallation(model: MacroModel, prepared: PreparedMacros): M
     message: conflict ?? (pending
       ? 'Preparation queued. Fully exit EverQuest and wait for Saved before relaunching.' : preparationSavedMessage(prepared)),
     at: prepared.installedAt, targetFile: prepared.targetFile, destination: prepared.destination,
+    packageId: prepared.packageId, completion: pending || conflict ? undefined : prepared.completion,
     loadSetIndex: prepared.sets.find((set) => set.id === 'preparation-load')?.index,
     combatSetIndex: prepared.sets.find((set) => set.id === 'preparation-combat')?.index,
     buttons: prepared.requests.map(({ id, name, lines }) => ({ id, name, lines: [...lines] }))

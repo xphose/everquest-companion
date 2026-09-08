@@ -35,5 +35,6 @@ export function rememberPreparation(saved: MacroSaved, queue: QueuedMacros, sets
   saved.preparations ??= {}
   saved.setManaged[queue.targetFile] = sets
   const installedAt = receipt.changed ? receipt.at : saved.preparations[queue.targetFile]?.installedAt
-  saved.preparations[queue.targetFile] = { ...structuredClone(queue.preparation), installedAt, unchanged: !receipt.changed }
+  saved.preparations[queue.targetFile] = { ...structuredClone(queue.preparation), installedAt, unchanged: !receipt.changed,
+    completion: { kind: receipt.changed ? 'written' : 'unchanged', at: receipt.at } }
 }

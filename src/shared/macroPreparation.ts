@@ -37,6 +37,11 @@ export interface MacroPreparationPlan {
   suppliesButton?: { name: 'Make Supplies'; lines: string[]; mana: number; pauseTenths: number }
 }
 export type MacroPreparationResult = { ok: true; plan: MacroPreparationPlan } | { ok: false; reasons: string[] }
+export interface MacroPreparationCompletion {
+  kind: 'written' | 'unchanged'
+  /** Completion/check time; installation.at remains the last actual save time. */
+  at: string
+}
 export interface MacroPreparationPhase {
   phase: 'unknown' | 'combat' | 'utility-ready' | 'changing' | 'changed'
   message: string
@@ -50,6 +55,9 @@ export interface MacroPreparationSnapshot extends MacroPreparationPhase {
   installation?: {
     state: 'pending' | 'saved' | 'conflict'
     message: string
+    /** Stable for one explicitly captured preparation package, including queued replacements. */
+    packageId?: string
+    completion?: MacroPreparationCompletion
     at?: string
     targetFile?: string
     destination?: { bar: number; page: number }

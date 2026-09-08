@@ -56,7 +56,7 @@ export async function queuePreparation(deps: MacroServiceDeps, model: MacroModel
   const requested = setRequests(result.plan)
   const plan = planSpellLoadoutIni(file.text, defaults, requested, model.saved.setManaged?.[model.target] ?? [])
   const sets = allocatedSets(requested, plan)
-  const prepared = { plan: result.plan, targetFile: model.target, destination: { ...mutation.destination }, sets, createdAt: new Date(deps.now()).toISOString() }
+  const prepared = { packageId: randomUUID(), plan: result.plan, targetFile: model.target, destination: { ...mutation.destination }, sets, createdAt: new Date(deps.now()).toISOString() }
   const preparation: PreparedMacros = { ...prepared, requests: socialRequests(prepared) }
   const requests = [...combat.requests, ...preparation.requests]
   const socials = planSocialIni(plan.text, requests, model.saved.managed[model.target] ?? [], { retireMissing: true })
@@ -65,3 +65,4 @@ export async function queuePreparation(deps: MacroServiceDeps, model: MacroModel
   return { ...combat, source: 'prepare', requests, preparation,
     signature: JSON.stringify([model.target, requests, combat.problems, preparation.sets, preparation.plan]) }
 }
+import { randomUUID } from 'node:crypto'

@@ -16,7 +16,13 @@ function completedStatus(saved: MacroSaved, queue: QueuedMacros, plan: ReturnTyp
   saved.status = conflicts.length
     ? { state: 'conflict', message: 'Some selected macros need attention. Existing edits were preserved.', conflicts }
     : { state: 'applied', message: changed ? 'Managed hotbuttons saved. They will load next time you enter the game.' : 'The managed hotbuttons already match this plan.', conflicts: [],
-      completion: { kind: changed ? 'written' : 'unchanged', at, targetFile: queue.targetFile, destination: { ...saved.settings.destination } } }
+      completion: { kind: changed ? 'written' : 'unchanged', at, targetFile: queue.targetFile, destination: completionDestination(queue) } }
+}
+
+function completionDestination(queue: QueuedMacros): { bar: number; page: number } | undefined {
+  const destinations = queue.requests.flatMap((request) => request.hotbar ? [request.hotbar] : [])
+  const first = destinations[0]
+  return first && destinations.every((destination) => destination.bar === first.bar && destination.page === first.page) ? { ...first } : undefined
 }
 
 export async function applyQueuedMacros(deps: MacroServiceDeps, world: MacroWorld, saved: MacroSaved): Promise<void> {
