@@ -27,6 +27,7 @@ import { registerFeedbackIpc } from './feedback'
 import { registerGraphicsIpc } from './graphics'
 import { registerKnowledgeIpc } from './knowledge'
 import { registerMapsIpc } from './maps'
+import { registerMacrosIpc } from './macros'
 import { registerOutputsIpc } from './outputs'
 import { registerPerfIpc } from './perf'
 import { registerPlannerIpc } from './planner'
@@ -92,6 +93,7 @@ export function registerIpc(): void {
   registerPlannerIpc()
   registerQuestJournalIpc()
   registerMapsIpc()
+  registerMacrosIpc()
   registerPresenceIpc()
   registerWindowIpc()
   registerToastIpc()

@@ -642,6 +642,8 @@ export const IPC = {
   // Args: (query, opts?). Returns MapSearchHit[].
   mapsSearch: 'maps:search',
   mapsPlayerLocation: 'maps:playerLocation',
+  macroAssistantQuery: 'macros:query',
+  macroAssistantMutate: 'macros:mutate',
 
   // ---- settings / alert sharing ("profiles" — src/shared/profiles.ts) ----
   // Every call carries the renderer's whitelisted localStorage prefs (UI_PREF_SPECS): main

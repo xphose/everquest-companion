@@ -8,7 +8,7 @@ import type { PlayerLocationReader } from './client'
 
 let reader: PlayerLocationReader | undefined
 
-/** Maps, Gear, and journal share one worker. Native reads run only when a mounted view asks. */
+/** Views and the enabled/pending macro service share one bounded read-only worker. */
 export async function readActivePlayer(): Promise<PlayerLocationResult> {
   if (!reader) {
     reader = createPlayerLocationReader()
