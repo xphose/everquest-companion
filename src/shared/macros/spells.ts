@@ -36,7 +36,8 @@ export function spellRoles(spell: MacroSpell): MacroRole[] {
   const heal = !damage && (effect(0, (base) => base > 0) || effect(100, (base) => base > 0))
   if (spell.targetType === 5) roles.push(...singleTargetRoles(spell, { heal, damage }))
   if (heal) roles.push(...FRIENDLY_HEALS[spell.targetType] ?? [])
-  if (effect(33) || effect(71)) roles.push('summon-pet')
+  // EQEmu names effect 106 SummonBSTPet; warders use the verified self target.
+  if (effect(33) || effect(71) || spell.targetType === 6 && effect(106)) roles.push('summon-pet')
   if (beneficialBuff(spell, damage)) roles.push('buff')
   return roles
 }

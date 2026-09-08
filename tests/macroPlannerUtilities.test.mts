@@ -139,3 +139,20 @@ test('owned book membership, valid classes and eligible level remain necessary f
   config.player.spellbook = undefined
   assert.deepEqual(planMacros(config).map((r) => r.role), ['loc', 'export'])
 })
+test('a verified owned Beastlord warder enables summoning and existing pet commands for mixed classes', () => {
+  // Effect106 is SummonBSTPet in the primary effect enum; this row is authored.
+  const warder = spell(700, 'Call Warder', [106, 1], { targetType: 6, classLevels: { BST: 8 } })
+  const config = input([warder], ['BST', 'WAR', 'SHM'])
+  const recipes = planMacros(config)
+  assert.deepEqual(recipes.find((r) => r.role === 'summon-pet')!.lines, ['/pause 47, /cast 1'])
+  assert.deepEqual(recipes.find((r) => r.role === 'pet-attack')!.lines, ['/pet attack'])
+  assert.deepEqual(recipes.find((r) => r.role === 'pet-backoff')!.lines, ['/pet back off'])
+  config.player.level = 7
+  assert.deepEqual(planMacros(config).map((r) => r.role), ['loc', 'export'])
+  config.player.level = 10
+  config.player.spellbook = []
+  assert.deepEqual(planMacros(config).map((r) => r.role), ['loc', 'export'])
+  config.player.spellbook = [700]
+  config.spells[0].targetType = 41
+  assert.deepEqual(planMacros(config).map((r) => r.role), ['loc', 'export'])
+})
