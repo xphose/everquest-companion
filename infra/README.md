@@ -80,19 +80,20 @@ endpoint superuser on the whole backlog. Never do it.
 
 ## One-time: the sub-account and the state backend
 
-Already done for this product — recorded here so it can be redone or audited:
+Configure these resources for your own deployment:
 
 1. Create a dedicated account in AWS Organizations for the product.
 2. Create a local profile that assumes an admin role in it. This repo commits
    **no profile name and no account id**; the examples below use `<profile>`.
 3. Hand-create the state backend in that account, in **us-east-1** (a backend
    cannot bootstrap itself):
-   - S3 bucket `eqcompanion-tf-state-dae027bf` — versioning **on**, Block Public
+   - A uniquely named S3 state bucket — versioning **on**, Block Public
      Access all four flags, SSE-S3.
-   - DynamoDB table `eqcompanion-tf-lock`, on-demand, partition key `LockID` (S).
+   - A DynamoDB lock table, on-demand, partition key `LockID` (S).
 
-Those names are hardcoded in the `backend "s3"` block in `versions.tf`. They are
-physical names, not secrets: no account id appears anywhere in git.
+The `backend "s3"` block in `versions.tf` is partial. Put `bucket`, `key`, `region`,
+and `dynamodb_table` in an ignored `backend.local.hcl`, then pass that file to
+`terraform init`. Keep account identifiers and local profiles out of tracked files.
 
 > The lock table is the **last DynamoDB dependency in the tree** and it is
 > Terraform's, not the product's. Terraform now deprecates `dynamodb_table` in
@@ -107,7 +108,7 @@ export AWS_PROFILE=<profile>
 cd infra
 
 node build.mjs                     # BOTH zips FIRST — plan hashes them
-terraform init                     # first run downloads providers + reads the backend
+terraform init -backend-config=backend.local.hcl
 terraform plan  -var triage_principal_arn=arn:aws:iam::<acct>:user/<you>
 terraform apply -var triage_principal_arn=arn:aws:iam::<acct>:user/<you>
 ```
@@ -116,7 +117,7 @@ terraform apply -var triage_principal_arn=arn:aws:iam::<acct>:user/<you>
 both are hashed by the plan. A plan run without a build deploys nothing useful for either
 function.
 
-`alarm_email` defaults to `jmoyers+eqc@gmail.com`; override with
+Supply `alarm_email` through ignored local variables or
 `-var alarm_email=...`. **Confirm the SNS subscription email after the first
 apply** — until you click it, every alarm and budget alert goes nowhere.
 

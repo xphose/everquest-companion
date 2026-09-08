@@ -3760,3 +3760,81 @@ your commit (6db8790 swept one; its wave's later commit completed it).
   combat suite locally) · **RESOLVED in the JOS-531 CI follow-up** — start
   the engine before stamping the live fixture, so startup is outside the
   world-time precondition.
+
+
+## Public-build documentation distillation
+
+Historical descriptions preserved verbatim; current build configuration is in
+`docs/public-builds.md` and AGENTS.md. Historical deployment statements do not
+identify this checkout's configuration or authorize access.
+
+For two days the app could restore its world model from a binary checkpoint
+(JOS-208); the owner removed it anyway (JOS-230): the cold-read stall it
+targeted did not survive its own instrumentation, and it taxed every fold
+change with schema/goldens/census ceremony. WHAT SURVIVED, because it is the
+app's and not the feature's: `tests/foldDeterminism.test.mts` (**a
+historical replay reads no wall clock**), the engine's `st.hydrating` gate
+(`tests/combatReplayClock.test.mts`), and
+`MessageOverlayMiner.lastObservedTs` (a published snapshot's `updatedAt` is
+the LOG's clock). Both product fixes were found by folding the same bytes
+twice and diffing — reach for that again. If a startup-cost ticket comes
+back: measure first, and read `git log 5038f6f0..1c3e584f`. Full
+post-mortem: docs/agents-archive.md.
+
+- **F2: DEPLOYED AND LIVE (2026-08-04)** — submit/idempotency/oversize
+  live-verified, kill switch OPEN, constants in net.ts. Two DSQL live
+  findings encoded: grants on the system-owned `public` schema are
+  unsupported, and `statement_timeout` cannot be SET (client-side
+  query_timeout only; db.ts). Verification detail + the SNS confirmation:
+  docs/agents-archive.md.
+- **ANALYTICS COHORT SPLIT — LIVE (2026-08-05, waves R+S, run under the
+  standing authorization).** The migration ran COPY-FIRST per owner ruling
+  (staging tables, row-count AND sum(n) verification, swap via DSQL's
+  documented `RENAME TO`; nothing dropped until its verified copy existed).
+  Runbook: infra/README.md "THE COHORT MIGRATION". **A ROTATED analyticsId
+  arrives unmarked — re-run `analytics owner-add`**; cohort mechanics live
+  in the USER/OWNER SPLIT bullet below.
+
+- **Usage analytics**: opt-OUT (owner decision over the integrator's opt-in
+  recommendation) but NOTHING transmits before the first-run notice renders;
+  allowlist schema; separate rotatable analyticsId; payload viewer +
+  TELEMETRY.md (plan: docs/plans/usage-analytics.md). A1/A2/A3 are ALL LIVE:
+  a second Lambda (`eqcompanion-telemetry-ingest`) behind `POST
+  /v1/telemetry`, aggregating on arrival into the three tables — NO
+  raw-event store — plus EMF metrics, a dashboard, `analytics
+  digest|wipe|open|close`, and the Triage → Analytics tab. **The endpoint is
+  LIT**: `TELEMETRY_API_URL` is a compiled-in constant;
+  tests/telemetryNet.test.mts pins the exact URL, the single fetch site, and
+  the consent gates (nothing before the notice; opt-out destroys buffer +
+  id). Full detail: docs/agents-archive.md.
+
+### Earlier release and backlog status
+
+## Known open items
+
+- **Toolchain (JOS-63, landed 2026-08-06)**: electron 43.2.0 / vite 7.3.6 /
+  electron-vite 5.0.0. Still open: ~150MB of other-platform onnx binaries in
+  the installer (trim via asarUnpack filters; koffi's excluded prebuilds are
+  the worked example). History: docs/agents-archive.md.
+
+- **Feedback loop**: planned in `docs/plans/feedback-triage.md`; F1/F2 have
+  since SHIPPED (see Cloud above) — the plan is historical intent now.
+- Azure signing: waiting on Microsoft identity validation → cert profile +
+  app registration + repo secrets.
+- Windows Sandbox: WORKING (last run 2026-08-03, PASS, gating v0.2.0) —
+  `run-installer-test.ps1` is the standard pre-ship clean-machine gate.
+- Design docs for shipped 2026-08-03 features live in `docs/plans/` —
+  historical intent; the code + this file are the current truth.
+- Startup could be TAIL-FIRST (attach the live tail, backfill history
+  backwards): needs order-independent folding in every module — a real
+  architecture change, not yet attempted; the `hydrating` flag keeps today's
+  ~6s replay honest meanwhile.
+- Not yet parsed: Dragon Hoard / tradeskill depot / combine loot lines.
+  Group-member combat tracking: future scope.
+- **Open chips (2026-08-05, full briefs in the chips + docs/agents-archive.md):**
+  the combo swap-back blind spot — the hardest inference fix in the repo, do
+  not rush it (PARTLY CLOSED by JOS-79: `reinstatedDrops`; a swap between
+  capped classes still dings for nothing and remains evidence-only); the e2e
+  per-checkout lockfile; copyText still serializing the melee-rounds footer
+  the Rounds panel replaced.
+

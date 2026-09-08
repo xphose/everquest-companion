@@ -29,12 +29,42 @@ archive. Layout: `src/main` (Node), `src/preload`, `src/renderer`,
 `src/shared`, `tests/`, `scripts/`. Per-surface detail:
 docs/agents-archive.md.
 
-- Repo: `C:\Users\<user>\everquest-companion` (public: github.com/jmoyers/everquest-companion).
-- Game log: `C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest
-  Legends\Logs\eqlog_<Char>_<server>.txt` — but the path is auto-discovered +
-  Settings-overridable now; NEVER hardcode, route through
-  `config.ts effectiveEqRoot()/eqLogsDir()`.
-- Active dev character: `Primitive@freeport`. The log is LIVE and growing.
+- Repository root: resolve the current checkout with Git or the script's location.
+- Game installation and logs: auto-discover or use Settings / `EQ_INSTALL_DIR`;
+  route through `config.ts effectiveEqRoot()/eqLogsDir()`.
+- Active character: resolve it from the current session. Never commit a developer's
+  character name, live file path, or account information as a default or fixture.
+
+## Public repository privacy and portability
+
+This is a public app that must work on another person's computer. This rule applies
+to source, configuration, tests, examples, research notes, generated files, commit
+messages, and Git author/committer metadata.
+
+- Never commit personal names, private emails, character/account identifiers,
+  credentials, tokens, raw game exports/logs, private screenshots, or local artifact
+  paths. Keep diagnostic originals and backups outside the tracked repository.
+  Use coherent synthetic identities in fixtures; scrub and anonymize any necessary
+  real evidence before adding it. Earlier fixture carve-outs do not authorize
+  publishing a current user's identity or private data.
+- Resolve paths from the checkout, the OS application-data APIs, installed-game
+  discovery, or explicit configuration. Never assume a developer's home directory,
+  drive, game install, cloud account, repository, signing identity, or task board.
+  Keep public example configuration separate from ignored local configuration.
+- Verified game constants, protocol limits, public source attribution, and synthetic
+  redaction test vectors may remain fixed. They are not personal configuration.
+- Before committing, run `npm run privacy:check -- --staged`; before sharing or
+  publishing, also run `npm run privacy:check` and
+  `npm run privacy:check -- --history <published-base-ref>`. Review results and
+  metadata. Optional private scan terms belong in an ignored external file supplied
+  through `EQC_PRIVACY_TERMS_FILE`, never a committed denylist or command output.
+  A clean latest tree is insufficient if earlier unpublished commits contain data.
+- Use a public alias and privacy-preserving Git email for new commits. Remove private
+  data from unpublished history only after a private external backup. Never rewrite
+  published history or push changes without the user's authorization.
+- Historical references to a maintainer's services or standing deployment authority
+  are not authorization for this checkout. External services require the current
+  user's configuration; sending information or publishing requires their instruction.
 
 ## Operating model (how work happens here — this works, keep it)
 
@@ -67,7 +97,7 @@ docs/agents-archive.md.
   docs/agents-archive.md.
 - **THE BOARD IS IN LINEAR, AND THE OWNER STEERS IT (owner, 2026-08-05).**
   Canonical project management is the kanban in the owner's PERSONAL Linear
-  workspace (Josh's Maker Space, team JOS — never the work workspace).
+  workspace configured by the current user — never an inferred personal or work workspace.
   `scripts/linear.mts` is the CLI (auth: `.triage/linear.env`, gitignored).
   The full loop is the `linear-board` skill (.claude/skills/linear-board) —
   the short form: SYNC fresh before every pick (the owner reorders,
@@ -976,18 +1006,10 @@ alwaysOnTop, click-through pin).
 
 ## The fold checkpoint, and why there isn't one (JOS-208, removed by JOS-230)
 
-For two days the app could restore its world model from a binary checkpoint
-(JOS-208); the owner removed it anyway (JOS-230): the cold-read stall it
-targeted did not survive its own instrumentation, and it taxed every fold
-change with schema/goldens/census ceremony. WHAT SURVIVED, because it is the
-app's and not the feature's: `tests/foldDeterminism.test.mts` (**a
-historical replay reads no wall clock**), the engine's `st.hydrating` gate
-(`tests/combatReplayClock.test.mts`), and
-`MessageOverlayMiner.lastObservedTs` (a published snapshot's `updatedAt` is
-the LOG's clock). Both product fixes were found by folding the same bytes
-twice and diffing — reach for that again. If a startup-cost ticket comes
-back: measure first, and read `git log 5038f6f0..1c3e584f`. Full
-post-mortem: docs/agents-archive.md.
+There is no fold checkpoint (JOS-208/JOS-230). A historical replay reads no wall
+clock; keep the hydrating gate and log-clock `updatedAt`. Measure startup costs
+before proposing persistence. Historical rationale: `docs/agents-archive.md`,
+“Public-build documentation distillation”.
 
 **A FOLD MUST NEVER BE SEEDED WITH WHAT IT IS ABOUT TO RE-DERIVE, AND THE ONLY
 HONEST WAY TO KNOW IS TO FILE EVERY COUNT UNDER ITS SOURCE** (JOS-231). The
@@ -1517,8 +1539,8 @@ the full per-lane evidence lives in docs/agents-archive.md.
   'main' channel feed, and a stable release natively writes only latest.yml,
   so the tag job uploads a copy as main.yml on the same release — old
   main-channel installs step up to stables instead of stalling forever.
-  Azure Trusted Signing wiring is inert until 6 `AZURE_*` repo secrets
-  exist (account `jmoyers-eqtools`, deliberately not renamed).
+  Azure signing requires explicitly configured repository secrets and
+  `EQC_SIGNING_PUBLISHER`; no developer signing account is a default.
 - **`npm ci` DOES NOT INSTALL ELECTRON'S BINARY ANY MORE.** `.npmrc` sets
   `ignore-scripts=true` (no dependency's install hook executes — the npm
   compromise vector), so after any `npm ci` / `npm install` you MUST run
@@ -1881,22 +1903,17 @@ plumbing proven). Reuses the tier-2 lifecycle via
   (the card WARNS there rather than explaining). The access violation is
   unidentified: this is a workaround to re-measure when Wine or Electron moves.
 
-## Cloud (feedback backend + future web) — state as of 2026-08-04
+## Cloud configuration and historical backend design
 
-- **AWS**: dedicated sub-account `eqcompanion` **001634075447** (org
-  management = `jmoyers` 383185690517), region **us-east-1**. CLI: profile
-  `eqc` assumes `OrganizationAccountAccessRole` via source profile
-  `windows-desktop-eqc` (owner-managed key). Terraform + AWS CLI installed
-  via winget. Full detail: docs/agents-archive.md.
-- **Terraform**: root `infra/`, state in s3 bucket
-  `eqcompanion-tf-state-dae027bf` (versioned, BPA) + lock table
-  `eqcompanion-tf-lock`. Deploys run from this machine with
-  `AWS_PROFILE=eqc`; CI only fmt/validate/bundle. **Standing authorization
-  (owner, 2026-08-05): NON-DESTRUCTIVE applies and migrations — additive
-  DDL, copy-first backfills with count verification, Lambda updates — may
-  be run by the agent directly. Anything that drops, overwrites, or loses
-  data (including "empty" shells until counts are VERIFIED) still gets
-  explicit owner approval first.** The 30-resource stack applied 2026-08-04.
+- **Default builds have no feedback, telemetry, release feed, or signing identity.**
+  Configure the build-only `EQC_*` values described in `docs/public-builds.md`.
+  Runtime users cannot redirect a packaged build's upload destinations.
+- **Terraform**: root `infra/` uses a partial S3 backend. Supply the current
+  deployment's account/profile, backend settings, alarm recipient, and endpoints
+  through ignored local configuration or CI secrets. See `infra/README.md`.
+  CI validates and bundles; deployment requires the current user's instruction.
+  The following implementation history does not identify an active deployment or
+  grant authority to access or modify any prior maintainer's infrastructure.
 - **Store is Aurora DSQL** (owner: "I hate dynamodb"), not DynamoDB:
   schema in `infra/schema.sql`, applied by `triage-feedback migrate`
   (never yet run against a live cluster — it stops on and prints a bad
@@ -1905,19 +1922,12 @@ plumbing proven). Reuses the tier-2 lifecycle via
   PLpgSQL, fixed Repeatable Read + OCC (retry only SQLSTATE 40001),
   3,000-row txn cap (bounds every sweep), one DDL per txn,
   `CREATE INDEX ASYNC`, jsonb young + unindexable (we use text).
-- **F2: DEPLOYED AND LIVE (2026-08-04)** — submit/idempotency/oversize
-  live-verified, kill switch OPEN, constants in net.ts. Two DSQL live
-  findings encoded: grants on the system-owned `public` schema are
-  unsupported, and `statement_timeout` cannot be SET (client-side
-  query_timeout only; db.ts). Verification detail + the SNS confirmation:
-  docs/agents-archive.md.
-- **ANALYTICS COHORT SPLIT — LIVE (2026-08-05, waves R+S, run under the
-  standing authorization).** The migration ran COPY-FIRST per owner ruling
-  (staging tables, row-count AND sum(n) verification, swap via DSQL's
-  documented `RENAME TO`; nothing dropped until its verified copy existed).
-  Runbook: infra/README.md "THE COHORT MIGRATION". **A ROTATED analyticsId
-  arrives unmarked — re-run `analytics owner-add`**; cohort mechanics live
-  in the USER/OWNER SPLIT bullet below.
+- **Backend constraints:** grants on the system-owned `public` schema are
+  unsupported, and `statement_timeout` cannot be SET (use client-side query_timeout).
+  **A ROTATED analyticsId arrives unmarked — re-run `analytics owner-add`**.
+  Historical deployments and cohort migrations: `docs/agents-archive.md`,
+  “Public-build documentation distillation”.
+
 - **ANALYTICS OPERATIONS (how usage questions get answered):**
   - Daily/adoption truth: `triage-feedback analytics digest --days N
     --profile eqc` (user cohort by default; `--cohort all` prints both,
@@ -1946,18 +1956,11 @@ plumbing proven). Reuses the tier-2 lifecycle via
   same shared validator, failure knobs; the app reaches it via
   `EQ_FEEDBACK_URL`, honored ONLY behind `!app.isPackaged` (packaged builds
   must prove the env var does nothing).
-- **Usage analytics**: opt-OUT (owner decision over the integrator's opt-in
-  recommendation) but NOTHING transmits before the first-run notice renders;
-  allowlist schema; separate rotatable analyticsId; payload viewer +
-  TELEMETRY.md (plan: docs/plans/usage-analytics.md). A1/A2/A3 are ALL LIVE:
-  a second Lambda (`eqcompanion-telemetry-ingest`) behind `POST
-  /v1/telemetry`, aggregating on arrival into the three tables — NO
-  raw-event store — plus EMF metrics, a dashboard, `analytics
-  digest|wipe|open|close`, and the Triage → Analytics tab. **The endpoint is
-  LIT**: `TELEMETRY_API_URL` is a compiled-in constant;
-  tests/telemetryNet.test.mts pins the exact URL, the single fetch site, and
-  the consent gates (nothing before the notice; opt-out destroys buffer +
-  id). Full detail: docs/agents-archive.md.
+- **Usage analytics:** when explicitly configured, retain the consent gates,
+  closed-schema counters, payload viewer, and opt-out deletion of buffer and ID.
+  Default builds have no telemetry endpoint. Historical deployment details are in
+  `docs/agents-archive.md`, “Public-build documentation distillation”.
+
   **THE CADENCE IS A COST DIAL, THE CONTENT IS NOT (JOS-269, owner ruling
   2026-08-12).** `FLUSH_INTERVAL_MS` 5 min and `HEARTBEAT_INTERVAL_MS`
   10 min (flush.ts). Every event is a counter delta that sums server-side,
@@ -1992,33 +1995,12 @@ plumbing proven). Reuses the tier-2 lifecycle via
   read defaults to the user cohort; `--cohort all` renders both SIDE BY SIDE
   and nothing ever sums them. Rows aggregated before a marking keep their
   cohort and the digest says so.
-## Known open items
+## Evidence still required
 
-- **Toolchain (JOS-63, landed 2026-08-06)**: electron 43.2.0 / vite 7.3.6 /
-  electron-vite 5.0.0. Still open: ~150MB of other-platform onnx binaries in
-  the installer (trim via asarUnpack filters; koffi's excluded prebuilds are
-  the worked example). History: docs/agents-archive.md.
+Earlier release, toolchain, and backlog status is preserved in
+`docs/agents-archive.md` under “Earlier release and backlog status”. Verify current
+code and the user's task before treating historical status as active work.
 
-- **Feedback loop**: planned in `docs/plans/feedback-triage.md`; F1/F2 have
-  since SHIPPED (see Cloud above) — the plan is historical intent now.
-- Azure signing: waiting on Microsoft identity validation → cert profile +
-  app registration + repo secrets.
-- Windows Sandbox: WORKING (last run 2026-08-03, PASS, gating v0.2.0) —
-  `run-installer-test.ps1` is the standard pre-ship clean-machine gate.
-- Design docs for shipped 2026-08-03 features live in `docs/plans/` —
-  historical intent; the code + this file are the current truth.
-- Startup could be TAIL-FIRST (attach the live tail, backfill history
-  backwards): needs order-independent folding in every module — a real
-  architecture change, not yet attempted; the `hydrating` flag keeps today's
-  ~6s replay honest meanwhile.
-- Not yet parsed: Dragon Hoard / tradeskill depot / combine loot lines.
-  Group-member combat tracking: future scope.
-- **Open chips (2026-08-05, full briefs in the chips + docs/agents-archive.md):**
-  the combo swap-back blind spot — the hardest inference fix in the repo, do
-  not rush it (PARTLY CLOSED by JOS-79: `reinstatedDrops`; a swap between
-  capped classes still dings for nothing and remains evidence-only); the e2e
-  per-checkout lockfile; copyText still serializing the melee-rounds footer
-  the Rounds panel replaced.
 - **Awaiting real samples** (the outputs registry refuses them typed until
   a committed fixture graduates each): /outputfile guild, raid, spellbook,
   factions, achievements, alternateadv — one in-game `/outputfile <kind>`

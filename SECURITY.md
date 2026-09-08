@@ -1,19 +1,18 @@
 # Security
 
 EQ Legends Companion is a desktop app that reads your EverQuest log file and shows
-you what happened. This document is an honest description of what it touches, what
+you what happened. Optional live features also read the supported game's current
+character state without changing game memory. Selected macro installations update
+the character settings file only after the game fully exits, with a backup and
+conflict checks. This document describes what it touches, what
 it does not, and how you can verify that the copy you installed is the one we built.
 
 ## Reporting a vulnerability
 
-Email **[jmoyers+eqc@gmail.com](mailto:jmoyers+eqc@gmail.com)** — that inbox reaches the
-person who maintains this project directly and privately, so a vulnerability can be confirmed
-and fixed before anything is public. Put enough to reproduce it in the mail; don't file it in
-a public issue.
-
-If you'd rather use GitHub, [private security advisories](https://github.com/jmoyers/everquest-companion/security/advisories/new)
-are an optional second channel when they're available on the repo — but the email above is the
-one that's always open, so prefer it if you're unsure.
+Use this repository's **Security → Report a vulnerability** channel when private
+reporting is enabled. If it is unavailable, ask the current maintainer for a private
+reporting channel without including vulnerability details or personal data in a public
+issue. Maintainers should configure and document that channel before distributing releases.
 
 This is a small hobby project maintained by one person. There is no bounty and no
 guaranteed response time, but reports are taken seriously and credited unless you
@@ -172,7 +171,7 @@ and the whole stack is in this repo under [`infra/`](infra/).
 **Asking us to delete something.** The dialog shows a **report id** after a successful
 send — keep it. Quote that id in a
 [GitHub issue](https://github.com/jmoyers/everquest-companion/issues) (or, if you'd rather it
-not be public, email [jmoyers+eqc@gmail.com](mailto:jmoyers+eqc@gmail.com)) and say what you
+not be public, use the private reporting channel described above) and say what you
 want removed. Deleting a slice
 deletes the object outright and stamps the row so we can tell it was done. The
 description itself stays unless you ask for the whole report to go, in which case the
@@ -258,25 +257,19 @@ at boundaries we control:
 
 ## Code signing and the update trust chain
 
-**Release builds are code-signed** ("Joshua Moyers", via Azure Artifact Signing;
-CI injects the signing arguments on tagged releases — see `.github/workflows/`).
-Two consequences:
+Local builds are unsigned and have automatic updates disabled by default. A release
+requires an explicitly configured release repository, signing publisher, and Azure
+signer. See [Public builds](docs/public-builds.md); this fork does not inherit another
+maintainer's signing identity or update feed.
 
-1. SmartScreen: signed installers should not warn. If a warning appears while the
-   certificate's reputation is new, *More info → Run anyway* — and the signature
-   details on the exe are checkable either way (right-click → Properties →
-   Digital Signatures).
+For a configured signed release, inspect the installer's Digital Signatures tab and
+compare its publisher with that release's documented publisher. Windows may still
+show a reputation warning for a newly signed application.
 
-2. The update path: `electron-updater` verifies more than transport integrity.
-   Every download is checked byte-for-byte against the sha512 in the release
-   feed, AND (because `publisherName` is set in electron-builder.yml) the
-   downloaded installer's Authenticode publisher must match "Joshua Moyers" or
-   the update fails with `ERR_UPDATER_INVALID_SIGNATURE` before anything runs.
-   A compromised GitHub account alone is therefore no longer sufficient to ship
-   a malicious update to existing installs: the attacker would also need the
-   Azure signing identity. (Historical note: builds before v0.1.8 were unsigned
-   and did not verify publisher identity; they will update to signed builds,
-   and from then on the verification applies.)
+The configured update path checks the download against the feed's SHA-512 and
+requires the Authenticode publisher configured by `EQC_SIGNING_PUBLISHER`. A
+publisher mismatch fails before running the installer. A build with no configured
+release repository and publisher cannot use the automatic update path.
 
 - **Release-pipeline hardening.** CI publishes only from a pushed `v*` tag;
   only that one job holds a repository-write token (every other path runs read-only);
