@@ -1,5 +1,5 @@
 // BuffsOverlay (JOS-89; split into TWO WINDOWS by JOS-119) — the timer-bar surface, rendered once
-// per timer kind: 'buffs' draws the beneficial spells you have running, 'debuffs' draws what you
+// per timer kind: 'buffs' draws live effects on you plus logged target buffs; 'debuffs' draws what you
 // have put on something else (debuffs plus the per-enemy crowd-control clocks, so a chain-mez
 // shows a named countdown per enemy). Design record: docs/plans/buff-timer-overlay.md.
 //
@@ -9,10 +9,10 @@
 // DEFAULT_OVERLAY_CONFIG, no migration) — JOS-89's internal-validation stance, continued.
 //
 // ONE COMPONENT, TWO KINDS — the JOS-105 no-fork rule, and a copy of this file would be a defect.
-// Everything that differs between the two windows is DATA (`SURFACE` below): the chrome label, the
+// Their timer differences are DATA (`SURFACE` below): the chrome label, the
 // accent, the empty-state sentence, the heading a self row sits under, and which rows the surface
 // keeps. Everything else — the modules, the projection, the clock, the chrome, the footer — is
-// literally the same code running twice.
+// the same code running twice. Only buffs reads the current native self-effect list.
 //
 // A sibling of OverlayMeter and EventLogOverlay in the SAME overlay.html bundle (kind read from
 // `?kind=`), so it shares every piece of per-kind machinery: the persisted `overlays.<kind>`
@@ -28,7 +28,9 @@
 // draws the result. Two windows, one model: a second fold of the same events is the two-models
 // scar world-model law 4 is made of.
 //
-// THE HONESTY LAW ON SCREEN: a receding bar means spells.json STATED a duration. A row with no
+// Live native self effects supersede logged self rows only while the complete observation is fresh.
+// Their countdown is approximate, with no invented initial duration or permanent classification.
+// THE HONESTY LAW FOR LOGGED TIMERS: a receding bar means spells.json STATED a duration. A row with no
 // bar and a `+` before its time is counting UP because nobody states one. The overlay never
 // renders a remaining it had to invent — see buffTimerBars.tsx.
 //
@@ -39,6 +41,9 @@
 import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BuffsSnap } from '@shared/types'
 import { useOverlayModuleState } from './useOverlayModule'
+import { useActiveSelfEffects } from './useActiveSelfEffects'
+import { ActiveSelfEffects } from './ActiveSelfEffects'
+import { withoutSupersededSelfRows } from '../../../shared/activeBuffs'
 import {
   type BuffTimerRow,
   type BuffTimersSnap,
@@ -448,9 +453,11 @@ export default function BuffsOverlay({ kind }: { kind: TimerOverlayKind }): JSX.
   // what makes this whole feature invisible to a user who never opens it.
   const { prefs: allow } = useBuffAllow(window.eqOverlay)
   const { dismissals, dismiss } = useDismissals()
+  const active = useActiveSelfEffects(kind === 'buffs', allow, nowMs)
+  const activeChanges = useChangeCount(active.epoch)
   const rows = useMemo(
-    () => drawnRows({ buffs, timers, kind }, { showPermanent, allow, grouping, dismissals }),
-    [buffs, timers, kind, grouping, showPermanent, allow, dismissals]
+    () => withoutSupersededSelfRows(drawnRows({ buffs, timers, kind }, { showPermanent, allow, grouping, dismissals }), active.live),
+    [buffs, timers, kind, grouping, showPermanent, allow, dismissals, active.live]
   )
   const groups = useMemo(() => groupRows(rows, surface.selfLabel, grouping), [rows, surface.selfLabel, grouping])
   // ONE COUNTER OVER BOTH MODULES: either one re-hydrating is a rebuilt row set, and the two
@@ -465,7 +472,7 @@ export default function BuffsOverlay({ kind }: { kind: TimerOverlayKind }): JSX.
   const drops = useDropFlash(
     rows,
     nowMs,
-    buffsHydrations + timersHydrations + dismissals.size + (showPermanent ? 1 : 0) + allowChanges
+    buffsHydrations + timersHydrations + dismissals.size + (showPermanent ? 1 : 0) + allowChanges + activeChanges
   )
 
   return (
@@ -496,7 +503,7 @@ export default function BuffsOverlay({ kind }: { kind: TimerOverlayKind }): JSX.
         tag={surface.tag}
         title={surface.title}
         titleColor={surface.accent}
-        tail={String(rows.length)}
+        tail={String(rows.length + active.rows.length)}
         tailTitle={surface.tailTitle}
         tailColor="rgba(255,255,255,0.5)"
         chrome={{ locked, hovering, dragRegion, noDrag, toggleLock }}
@@ -506,9 +513,10 @@ export default function BuffsOverlay({ kind }: { kind: TimerOverlayKind }): JSX.
           content), which is also the one place the text scale applies — the chrome above and
           below stays at 1 so it cannot be pushed out of a small window. */}
       <OverlayContent textScale={textScale} testId="buff-timer-rows">
-        {groups.length === 0 ? (
+        {kind === 'buffs' && <ActiveSelfEffects model={active} />}
+        {groups.length === 0 ? (!active.live && (
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', padding: '8px 2px' }}>{surface.empty}</div>
-        ) : (
+        )) : (
           groups.map((g) => (
             <BuffTimerGroup
               key={g.key}

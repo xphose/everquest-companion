@@ -1033,6 +1033,8 @@ export const IPC = {
   // launch (spawn contract rule 5), so this is a fresh token, port and epoch world. Returns void.
   engineRetry: 'engine:retry',
 
+  activeBuffNames: 'player:activeBuffNames',
+
   // ---- misc pushes ----
   questJournalQuery: 'questJournal:query',
   questJournalDetail: 'questJournal:detail',
