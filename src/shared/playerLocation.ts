@@ -1,4 +1,6 @@
 import type { ClassAbbr } from './classCombo'
+import type { PlayerActiveBuff } from './playerBuffs'
+export type { PlayerActiveBuff } from './playerBuffs'
 
 /** A fresh observation of the local player. Positions use the game's /loc axes. */
 export interface PlayerLocation {
@@ -20,6 +22,8 @@ export interface PlayerLocation {
   /** Verified unlocked gem indices, one-based and sorted. Empty unlocked gems remain usable;
    * omission means entitlement is unknown, independently of stored gem capacity/occupancy. */
   unlockedSpellSlots?: number[]
+  /** Complete current self buffs/songs. [] is verified empty; omission means unavailable. */
+  activeBuffs?: PlayerActiveBuff[]
   sampledAt: number
 }
 

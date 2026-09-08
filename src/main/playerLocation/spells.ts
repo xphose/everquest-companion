@@ -8,7 +8,7 @@ interface SpellManager {
   maximumId: number
 }
 
-function spellManager(read: MemoryRead, base: bigint): SpellManager | null {
+export function readSpellManager(read: MemoryRead, base: bigint): SpellManager | null {
   const pointer = pointerAt(read, base + P.spellManagerRva)
   if (!readableAddress(pointer)) return null
   const maximumId = exactRead(read, pointer + BigInt(P.maximumSpellId), 4).readInt32LE()
@@ -48,7 +48,7 @@ function ownedSpellbook(entries: (number | null)[]): number[] {
  */
 export function readProfileSpells(read: MemoryRead, base: bigint, profile: bigint): ObservedSpells {
   try {
-    const manager = spellManager(read, base)
+    const manager = readSpellManager(read, base)
     if (!manager) return {}
     const bookAddress = profile + BigInt(P.spellbook)
     const gemAddress = profile + BigInt(P.memorizedSpells)
@@ -62,7 +62,7 @@ export function readProfileSpells(read: MemoryRead, base: bigint, profile: bigin
     if (memorizedSpells.some(id => id !== null && !owned.has(id))) return {}
     if (!bookBytes.equals(readEntries(read, bookAddress, P.spellbookSlots))) return {}
     if (!gemBytes.equals(readEntries(read, gemAddress, P.memorizedSpellSlots))) return {}
-    const final = spellManager(read, base)
+    const final = readSpellManager(read, base)
     if (final?.pointer !== manager.pointer || final.maximumId !== manager.maximumId) return {}
     return { spellbook, memorizedSpells }
   } catch {
