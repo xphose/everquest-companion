@@ -1,4 +1,5 @@
 import type { PlayerLocation, PlayerLocationResult } from '../../shared/playerLocation'
+import { isClassAbbr } from '../../shared/classCombo'
 
 export const LOCATION_UNAVAILABLE: PlayerLocationResult = {
   state: 'unavailable', reason: 'The game location is temporarily unavailable. The game may be loading or closing.'
@@ -27,10 +28,16 @@ function validLevel(value: unknown): boolean {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 125
 }
 
+function validClasses(value: unknown): boolean {
+  return Array.isArray(value) && value.length >= 2 && value.length <= 3 &&
+    value.every(isClassAbbr) && new Set(value).size === value.length
+}
+
 function validLocation(value: unknown): value is PlayerLocation {
   if (!record(value)) return false
   return typeof value.characterName === 'string' && typeof value.zone === 'string' &&
     (!('level' in value) || validLevel(value.level)) &&
+    (!('classes' in value) || validClasses(value.classes)) &&
     ['ns', 'ew', 'z', 'heading', 'sampledAt'].every(key =>
       typeof value[key] === 'number' && Number.isFinite(value[key]))
 }

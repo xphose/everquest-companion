@@ -11,6 +11,19 @@ export const LEGENDS_PROFILE = {
   optionalMagic: 0x20b,
   playerRva: 0xf0c360n,
   worldRva: 0xf0be50n,
+  // Current-profile class mask: verified active spell eligibility path, then two live reads.
+  // The descriptor and its displacement identify this build's local character owner layout.
+  characterRva: 0xf0c4b0n,
+  characterDescriptorRva: 0x9a8968n,
+  characterDescriptor: 0x08,
+  descriptorDisplacement: 0x04,
+  profileManagerBias: 0x10,
+  profileManagerDisplacement: 0x2f68,
+  profileCurrentType: 0x08,
+  profileListType: 0x00,
+  profileListFirst: 0x08,
+  profileListNext: 0x18,
+  classMask: 0x2748,
   // Verified against the in-game Ak'Anon map: native X is /loc NS, native Y is /loc EW.
   // The map's axis swap and negation are applied later by mapFromLoc, once.
   ns: 0x74,

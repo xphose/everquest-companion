@@ -1,3 +1,5 @@
+import type { ClassAbbr } from './classCombo'
+
 /** A fresh observation of the local player. Positions use the game's /loc axes. */
 export interface PlayerLocation {
   characterName: string
@@ -9,6 +11,8 @@ export interface PlayerLocation {
   heading: number
   /** Current local-player level when the client exposes a valid observation. */
   level?: number
+  /** Complete active class set, ordered by native class ID rather than loadout slot. */
+  classes?: ClassAbbr[]
   sampledAt: number
 }
 
