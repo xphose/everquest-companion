@@ -289,7 +289,7 @@ function isDevUpload(u: URL, devOrigin: string): boolean {
  * Every check, and why it is a check and not a nicety:
  *   * `https:` ONLY        — an `http:` presign would put a user's log on the wire in clear.
  *                            `file:`/`data:` would make "upload" mean something else entirely.
- *   * no credentials       — `https:maintainer@example.invalid/` parses
+ *   * no credentials       — `https://<userinfo>@<allowed-host>/x` parses
  *                            with hostname `evil.com`; the host test already rejects it, and
  *                            refusing userinfo outright means we never send one either.
  *   * default port only    — `:8443` on an S3 hostname is not S3.

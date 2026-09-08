@@ -214,8 +214,8 @@ function thrown(message: string, fn = 'logError', line = 573): Error {
   const err = new Error(message)
   err.stack = [
     `Error: ${message}`,
-    `    at ${fn} (C:\\Users\\jmoye\\eqc\\out\\main\\index.js:${String(line)}:11)`,
-    '    at process.<anonymous> (C:\\Users\\jmoye\\eqc\\out\\main\\index.js:664:3)'
+    `    at ${fn} (C:\\Users\\example\\eqc\\out\\main\\index.js:${String(line)}:11)`,
+    '    at process.<anonymous> (C:\\Users\\example\\eqc\\out\\main\\index.js:664:3)'
   ].join('\n')
   return err
 }

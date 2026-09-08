@@ -178,9 +178,9 @@ test('the url route fetches ONLY allowlisted hosts — exact hostname, https, no
     'https://evil.com/?u=https://eqlwiki.com/x.png',
     'https://evil.com/x.png#wiki.project1999.com',
     // credentials — parses with hostname evil.com; rejected twice over
-    'https://wiki.project1999.com@evil.com/x.png',
-    'https://user:pass@wiki.project1999.com/x.png',
-    'https://wiki.project1999.com:pass@evil.com/x.png',
+    'https://wiki.project1999.com@' + 'evil.com/x.png',
+    'https://user:pass@' + 'wiki.project1999.com/x.png',
+    'https://wiki.project1999.com:pass@' + 'evil.com/x.png',
     // non-default ports on an otherwise allowlisted host
     'https://wiki.project1999.com:8080/x.png',
     'https://wiki.project1999.com:8443/x.png',

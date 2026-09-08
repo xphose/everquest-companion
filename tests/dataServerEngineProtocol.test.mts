@@ -451,7 +451,7 @@ test('SILENCE IS FOR THE ORDINARY LAUNCH, and for the packaged one especially', 
   // The staged copy of a RELEASE binary (JOS-496 runs the engine from `userData/engine-run`) is
   // never itself the input — `engineHost.ts` computes the notice on the path it FOUND — but a
   // reader asking about the copy gets silence rather than a warning about an unclassifiable file.
-  assert.equal(engineProfileNotice('C:/Users/x/AppData/Roaming/eqc/engine-run/engined.exe', env), null)
+  assert.equal(engineProfileNotice('C:/Users/example/AppData/Roaming/eqc/engine-run/engined.exe', env), null)
 })
 
 test('THE HARNESS IS NOT EXEMPT: an override that lands on debug is just as loud', () => {
@@ -545,7 +545,7 @@ test('a CARGO TARGET binary is the one to copy, and a PACKAGED one is emphatical
   // The predicate is about who ELSE WRITES to the path, so a `target` that is not cargo's engine
   // output — and the staging directory itself, which is where the copies land — are both false.
   assert.equal(isCargoTargetBinary('C:/app/target/debug/engined.exe'), false)
-  assert.equal(isCargoTargetBinary('C:/Users/x/AppData/Roaming/eqc/engine-run/engined.exe'), false)
+  assert.equal(isCargoTargetBinary('C:/Users/example/AppData/Roaming/eqc/engine-run/engined.exe'), false)
 })
 
 test('the predicate is SEPARATOR-BLIND, because `node:path` hands back the other one', () => {

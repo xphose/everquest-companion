@@ -36,7 +36,7 @@ import { decodeShareString, encodeShareString, looksLikeShareString } from '../s
 import { MAX_SPEECH_CHARS } from '../src/shared/speechText'
 import type { AlertDef } from '../src/shared/types'
 
-const MACHINE_PATH = 'C:\\Users\\jmoye\\AppData\\Roaming\\everquest-companion-dev'
+const MACHINE_PATH = 'C:\\Users\\example\\AppData\\Roaming\\everquest-companion-dev'
 const EQ_PATH = 'C:\\Users\\Public\\Daybreak Game Company\\Installed Games\\EverQuest Legends'
 
 function alert(over: Partial<AlertDef> = {}): AlertDef {

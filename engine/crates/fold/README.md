@@ -201,13 +201,14 @@ whether anything diverged at all (`tests/bench/parityLedger.mts` carries the arg
 
 The slices and goldens are gitignored and machine-local, so a **worktree** run needs the two
 directory flags pointing at the main checkout, plus `--tz` matching the zone the goldens were
-recorded in (`goldens/manifest.json` records it):
+recorded in (`goldens/manifest.json` records it). Set `MAIN_CHECKOUT` to that checkout and
+`GOLDEN_TIMEZONE` to the recorded timezone:
 
 ```
 npm run oracle:rust-fold -- --keep-going \
-  --slices=C:\Users\jmoye\everquest-companion\tests\bench\fixtures\slices \
-  --goldens=C:\Users\jmoye\everquest-companion\tests\bench\fixtures\goldens \
-  --tz=America/Los_Angeles
+  --slices="$MAIN_CHECKOUT/tests/bench/fixtures/slices" \
+  --goldens="$MAIN_CHECKOUT/tests/bench/fixtures/goldens" \
+  --tz="$GOLDEN_TIMEZONE"
 ```
 
 It prints PASS per module per slice, the first divergence (dotted path, both values, truncated) for

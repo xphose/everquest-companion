@@ -30,7 +30,7 @@ import {
   takeArtifactsBack
 } from '../src/main/dataServer/artifactOwner'
 
-const USER_DATA = 'C:/Users/nobody/AppData/Roaming/everquest-companion'
+const USER_DATA = 'C:/Users/example/AppData/Roaming/everquest-companion'
 
 /** The deps a served launch hands in, with the notes captured. */
 function servedLaunch(notes: string[] = []) {

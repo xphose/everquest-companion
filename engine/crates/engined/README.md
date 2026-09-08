@@ -921,7 +921,7 @@ is what came off the socket.
 
 ```console
 $ cargo build --release -p engined
-$ node scratch/drive482.mjs C:/Users/jmoye/everquest-companion 20
+$ node scratch/drive482.mjs "." 20
 # staged C:\Users\…\Temp\engined-482-E3FlHx\eqlog_Primitive_freeport.txt (9185395 bytes)
 EQC-ENGINE PORT=64051 PROTOCOL=1
 -> {"op":"hello","token":"0f7d…7089","protocolVersion":1}
@@ -1035,7 +1035,7 @@ function talk(port) {
 
 ```console
 $ cargo build --release -p engined
-$ node scratch/drive480.mjs C:/Users/jmoye/everquest-companion 20
+$ node scratch/drive480.mjs "." 20
 # staged C:\Users\…\Temp\engined-480-fJUtbz\eqlog_Primitive_freeport.txt (9185598 bytes)
 EQC-ENGINE PORT=50834 PROTOCOL=1
 -> {"op":"hello","token":"0f7d…7089","protocolVersion":1}
@@ -1182,7 +1182,7 @@ function talk(port) {
 
 ```console
 $ cargo build --release -p engined
-$ node scratch/drive485.mjs C:/Users/jmoye/everquest-companion 20
+$ node scratch/drive485.mjs "." 20
 # staged C:\Users\…\Temp\engined-485-w75M8Y\eqlog_Primitive_freeport.txt (9185639 bytes)
 EQC-ENGINE PORT=64808 PROTOCOL=1
 -> {"op":"hello","token":"0f7d…7089","protocolVersion":1}
@@ -1387,7 +1387,7 @@ function talk(port) {
 
 ```console
 $ cargo build --release -p engined
-$ node scratch/drive.mjs C:/Users/jmoye/everquest-companion 20
+$ node scratch/drive.mjs "." 20
 # staged C:\Users\…\Temp\engined-manual-MWaZP7\eqlog_Primitive_freeport.txt (9185240 bytes)
 EQC-ENGINE PORT=61699 PROTOCOL=1
 -> {"op":"hello","token":"0f7d…7089","protocolVersion":1}
@@ -1487,7 +1487,7 @@ other byte is what came off the socket.
 
 ```console
 $ cargo build --release -p engined
-$ node scratch/drive478.mjs C:/Users/jmoye/everquest-companion 20
+$ node scratch/drive478.mjs "." 20
 # staged C:\t478\engined-478-6ikaTi\eqlog_Primitive_freeport.txt (9185240 bytes)
 EQC-ENGINE PORT=64299 PROTOCOL=1
 -> {"op":"hello","token":"0f7d…7089","protocolVersion":1}
@@ -1620,7 +1620,7 @@ function talk(port) {
 
 ```console
 $ cargo build --release -p engined
-$ node scratch/drive487.mjs C:/Users/jmoye/everquest-companion 20
+$ node scratch/drive487.mjs "." 20
 # staged C:\Users\…\Temp\engined-487-2VZKHE\eqlog_Primitive_freeport.txt (9185424 bytes)
 EQC-ENGINE PORT=61565 PROTOCOL=1
 -> {"op":"hello","token":"0f7d…7089","protocolVersion":1}
