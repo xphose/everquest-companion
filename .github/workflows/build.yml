@@ -107,6 +107,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check public repository privacy
+        run: npm run privacy:check
+
       - name: Install Electron binary
         run: npm run deps:electron
 
@@ -347,6 +350,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check public repository privacy
+        run: npm run privacy:check
 
       - name: Install Electron binary
         run: npm run deps:electron
