@@ -4,10 +4,12 @@ import type { MacroAssistantSettings, MacroAssistantSnapshot } from '../../share
 import type { MacroRecipe, MacroSpell } from '../../shared/macros'
 import type { PlayerLocationResult } from '../../shared/playerLocation'
 import type { ManagedSocial, SocialRequest } from './socialIni'
-import type { MacroPreparationPlan } from '../../shared/macroPreparation'
+import type { MacroPreparationCompletion, MacroPreparationPlan } from '../../shared/macroPreparation'
 import type { ManagedSpellLoadout, SpellLoadoutRequest } from './spellLoadoutIni'
 
 export interface PreparedMacros {
+  packageId?: string
+  completion?: MacroPreparationCompletion
   targetFile: string
   plan: MacroPreparationPlan
   destination: { bar: number; page: number }
