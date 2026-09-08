@@ -1,10 +1,14 @@
 import type { MacroAssistantMutation, MacroAssistantMutationResult, MacroAssistantSnapshot } from '../../../../shared/macroAssistant'
+import { installationFeedback, type MacroNotice } from './macroFeedback'
 
 export interface MacroBridge {
   getMacroAssistant: () => Promise<MacroAssistantSnapshot>
   mutateMacroAssistant: (mutation: MacroAssistantMutation) => Promise<MacroAssistantMutationResult>
 }
-export interface MacroSessionState { snapshot: MacroAssistantSnapshot | null; error: string | null; busy: boolean }
+export interface MacroSessionState {
+  snapshot: MacroAssistantSnapshot | null; error: string | null; busy: boolean
+  busyAction?: MacroAssistantMutation['action']; notice?: MacroNotice | null
+}
 const messageOf = (error: unknown): string => error instanceof Error ? error.message : String(error)
 
 /** One request at a time. A queued edit invalidates a pending poll before waiting for it.
@@ -15,6 +19,7 @@ export class MacroSession {
   private active = true
   private reading: Promise<void> | null = null
   private errorKind: 'read' | 'mutation' | null = null
+  private noticeId = 0
 
   constructor(private readonly bridge: MacroBridge, private readonly changed: (state: MacroSessionState) => void) {}
 
@@ -27,14 +32,27 @@ export class MacroSession {
   private fail(error: unknown, generation: number, kind: 'read' | 'mutation'): void {
     if (!this.current(generation)) return
     this.errorKind = kind
-    this.publish({ error: messageOf(error) })
+    this.publish({ error: messageOf(error), notice: null })
   }
 
-  private receiveMutation(result: MacroAssistantMutationResult, characterId: string, generation: number): void {
+  private acceptSnapshot(snapshot: MacroAssistantSnapshot, manualQueue = false): Partial<MacroSessionState> {
+    const previous = this.state.snapshot
+    const sameCharacter = previous?.characterId === snapshot.characterId
+    const prior = previous?.installation.state
+    const next = snapshot.installation.state
+    let notice = sameCharacter && prior === next ? this.state.notice : null
+    const completed = sameCharacter && prior === 'pending' && next !== 'pending' &&
+      (snapshot.installation.completion !== undefined || next === 'conflict')
+    if (manualQueue || completed) notice = { id: ++this.noticeId, feedback: installationFeedback(snapshot) }
+    return { snapshot, notice }
+  }
+
+  private receiveMutation(result: MacroAssistantMutationResult, mutation: MacroAssistantMutation, generation: number): void {
     if (!this.current(generation)) return
-    if (result.snapshot.characterId !== characterId) { this.reset(); return }
+    if (result.snapshot.characterId !== mutation.characterId) { this.reset(); return }
     this.errorKind = result.ok ? null : 'mutation'
-    this.publish({ snapshot: result.snapshot, error: result.ok ? null : result.error ?? 'The change could not be saved.' })
+    const update = result.ok ? this.acceptSnapshot(result.snapshot, mutation.action === 'queue') : { snapshot: result.snapshot, notice: null }
+    this.publish({ ...update, error: result.ok ? null : result.error ?? 'The change could not be saved.' })
   }
 
   private canMutate(characterId: string): boolean {
@@ -48,7 +66,9 @@ export class MacroSession {
     const generation = this.generation
     const read = this.bridge.getMacroAssistant().then((snapshot) => {
       if (!this.current(generation)) return
-      this.publish({ snapshot, error: this.errorKind === 'mutation' ? this.state.error : null })
+      const update = this.acceptSnapshot(snapshot)
+      this.publish({ ...update, notice: this.errorKind === 'mutation' ? null : update.notice,
+        error: this.errorKind === 'mutation' ? this.state.error : null })
     }).catch((error: unknown) => {
       this.fail(error, generation, 'read')
     }).finally(() => { if (this.reading === read) this.reading = null })
@@ -60,17 +80,18 @@ export class MacroSession {
     if (!this.canMutate(mutation.characterId)) return
     const generation = ++this.generation
     this.errorKind = null
-    this.publish({ busy: true, error: null })
+    this.publish({ busy: true, busyAction: mutation.action, error: null, notice: null })
     try {
       await this.reading
       if (!this.current(generation)) return
       const result = await this.bridge.mutateMacroAssistant(mutation)
-      this.receiveMutation(result, mutation.characterId, generation)
+      this.receiveMutation(result, mutation, generation)
     } catch (error) {
       this.fail(error, generation, 'mutation')
-    } finally { if (this.active) this.publish({ busy: false }) }
+    } finally { if (this.active) this.publish({ busy: false, busyAction: undefined }) }
   }
 
-  reset(): void { this.generation++; this.errorKind = null; this.publish({ snapshot: null, error: null }) }
+  dismissNotice(id: number): void { if (this.state.notice?.id === id) this.publish({ notice: null }) }
+  reset(): void { this.generation++; this.errorKind = null; this.publish({ snapshot: null, error: null, notice: null }) }
   dispose(): void { this.active = false; this.generation++ }
 }

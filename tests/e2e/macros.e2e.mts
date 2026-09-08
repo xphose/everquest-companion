@@ -59,6 +59,18 @@ async function queueInUi(page: Page, file: string): Promise<void> {
   await page.locator('[data-testid="macros-auto-update"]').click()
   await expectSnapshot(page, (s) => s.settings.autoUpdate && s.installation.state === 'pending' && s.installation.pendingCount > 0,
     'automatic installation queues reviewed selections while the client is running')
+  await page.click('[data-testid="macros-queue"]')
+  const acknowledgement = page.locator('[data-testid="macros-notification"]')
+  await acknowledgement.waitFor({ state: 'visible' })
+  const firstNotice = await acknowledgement.getAttribute('data-notice-id')
+  check('a manual Queue click acknowledges an already-pending plan without claiming a write',
+    (await acknowledgement.innerText()).includes('Queued, not written yet'))
+  await page.click('[data-testid="macros-queue"]')
+  const secondNotice = await settle(() => acknowledgement.getAttribute('data-notice-id'), (id) => id !== null && id !== firstNotice, { timeoutMs: 10_000 })
+  check('a repeated Queue click gets its own acknowledgement', secondNotice !== null && secondNotice !== firstNotice)
+  const instructions = await page.locator('[data-testid="macros-status"]').innerText()
+  check('the pending panel tells the player to keep the companion open and wait for a written or unchanged completion',
+    instructions.includes('Keep the companion open') && instructions.includes('Fully exit EverQuest') && instructions.includes('wait for Saved or Already up to date before relaunching'))
   check('queuing leaves the running game settings byte-for-byte unchanged', readFileSync(file, 'latin1') === PERSONAL_INI)
   await page.click('[data-testid="nav-overview"]')
   await page.waitForSelector('[data-testid="macros-view"]', { state: 'detached' })
@@ -88,6 +100,12 @@ async function backgroundInstall(app: ElectronApplication, page: Page, file: str
   await openMacros(page)
   const state = await expectSnapshot(page, (s) => s.installation.state === 'applied' && s.installation.canRestore,
     'reopening the view reports application and offers its saved backup')
+  const completion = await settle(() => page.locator('[data-testid="macros-status"]').innerText(),
+    (text) => text.includes('Saved to character settings'), { timeoutMs: 10_000 })
+  check('the completed panel confirms the actual write and tells the player how to load it',
+    state.installation.completion?.kind === 'written' && completion.includes('Start EverQuest') && completion.includes('Hotbar 4 · Page 1'))
+  check('the completion panel includes the saved time and character settings file',
+    await page.locator('[data-testid="macros-status"] time').getAttribute('datetime') === state.installation.completion?.at && completion.includes(CHARACTER_INI))
   check('installed socials are identified as managed', state.existing.some((s) => s.managed))
   await page.click('[data-testid="macros-restore"]')
   await expectSnapshot(page, (s) => !s.settings.autoUpdate && s.installation.pendingCount === 0 && !s.installation.canRestore,

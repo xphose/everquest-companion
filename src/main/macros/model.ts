@@ -106,7 +106,8 @@ function installation(model: MacroModel): MacroAssistantSnapshot['installation']
   const { saved, target, files } = model
   const base = installBase(model)
   if (!target) return { ...base, state: 'unavailable', message: files.length > 1 ? 'Choose a character settings file. The active loadout filename cannot be determined automatically.' : 'No matching character settings file is available.' }
-  if (saved.queued || saved.restoreRequested) return { ...base, state: 'pending', message: 'Queued. Exit EverQuest so the companion can safely update the settings file.' }
+  if (saved.queued || saved.restoreRequested) return { ...base, state: 'pending', pendingAction: saved.restoreRequested ? 'restore' : 'install',
+    message: 'Queued, not written yet. Keep the companion open, fully exit EverQuest, and wait for Saved or Already up to date before relaunching.' }
   if (saved.status) return { ...base, ...saved.status }
   return { ...base, state: saved.settings.autoUpdate ? 'ready' : 'off', message: saved.settings.autoUpdate ? 'Automatic updates are enabled for selected macros.' : 'Choose macros to install or keep updated automatically.' }
 }
