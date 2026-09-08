@@ -7,6 +7,8 @@ export interface PlayerLocation {
   z: number
   /** EverQuest heading units, in [0, 512). */
   heading: number
+  /** Current local-player level when the client exposes a valid observation. */
+  level?: number
   sampledAt: number
 }
 

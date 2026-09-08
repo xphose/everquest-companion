@@ -69,6 +69,16 @@ function readPosition(read: MemoryRead, player: bigint): Omit<PlayerLocation, 'z
   return { characterName: name, ns, ew, z, heading }
 }
 
+function readLevel(read: MemoryRead, player: bigint): number | undefined {
+  try {
+    const level = exactRead(read, player + BigInt(P.level), 1).readUInt8()
+    return level >= 1 && level <= 125 ? level : undefined
+  } catch {
+    // This optional byte must not remove an otherwise valid map position when unreadable.
+    return undefined
+  }
+}
+
 /** Read only the local-player fields and its zone metadata, with no entity enumeration. */
 export function samplePlayer(read: MemoryRead, base: bigint, now: () => number = Date.now): PlayerLocationResult {
   const identity = readWorld(read, base)
@@ -78,9 +88,10 @@ export function samplePlayer(read: MemoryRead, base: bigint, now: () => number =
   const zoneBytes = exactRead(read, identity.zoneEntry + BigInt(P.zoneEntryId), 68)
   const zone = zoneName(zoneBytes.subarray(P.zoneShortName - P.zoneEntryId))
   if (!zone || zoneBytes.readUInt32LE() !== identity.zoneId) return NOT_IN_WORLD
+  const level = readLevel(read, identity.player)
   const freshName = playerName(exactRead(read, identity.player + BigInt(P.name), 64))
   const freshType = exactRead(read, identity.player + BigInt(P.type), 1)[0]
   if (freshName !== position.characterName || freshType !== 0) return NOT_IN_WORLD
   if (!stillSameWorld(read, base, identity)) return NOT_IN_WORLD
-  return { state: 'live', location: { ...position, zone, sampledAt: now() } }
+  return { state: 'live', location: { ...position, zone, ...(level === undefined ? {} : { level }), sampledAt: now() } }
 }

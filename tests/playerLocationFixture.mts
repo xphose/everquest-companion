@@ -22,6 +22,7 @@ export function locationFixture() {
   playerBytes.writeFloatLE(30.9375, 0x7c)
   playerBytes.writeFloatLE(450.375, 0x94)
   playerBytes.write('Wayfinder', 0xb8, 'ascii')
+  playerBytes.writeUInt8(10, 0x4bc)
   playerBytes.writeUInt32LE(55, 0x59c)
   const worldBytes = Buffer.alloc(0x30 + 1001 * 8)
   worldBytes.writeBigUInt64LE(zoneEntry, 0x30 + 55 * 8)

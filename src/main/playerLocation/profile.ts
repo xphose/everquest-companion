@@ -19,6 +19,8 @@ export const LEGENDS_PROFILE = {
   heading: 0x94,
   name: 0xb8,
   type: 0x139,
+  // Verified against the current player's in-game level on this exact client build.
+  level: 0x4bc,
   zoneId: 0x59c,
   zoneTable: 0x30,
   zoneEntryId: 0x0c,
