@@ -3837,4 +3837,3 @@ post-mortem: docs/agents-archive.md.
   capped classes still dings for nothing and remains evidence-only); the e2e
   per-checkout lockfile; copyText still serializing the melee-rounds footer
   the Rounds panel replaced.
-
