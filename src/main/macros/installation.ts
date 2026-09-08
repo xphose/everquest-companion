@@ -30,7 +30,9 @@ export async function applyQueuedMacros(deps: MacroServiceDeps, world: MacroWorl
   saved.queued = undefined
   saved.status = conflicts.length
     ? { state: 'conflict', message: 'Some selected macros need attention. Existing edits were preserved.', conflicts }
-    : { state: 'applied', message: plan.changed ? 'Managed hotbuttons saved. They will load next time you enter the game.' : 'The managed hotbuttons already match this plan.', conflicts: [] }
+    : { state: 'applied', message: plan.changed ? 'Managed hotbuttons saved. They will load next time you enter the game.' : 'The managed hotbuttons already match this plan.', conflicts: [],
+      completion: { kind: plan.changed ? 'written' : 'unchanged', at: plan.changed && saved.applied ? saved.applied.at : new Date(deps.now()).toISOString(),
+        targetFile: queue.targetFile, destination: { ...saved.settings.destination } } }
 }
 
 export async function restoreMacros(deps: MacroServiceDeps, world: MacroWorld, saved: MacroSaved): Promise<void> {
@@ -45,5 +47,6 @@ export async function restoreMacros(deps: MacroServiceDeps, world: MacroWorld, s
   saved.managed[applied.targetFile] = applied.previousManaged
   saved.applied = undefined
   saved.restoreRequested = false
-  saved.status = { state: 'off', message: 'The previous character settings were restored. Automatic updates are off.', conflicts: [] }
+  saved.status = { state: 'off', message: 'The previous character settings were restored. Automatic updates are off.', conflicts: [],
+    completion: { kind: 'restored', at: new Date(deps.now()).toISOString(), targetFile: applied.targetFile } }
 }

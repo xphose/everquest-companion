@@ -35,7 +35,7 @@ export interface MacroSaved {
   classes?: ClassAbbr[]
   level?: number
   lastSignature?: string
-  status?: Pick<MacroAssistantSnapshot['installation'], 'state' | 'message' | 'conflicts'>
+  status?: Pick<MacroAssistantSnapshot['installation'], 'state' | 'message' | 'conflicts' | 'completion'>
 }
 export interface MacroRepository {
   get(key: string): Promise<MacroSaved>

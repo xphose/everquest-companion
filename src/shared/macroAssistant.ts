@@ -20,6 +20,14 @@ export interface MacroExistingSocial {
   issues: MacroAuditIssue[]
 }
 
+export interface MacroInstallCompletion {
+  kind: 'written' | 'unchanged' | 'restored'
+  /** Time of this outcome; unchanged is a check, not a new file write. */
+  at: string
+  targetFile: string
+  destination?: { bar: number; page: number }
+}
+
 export interface MacroAssistantSnapshot {
   character: CharacterRef | null
   characterId: string | null
@@ -46,6 +54,9 @@ export interface MacroAssistantSnapshot {
     targetFiles: string[]
     targetFile?: string
     pendingCount: number
+    pendingAction?: 'install' | 'restore'
+    /** Optional for compatibility with saved outcomes from earlier versions. */
+    completion?: MacroInstallCompletion
     appliedAt?: string
     canRestore: boolean
     conflicts: string[]

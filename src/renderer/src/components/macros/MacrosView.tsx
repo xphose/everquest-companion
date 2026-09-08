@@ -5,6 +5,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { macroSelectionKey } from '@shared/macros'
 import { MacroContext } from './MacroContext'
 import { MacroInstallation } from './MacroInstallation'
+import { MacroNotification } from './MacroStatus'
 import { MacroLoadout } from './MacroLoadout'
 import { MacroRecipeCard } from './MacroRecipeCard'
 import { MacroExisting } from './MacroExisting'
@@ -19,7 +20,7 @@ export function MacrosDestination({ view, viewKey }: { view: View; viewKey: stri
 
 export default function MacrosView(): JSX.Element {
   const assistant = useMacroAssistant()
-  const { snapshot, busy, error, mutate, refresh } = assistant
+  const { snapshot, busy, busyAction, notice, error, mutate, refresh, dismissNotice } = assistant
   const [filter, setFilter] = useState('all')
   const { all: recipes, selected, ready, displayed } = useMemo(() =>
     recipePresentation(snapshot?.recipes ?? [], snapshot?.settings.selections ?? [], filter), [snapshot, filter])
@@ -31,7 +32,8 @@ export default function MacrosView(): JSX.Element {
   return <Stack spacing={2} data-testid="macros-view" data-character-id={snapshot.characterId ?? ''} sx={{ minWidth: 0, pb: 2 }}>
     <MacroContext snapshot={snapshot} busy={busy} onStyle={(style) => mutate({ style })} />
     {error && <Alert severity="error" action={<Button disabled={busy} onClick={refresh}>Retry</Button>}>{error}</Alert>}
-    <MacroInstallation snapshot={snapshot} busy={busy} configure={mutate} action={mutate} />
+    <MacroInstallation snapshot={snapshot} busy={busy} busyAction={busyAction} configure={mutate} action={mutate} />
+    <MacroNotification notice={notice} dismiss={dismissNotice} />
     <MacroLoadout snapshot={snapshot} />
     <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
       <Typography variant="h6">Build your hotbar</Typography>
