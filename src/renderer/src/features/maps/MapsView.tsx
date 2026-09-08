@@ -448,6 +448,7 @@ export default function MapsView(props: MapFocusProps): JSX.Element {
       />
       <MapBody
         data={data}
+        zones={zones}
         // Nothing is claimed before the pack listing and the first fetch have answered — a
         // panel that flashes up and vanishes reads as a bug, not as a load.
         empty={
