@@ -22,3 +22,13 @@ test('location protocol rejects invalid optional levels when present', () => {
     assert.equal(parseLocationReply(reply), null)
   }
 })
+
+test('location protocol accepts complete class sets and rejects malformed optional classes', () => {
+  for (const classes of [['SHM', 'MAG'], ['SHM', 'MAG', 'ENC']]) {
+    const reply = { id: 3, result: { state: 'live', location: { ...LOCATION, classes } } }
+    assert.deepEqual(parseLocationReply(reply), reply)
+  }
+  for (const classes of [[], ['MAG'], ['MAG', 'MAG'], ['MAG', 'UNKNOWN'], ['MAG', 'SHM', 'ENC', 'WAR'], 'MAG/SHM', null, undefined]) {
+    assert.equal(parseLocationReply({ id: 3, result: { state: 'live', location: { ...LOCATION, classes } } }), null)
+  }
+})
