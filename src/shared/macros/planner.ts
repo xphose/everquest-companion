@@ -6,6 +6,7 @@ import { familyChoice, ownedSpells, roleFamilies } from './spells'
 import { FAMILY_ROLES } from './utilityRoles'
 
 const ROLES: Record<MacroRole, { name: string; description: string }> = {
+  finisher: { name: 'Finisher', description: 'Press once to cast direct damage at your selected enemy. Choose when to finish the fight; this button does not check enemy health or guarantee a kill.' },
   damage: { name: 'Single Damage', description: 'Cast on your selected enemy. Single-target spells keep nearby enemies out of the sequence.' },
   'pet-opener': { name: 'Pet Opener', description: 'Send your existing pet at your selected enemy, then cast one single-target damage spell.' },
   'self-buffs': { name: 'Self Buffs', description: 'Target yourself and refresh up to four distinct memorized buff lines. Your target remains yourself afterward.' },
@@ -34,9 +35,9 @@ const ROLES: Record<MacroRole, { name: string; description: string }> = {
 }
 const UTILITIES: MacroRole[] = ['cure', 'root', 'snare', 'lull', 'summon-item', 'rune', 'invisibility', 'vision', 'breathing', 'levitation', 'gate']
 const PRIORITY: Record<MacroStyle, MacroRole[]> = {
-  solo: ['heal-self', 'damage', 'self-buffs', 'buff', 'debuff', 'summon-pet', 'pet-opener', 'heal-pet', 'pet-attack', 'pet-backoff', 'mez', 'heal-target', ...UTILITIES, 'loc', 'export'],
-  group: ['heal-target', 'mez', 'debuff', 'self-buffs', 'buff', 'heal-self', 'damage', 'heal-pet', 'pet-backoff', 'summon-pet', 'pet-opener', 'pet-attack', ...UTILITIES, 'loc', 'export'],
-  pet: ['summon-pet', 'pet-opener', 'heal-pet', 'pet-backoff', 'debuff', 'self-buffs', 'buff', 'heal-self', 'damage', 'mez', 'heal-target', 'pet-attack', ...UTILITIES, 'loc', 'export']
+  solo: ['heal-self', 'damage', 'finisher', 'self-buffs', 'buff', 'debuff', 'summon-pet', 'pet-opener', 'heal-pet', 'pet-attack', 'pet-backoff', 'mez', 'heal-target', ...UTILITIES, 'loc', 'export'],
+  group: ['heal-target', 'mez', 'debuff', 'self-buffs', 'buff', 'heal-self', 'damage', 'finisher', 'heal-pet', 'pet-backoff', 'summon-pet', 'pet-opener', 'pet-attack', ...UTILITIES, 'loc', 'export'],
+  pet: ['summon-pet', 'pet-opener', 'heal-pet', 'pet-backoff', 'debuff', 'self-buffs', 'buff', 'heal-self', 'damage', 'finisher', 'mez', 'heal-target', 'pet-attack', ...UTILITIES, 'loc', 'export']
 }
 const COMMANDS: Partial<Record<MacroRole, string>> = {
   'pet-attack': '/pet attack', 'pet-backoff': '/pet back off', loc: '/loc', export: '/outputfile inventory'
@@ -80,7 +81,7 @@ function spellRecipe(role: MacroRole, input: MacroPlanInput, selection?: MacroSe
   return {
     id: macroSelectionKey(chosen), role, ...ROLES[role], selection: chosen,
     ...compileMacro(ROLES[role].name, stepsFor(role, spell), input),
-    description: `${ROLES[role].description} Uses ${spell.name}.`,
+    description: `${ROLES[role].description} Uses ${spell.name}.${spell.targetType === 1 ? ' Projectiles take time to reach the target and need a clear path; keep the enemy in range.' : ''}`,
     ...(upgrade ? { upgrade: { from: spell, to: upgrade,
       reason: `${upgrade.name} is a higher owned rank in the same spell line. Memorize it to update this recipe.` } } : {})
   }
@@ -114,7 +115,7 @@ function familyRecipes(role: MacroRole, input: MacroPlanInput, choices: MacroSel
   const labels = new Set<string>()
   return recipes.map((recipe, index) => {
     const spell = input.spells.find((s) => s.id === recipe.requiredSpellIds[0])
-    let name = spell ? parseSpellRank(spell.name).base.slice(0, 15) : ROLES[role].name
+    let name = spell ? `${role === 'finisher' ? 'Finish ' : ''}${parseSpellRank(spell.name).base}`.slice(0, 15) : ROLES[role].name
     if (!safeMacroText(name, 15)) name = `Spell ${index + 1}`
     if (labels.has(name)) name = `${index + 1} ${name}`.slice(0, 15)
     labels.add(name)

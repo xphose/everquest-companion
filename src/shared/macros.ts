@@ -27,7 +27,7 @@ export interface MacroPlayer {
 }
 export type MacroStyle = 'solo' | 'group' | 'pet'
 export const MACRO_CAST_GEMS = 14
-export const MACRO_ROLES = ['damage', 'heal-self', 'heal-target', 'heal-pet', 'buff', 'debuff', 'pet-opener', 'self-buffs',
+export const MACRO_ROLES = ['damage', 'finisher', 'heal-self', 'heal-target', 'heal-pet', 'buff', 'debuff', 'pet-opener', 'self-buffs',
   'mez', 'summon-pet', 'pet-attack', 'pet-backoff', 'loc', 'export', 'summon-item', 'cure', 'root', 'snare', 'lull',
   'invisibility', 'vision', 'breathing', 'levitation', 'gate', 'rune'] as const
 export type MacroRole = typeof MACRO_ROLES[number]
@@ -59,7 +59,16 @@ export interface MacroPlanInput {
 }
 export type MacroStep = { kind: 'cast'; spellId: number } | { kind: 'command'; command: string; pauseTenths?: number } |
   { kind: 'target-self' }
+/** Current observed command binding, never an intended or inferred spellbook position. */
+export interface MacroCastBinding {
+  line: number
+  gem: number
+  spellId: number
+  name: string
+  castable: boolean
+}
 export interface CompiledMacro {
+  bindings?: MacroCastBinding[]
   lines: string[]
   requiredSpellIds: number[]
   missingSpellIds: number[]

@@ -1,7 +1,7 @@
 import type { MacroRole, MacroSpell } from '../macros'
 
 /** Each family remains a choice: food must not hide drink, or poison cure hide disease cure. */
-export const FAMILY_ROLES: readonly MacroRole[] = ['buff', 'summon-item', 'cure', 'root', 'snare', 'lull',
+export const FAMILY_ROLES: readonly MacroRole[] = ['finisher', 'buff', 'summon-item', 'cure', 'root', 'snare', 'lull',
   'invisibility', 'vision', 'breathing', 'levitation', 'gate', 'rune']
 
 // Effect meanings: https://github.com/EQEmu/EQEmu/blob/master/common/spdat.h, SpellEffect.
