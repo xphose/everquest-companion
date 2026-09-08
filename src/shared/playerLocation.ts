@@ -17,6 +17,9 @@ export interface PlayerLocation {
   spellbook?: number[]
   /** Eighteen native gem slots in order; null is empty capacity, not proof a slot is unlocked. */
   memorizedSpells?: (number | null)[]
+  /** Verified unlocked gem indices, one-based and sorted. Empty unlocked gems remain usable;
+   * omission means entitlement is unknown, independently of stored gem capacity/occupancy. */
+  unlockedSpellSlots?: number[]
   sampledAt: number
 }
 

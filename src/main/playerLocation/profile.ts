@@ -32,6 +32,17 @@ export const LEGENDS_PROFILE = {
   spellEntryBytes: 8,
   spellManagerRva: 0xf92118n,
   maximumSpellId: 0x64,
+  // Actual gem entitlement: the same effect-cache check gates UI visibility and memorization.
+  characterZone: 0x2810,
+  characterZoneDescriptorRva: 0x9a8970n,
+  characterZoneDisplacement: 0x758,
+  profileSpecial: 0x27fc,
+  effectCache: 0x1a0,
+  effectCacheReady: 0x08,
+  itemEffectCacheReady: 0x38,
+  itemEffectTable: 0x30,
+  additionalSpellSlotsEffect: 326,
+  baseSpellSlots: 8,
   // Verified against the in-game Ak'Anon map: native X is /loc NS, native Y is /loc EW.
   // The map's axis swap and negation are applied later by mapFromLoc, once.
   ns: 0x74,

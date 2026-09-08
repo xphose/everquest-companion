@@ -46,11 +46,17 @@ function validMemorizedSpells(value: unknown): boolean {
   return Array.isArray(value) && value.length === 18 && Array.from(value).every(id => id === null || validSpellId(id))
 }
 
+function validUnlockedSlots(value: unknown): boolean {
+  return Array.isArray(value) && value.length <= 18 && Array.from(value).every((slot, index) =>
+    typeof slot === 'number' && Number.isInteger(slot) && slot >= 1 && slot <= 18 && (index === 0 || value[index - 1] < slot))
+}
+
 function validOptionalObservations(value: Record<string, unknown>): boolean {
   return (!('level' in value) || validLevel(value.level)) &&
     (!('classes' in value) || validClasses(value.classes)) &&
     (!('spellbook' in value) || validSpellbook(value.spellbook)) &&
-    (!('memorizedSpells' in value) || validMemorizedSpells(value.memorizedSpells))
+    (!('memorizedSpells' in value) || validMemorizedSpells(value.memorizedSpells)) &&
+    (!('unlockedSpellSlots' in value) || validUnlockedSlots(value.unlockedSpellSlots))
 }
 
 function validLocation(value: unknown): value is PlayerLocation {
