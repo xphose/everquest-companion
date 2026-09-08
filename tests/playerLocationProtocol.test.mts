@@ -50,3 +50,16 @@ test('spell protocol rejects malformed IDs, duplicates, unbounded arrays and spa
     assert.equal(parseLocationReply({ id: 4, result: { state: 'live', location: { ...LOCATION, memorizedSpells } } }), null)
   }
 })
+
+test('unlocked gem protocol preserves exact sorted sets, including verified empty and sparse masks', () => {
+  for (const unlockedSpellSlots of [[], [1, 3, 18], Array.from({ length: 18 }, (_, i) => i + 1)]) {
+    const reply = { id: 5, result: { state: 'live', location: { ...LOCATION, unlockedSpellSlots } } }
+    assert.deepEqual(parseLocationReply(reply), reply)
+  }
+})
+
+test('unlocked gem protocol rejects malformed, unbounded and ambiguous slot sets', () => {
+  for (const unlockedSpellSlots of [null, undefined, '12', 12, [0], [19], [-1], [1.5], [NaN], [Infinity], ['1'], [1, 1], [2, 1], new Array(1), Array.from({ length: 19 }, (_, i) => i + 1)]) {
+    assert.equal(parseLocationReply({ id: 5, result: { state: 'live', location: { ...LOCATION, unlockedSpellSlots } } }), null)
+  }
+})
