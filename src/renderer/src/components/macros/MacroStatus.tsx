@@ -22,6 +22,7 @@ export function MacroNotification({ notice, dismiss }: { notice: MacroNotice | n
     <Alert data-testid="macros-notification" data-notice-id={notice.id} severity={notice.feedback.severity} variant="filled"
       onClose={() => dismiss(notice.id)} sx={{ maxWidth: 620 }}>
       <AlertTitle>{notice.feedback.title}</AlertTitle>{notice.feedback.message}
+      {notice.feedback.detail && <Typography variant="body2" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{notice.feedback.detail}</Typography>}
     </Alert>
   </Snackbar>
 }

@@ -7,6 +7,7 @@ import type { MacroPlanInput, MacroSpell } from '../src/shared/macros'
 import { planMacroPreparation, preparationOptions } from '../src/shared/macros/preparation'
 import { MacroPreparation } from '../src/renderer/src/components/macros/MacroPreparation'
 import { MacroSession, type MacroSessionState } from '../src/renderer/src/components/macros/macroSession'
+import { preparationFeedback } from '../src/renderer/src/components/macros/macroFeedback'
 
 Object.assign(globalThis, { React }) // Node tests use classic JSX; the renderer uses react-jsx.
 function spell(id: number, name: string, effect = 32): MacroSpell {
@@ -24,7 +25,7 @@ function snapshot(captured = false): MacroAssistantSnapshot {
     settings: { autoUpdate: true, style: 'solo', selections: [{ role: 'damage' }], destination: { bar: 4, page: 1 } },
     recipes: [], existing: [], installation: { state: 'ready', message: 'Ready', targetFiles: [], pendingCount: 0, canRestore: false, conflicts: [] },
     preparation: { options: preparationOptions(input), previewInput: input, phase: 'combat', message: 'Combat gems are restored.', readySpellIds: [],
-      ...(captured ? { plan: compiled.plan, installation: { state: 'pending', message: 'Queued', destination: { bar: 7, page: 2 } } } : {}) } }
+      ...(captured ? { plan: compiled.plan, installation: { state: 'pending', packageId: 'package-current', message: 'Queued', destination: { bar: 7, page: 2 } } } : {}) } }
 }
 function render(state: MacroAssistantSnapshot): string {
   return renderToStaticMarkup(createElement(MacroPreparation, { preparation: state.preparation!, busy: false,
@@ -65,6 +66,7 @@ test('persistent preparation status reports its custom destination and offline q
   const html = render(state)
   assert.ok(html.includes('Preparation queued, not written yet'))
   assert.ok(html.includes('Hotbar 7') && html.includes('Page 2'))
+  assert.ok(html.includes('Show Hotbar 7, page 2 in EverQuest to find these buttons.'))
   assert.ok(html.includes('Keep the companion open'))
   assert.ok(queueButton(html).includes('disabled'))
 })
@@ -90,7 +92,8 @@ test('manual prepare acknowledges repeated pending requests and polling announce
   await session.mutate(action)
   assert.ok(current.notice!.id > first.id)
   value = structuredClone(value)
-  value.preparation!.installation = { state: 'saved', message: 'Written', destination: { bar: 7, page: 2 }, at: '2026-09-08T18:00:00.000Z' }
+  value.preparation!.installation = { state: 'saved', packageId: 'package-current', completion: { kind: 'written', at: '2026-09-08T18:00:00.000Z' },
+    message: 'Written', destination: { bar: 7, page: 2 }, at: '2026-09-08T18:00:00.000Z' }
   await session.read()
   assert.equal(current.notice!.feedback.title, 'Preparation saved')
   assert.equal(current.notice!.feedback.timestamp?.label, 'Saved')
@@ -112,4 +115,38 @@ test('failed preparation suppresses queued feedback across polls and character r
   session.reset()
   assert.equal(current.snapshot, null)
   assert.equal(current.error, null)
+})
+test('canceling a pending package cannot announce the older installed package as a new save', async () => {
+  for (const configured of [false, true]) {
+    let value = snapshot(true)
+    value.installation.state = 'pending'
+    let current: MacroSessionState = { snapshot: null, busy: false, error: null }
+    const session = new MacroSession({ getMacroAssistant: async () => value,
+      mutateMacroAssistant: async () => ({ ok: true, snapshot: value }) }, (state) => { current = state })
+    await session.read()
+    value = snapshot(true)
+    value.installation.state = 'applied'
+    value.installation.completion = { kind: 'written', at: '2026-09-07T18:00:00.000Z', targetFile: 'Example_test_LO1.ini' }
+    value.preparation!.installation = { state: 'saved', packageId: 'older-package', message: 'Previously installed',
+      completion: { kind: 'written', at: '2026-09-07T18:00:00.000Z' } }
+    if (configured) await session.mutate({ characterId: 'Example@test', action: 'configure', settings: { style: 'pet' } })
+    else await session.read()
+    assert.equal(current.notice, null)
+    session.dispose()
+  }
+})
+test('unchanged preparation reports a check without a new save or required restart, and legacy status remains neutral', () => {
+  const state = snapshot(true)
+  state.preparation!.installation = { state: 'saved', packageId: 'package-current', message: 'Already matches.',
+    at: '2026-09-07T18:00:00.000Z', completion: { kind: 'unchanged', at: '2026-09-08T18:00:00.000Z' } }
+  const feedback = preparationFeedback(state.preparation!)
+  assert.equal(feedback.title, 'Preparation already up to date')
+  assert.deepEqual(feedback.timestamp, { label: 'Last checked', value: '2026-09-08T18:00:00.000Z' })
+  const html = render(state)
+  assert.ok(html.includes('no restart is needed'))
+  assert.ok(!html.includes('Start or restart EverQuest'))
+  assert.ok(!html.includes('2026-09-07T18:00:00.000Z'))
+  delete state.preparation!.installation.completion
+  assert.equal(preparationFeedback(state.preparation!).title, 'Preparation status')
+  assert.ok(!render(state).includes('Start or restart EverQuest'))
 })

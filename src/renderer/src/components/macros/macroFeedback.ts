@@ -18,8 +18,13 @@ export function preparationFeedback(preparation: MacroPreparationSnapshot): Macr
   if (installation.state === 'pending') return { title: 'Preparation queued, not written yet', severity: 'info', detail,
     message: 'Keep the companion open. Fully exit EverQuest, wait for Preparation saved, then launch the game to load the buttons.' }
   if (installation.state === 'conflict') return { title: 'Preparation needs attention', severity: 'warning', message: installation.message, detail }
-  return { title: 'Preparation saved', severity: 'success', message: 'Start or restart EverQuest to load the saved preparation buttons.', detail,
-    ...(installation.at ? { timestamp: { label: 'Saved', value: installation.at } } : {}) }
+  if (installation.completion?.kind === 'unchanged') return { title: 'Preparation already up to date', severity: 'success', detail,
+    message: 'No new changes were written. If these buttons are already visible in game, no restart is needed.',
+    timestamp: { label: 'Last checked', value: installation.completion.at } }
+  if (installation.completion?.kind === 'written') return { title: 'Preparation saved', severity: 'success', detail,
+    message: 'Start or restart EverQuest to load the saved preparation buttons.',
+    timestamp: { label: 'Saved', value: installation.completion.at } }
+  return { title: 'Preparation status', severity: 'info', message: installation.message, detail }
 }
 
 /** Present typed outcomes. A legacy appliedAt can describe an older write, so it is never
