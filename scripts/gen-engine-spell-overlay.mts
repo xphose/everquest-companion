@@ -29,11 +29,12 @@
  * data change and must not make two checkouts disagree about a committed artifact.
  */
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { SPELL_CORRECTIONS } from '../src/main/data/spellCorrections'
 import { SPELL_REMOVALS } from '../src/main/data/spellRemovals'
 
-const ROOT = join(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..')
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 export const SIDECAR = join(ROOT, 'engine', 'crates', 'eqlog', 'data', 'spell-overlay.json')
 
 /** The correction fields the Rust parser's `field_of` knows. See the header's `effects` note. */
@@ -63,7 +64,7 @@ export function writeSidecar(): boolean {
   return true
 }
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const changed = writeSidecar()
   console.log(
     `[gen-engine-spell-overlay] ${changed ? 'REWROTE' : 'unchanged'} ${SIDECAR} — ` +

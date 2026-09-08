@@ -46,6 +46,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { applySpellRemovals, SPELL_REMOVALS } from '../src/main/data/spellRemovals.ts'
 import { SPELL_CORRECTIONS } from '../src/main/data/spellCorrections.ts'
 import {
@@ -506,7 +507,7 @@ function tsFilesUnder(dir: string, out: string[] = []): string[] {
 }
 
 test('every src importer of spells.json goes through the removals seam, or is exempt with a reason', () => {
-  const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
+  const root = fileURLToPath(new URL('..', import.meta.url))
   const offenders: string[] = []
   for (const file of tsFilesUnder(join(root, 'src'))) {
     const rel = file.replace(/\\/g, '/').slice(root.replace(/\\/g, '/').length).replace(/^\/+/, '')
@@ -528,7 +529,7 @@ test('every src importer of spells.json goes through the removals seam, or is ex
 test('the exemption list names only files that really exist and really import the scrape', () => {
   // An exemption that has rotted is worse than none: it looks like a decision somebody made about
   // a file, and the file may have been rewritten around it.
-  const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
+  const root = fileURLToPath(new URL('..', import.meta.url))
   for (const [rel, reason] of RAW_IMPORT_EXEMPT) {
     const src = readFileSync(join(root, rel), 'utf8')
     assert.match(src, /^import\s+\w+\s+from\s+'[^']*spells\.json'/m, `${rel} no longer imports the scrape`)
