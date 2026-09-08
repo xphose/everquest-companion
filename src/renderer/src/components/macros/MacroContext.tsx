@@ -5,7 +5,7 @@ import type { MacroAssistantSnapshot } from '@shared/macroAssistant'
 import { isMacroStyle, type MacroStyle } from '@shared/macros'
 
 function Count({ label, value }: { label: string; value: number | undefined }): JSX.Element {
-  return <Box sx={{ minWidth: 70 }}><Typography variant="h6" sx={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1.3 }}>{value ?? '—'}</Typography>
+  return <Box sx={{ minWidth: 70 }}><Typography variant="h6" sx={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1.3 }}>{value ?? '-'}</Typography>
     <Typography variant="caption" color="text.secondary">{label}</Typography></Box>
 }
 

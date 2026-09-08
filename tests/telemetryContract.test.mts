@@ -331,10 +331,10 @@ test('the view list is the SAME set the app can render', () => {
   const known = knownViews(src)
   assert.ok(known !== null && known.length > 5, 'failed to read KNOWN_VIEWS out of appViews.ts')
   const drills = declared.filter((v) => !known.includes(v) && !unreleased.includes(v))
-  // The fork's journal is usable but has no upstream telemetry contract. dwellView already
-  // returns null for it. Keep this one explicit exception out of transmitted batches without
+  // The fork's journal and macro setup are usable but have no upstream telemetry contract.
+  // dwellView already returns null for them. Keep these explicit exceptions out of transmitted batches without
   // exempting other new tabs or changing the independently deployed server's enum.
-  const localOnly = ['questJournal']
+  const localOnly = ['questJournal', 'macros']
   for (const view of localOnly) {
     assert.ok(declared.includes(view) && known.includes(view), `${view} must remain a restorable view`)
     assert.ok(!(TELEMETRY_VIEWS as readonly string[]).includes(view), `${view} must stay local`)

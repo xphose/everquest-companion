@@ -177,3 +177,12 @@ test('offline cached recipes cannot queue a new plan, while the pending explanat
   assert.ok(button.includes('disabled'))
   assert.ok(html.includes('Existing queued plans still install'))
 })
+
+test('starter spell roles follow available classes while manual family choices remain explicit', () => {
+  const damage = { ...recipe('damage', [1]), selection: { role: 'damage' as const, spellLine: 'flame' } }
+  const heal = { ...recipe('heal-self', [2]), selection: { role: 'heal-self' as const, spellLine: 'mending' } }
+  assert.deepEqual(starterSelections([damage, heal], []), [{ role: 'damage' }, { role: 'heal-self' }])
+  assert.deepEqual(changeSelection([], damage.selection, true), [damage.selection])
+  const manual = { role: 'damage' as const, spellLine: 'frost' }
+  assert.deepEqual(starterSelections([damage, heal], [manual]), [manual, { role: 'heal-self' }])
+})

@@ -30,6 +30,19 @@ function CopyCommands({ recipe }: { recipe: MacroRecipe }): JSX.Element {
   </Stack>
 }
 
+function RecipeInformation({ recipe }: { recipe: MacroRecipe }): JSX.Element {
+  return <>
+    <Typography variant="body2" color="text.secondary">{recipe.description}</Typography>
+    {recipe.requiredSpellIds.length > 0 && !recipe.selection.spellLine && <Typography variant="caption" color="primary">Follows available spells for this role.</Typography>}
+    {recipe.upgrade && <Alert severity="info" icon={<UpgradeIcon fontSize="inherit" />} sx={{ py: 0.25 }}>
+      <Typography variant="body2"><strong>Upgrade available:</strong> {recipe.upgrade.from.name} → {recipe.upgrade.to.name}</Typography>
+      <Typography variant="caption">{recipe.upgrade.reason}</Typography>
+    </Alert>}
+    {recipe.reasons.length > 0 && <Box>{recipe.reasons.map((reason, index) =>
+      <Typography key={index} variant="body2" color={recipe.ready ? 'text.secondary' : 'warning.main'}>{reason}</Typography>)}</Box>}
+  </>
+}
+
 export function MacroRecipeCard({ recipe, selected, busy, selectionFull = false, onSelect }: {
   recipe: MacroRecipe; selected: boolean; busy: boolean; selectionFull?: boolean; onSelect: (checked: boolean) => void
 }): JSX.Element {
@@ -40,13 +53,7 @@ export function MacroRecipeCard({ recipe, selected, busy, selectionFull = false,
       <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.4 }}>{recipe.name}</Typography>
       <Chip size="small" variant="outlined" color={recipe.ready ? 'success' : 'default'} label={label} sx={{ flexShrink: 0 }} />
     </Stack>
-    <Typography variant="body2" color="text.secondary">{recipe.description}</Typography>
-    {recipe.upgrade && <Alert severity="info" icon={<UpgradeIcon fontSize="inherit" />} sx={{ py: 0.25 }}>
-      <Typography variant="body2"><strong>Upgrade available:</strong> {recipe.upgrade.from.name} → {recipe.upgrade.to.name}</Typography>
-      <Typography variant="caption">{recipe.upgrade.reason}</Typography>
-    </Alert>}
-    {recipe.reasons.length > 0 && <Box>{recipe.reasons.map((reason, index) =>
-      <Typography key={index} variant="body2" color={recipe.ready ? 'text.secondary' : 'warning.main'}>{reason}</Typography>)}</Box>}
+    <RecipeInformation recipe={recipe} />
     {recipe.lines.length > 0 && <MacroCommands lines={recipe.lines} />}
     <Stack direction="row" spacing={1.5} sx={{ mt: 'auto' }}>
       <Typography variant="caption" color="text.secondary">{recipe.mana} mana</Typography>

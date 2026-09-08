@@ -40,7 +40,7 @@ export default function MacrosView(): JSX.Element {
         data-testid="macros-starter-set" onClick={() => mutate({ selections: starterSelections(recipes, snapshot.settings.selections) })}>Add starter set</Button>
     </Stack>
     <Typography variant="body2" color="text.secondary">
-      Start with up to eight ready macros, or choose your own. Each hotbar page holds 12 buttons; deselect a macro to make room when your set is full.
+      Starter macros follow your active classes and memorized spells. Choose individual cards to keep a particular spell line. Each hotbar page holds 12 buttons; deselect a macro to make room when your set is full.
     </Typography>
     <Tabs value={filter} onChange={(_, value: string) => setFilter(value)} aria-label="Macro suggestions" sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36 } }}>
       <Tab value="all" label={`All suggestions (${recipes.length})`} /><Tab value="ready" label={`Ready (${ready})`} /><Tab value="selected" label={`Selected (${selected.size})`} />

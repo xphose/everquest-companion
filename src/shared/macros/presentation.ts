@@ -28,13 +28,15 @@ export function starterSelections(recipes: readonly MacroRecipe[], selected: rea
   let next = [...selected]
   const buffs = recipes.find((recipe) => recipe.ready && recipe.role === 'self-buffs')
   const opener = recipes.find((recipe) => recipe.ready && recipe.role === 'pet-opener')
+  const existingRoles = new Set(selected.filter((selection) => selection.role !== 'buff').map((selection) => selection.role))
   const roles = new Set<string>()
   for (const candidate of recipes) {
     if (next.length >= MACRO_SELECTION_LIMIT) break
     const recipe = starterReplacement(candidate, buffs, opener)
-    if (!recipe.ready || roles.has(recipe.role) || roles.size >= 8) continue
+    if (!recipe.ready || roles.has(recipe.role) || existingRoles.has(recipe.role) || roles.size >= 8) continue
     roles.add(recipe.role)
-    next = changeSelection(next, recipe.selection, true)
+    // Starter roles can follow classes and gem changes; an individual card keeps its chosen line.
+    next = changeSelection(next, recipe.role === 'buff' ? recipe.selection : { role: recipe.role }, true)
   }
   return next
 }
