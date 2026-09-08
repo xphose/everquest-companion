@@ -1,5 +1,5 @@
 import type { MacroAssistantMutation, MacroAssistantMutationResult, MacroAssistantSnapshot } from '../../../../shared/macroAssistant'
-import { installationFeedback, type MacroNotice } from './macroFeedback'
+import { installationFeedback, preparationFeedback, type MacroFeedback, type MacroNotice } from './macroFeedback'
 
 export interface MacroBridge {
   getMacroAssistant: () => Promise<MacroAssistantSnapshot>
@@ -10,6 +10,24 @@ export interface MacroSessionState {
   busyAction?: MacroAssistantMutation['action']; notice?: MacroNotice | null
 }
 const messageOf = (error: unknown): string => error instanceof Error ? error.message : String(error)
+
+function sameInstallation(previous: MacroAssistantSnapshot | null, next: MacroAssistantSnapshot): boolean {
+  return previous?.installation.state === next.installation.state &&
+    previous?.preparation?.installation?.state === next.preparation?.installation?.state
+}
+function preparationNotice(previous: MacroAssistantSnapshot | null, next: MacroAssistantSnapshot, action?: MacroAssistantMutation['action']): MacroFeedback | undefined {
+  const before = previous?.preparation?.installation?.state
+  const after = next.preparation?.installation?.state
+  const completed = before === 'pending' && after !== 'pending' && after !== undefined
+  return next.preparation && (action === 'prepare' || completed) ? preparationFeedback(next.preparation) : undefined
+}
+function snapshotNotice(previous: MacroAssistantSnapshot | null, next: MacroAssistantSnapshot, action?: MacroAssistantMutation['action']): MacroFeedback | undefined {
+  const preparation = preparationNotice(previous, next, action)
+  if (preparation) return preparation
+  const completed = previous?.installation.state === 'pending' && next.installation.state !== 'pending' &&
+    (next.installation.completion !== undefined || next.installation.state === 'conflict')
+  return action === 'queue' || completed ? installationFeedback(next) : undefined
+}
 
 /** One request at a time. A queued edit invalidates a pending poll before waiting for it.
  * Character changes and unmounts invalidate both responses and edits not yet sent to main. */
@@ -35,15 +53,11 @@ export class MacroSession {
     this.publish({ error: messageOf(error), notice: null })
   }
 
-  private acceptSnapshot(snapshot: MacroAssistantSnapshot, manualQueue = false): Partial<MacroSessionState> {
-    const previous = this.state.snapshot
-    const sameCharacter = previous?.characterId === snapshot.characterId
-    const prior = previous?.installation.state
-    const next = snapshot.installation.state
-    let notice = sameCharacter && prior === next ? this.state.notice : null
-    const completed = sameCharacter && prior === 'pending' && next !== 'pending' &&
-      (snapshot.installation.completion !== undefined || next === 'conflict')
-    if (manualQueue || completed) notice = { id: ++this.noticeId, feedback: installationFeedback(snapshot) }
+  private acceptSnapshot(snapshot: MacroAssistantSnapshot, action?: MacroAssistantMutation['action']): Partial<MacroSessionState> {
+    const previous = this.state.snapshot?.characterId === snapshot.characterId ? this.state.snapshot : null
+    let notice = sameInstallation(previous, snapshot) ? this.state.notice : null
+    const feedback = snapshotNotice(previous, snapshot, action)
+    if (feedback) notice = { id: ++this.noticeId, feedback }
     return { snapshot, notice }
   }
 
@@ -51,7 +65,7 @@ export class MacroSession {
     if (!this.current(generation)) return
     if (result.snapshot.characterId !== mutation.characterId) { this.reset(); return }
     this.errorKind = result.ok ? null : 'mutation'
-    const update = result.ok ? this.acceptSnapshot(result.snapshot, mutation.action === 'queue') : { snapshot: result.snapshot, notice: null }
+    const update = result.ok ? this.acceptSnapshot(result.snapshot, mutation.action) : { snapshot: result.snapshot, notice: null }
     this.publish({ ...update, error: result.ok ? null : result.error ?? 'The change could not be saved.' })
   }
 

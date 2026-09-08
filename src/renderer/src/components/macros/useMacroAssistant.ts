@@ -21,6 +21,9 @@ export function useMacroAssistant() {
     void session.current?.mutate(mutation)
   }, [characterId])
   const refresh = useCallback(() => { void session.current?.read(true) }, [])
+  const prepare = useCallback((spellIds: number[], destination: { bar: number; page: number }) => {
+    if (characterId) void session.current?.mutate({ characterId, action: 'prepare', spellIds, destination })
+  }, [characterId])
   const dismissNotice = useCallback((id: number) => { session.current?.dismissNotice(id) }, [])
-  return { ...state, mutate, refresh, dismissNotice }
+  return { ...state, mutate, prepare, refresh, dismissNotice }
 }
