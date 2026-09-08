@@ -38,7 +38,7 @@
  *
  * Run: `npm run test:e2e`
  */
-import type { ElectronApplication, Page } from 'playwright-core'
+import type { Page } from 'playwright-core'
 import {
   buildIfStale,
   check,
@@ -51,11 +51,9 @@ import {
   dumpArtifacts,
   failures,
   listedValues,
-  narrowPanelCheck,
   note,
   openPicker,
   openSelectorValues,
-  pageOverflow,
   rectOf,
   reportRun,
   selectorText,
@@ -69,6 +67,7 @@ import {
   waitHydrated,
   type Snap
 } from './appHarness.mjs'
+import { stepResponsive } from './combatResponsiveSteps.mjs'
 import { mainWindow } from './appWindow.mjs'
 import { launchOnFixture } from './logFixture.mjs'
 import type { FixtureLog } from './logFixture.mjs'
@@ -461,68 +460,6 @@ async function stepSearch(page: Page, snap: Snap): Promise<void> {
   } else {
     note('no finalized fight with damage in the snapshot — the search assertions need one')
   }
-}
-
-/**
- * THE LAYOUT HAS STOPPED MOVING. A resize crosses Electron → the OS → Chromium's layout → a
- * ResizeObserver → React, and every one of those hops has its own clock; the suite used to give
- * the whole chain a flat 1200 ms and measure whatever it found. The positive signal is that the
- * panels' own boxes have settled — read them until three consecutive readings agree, then assert.
- */
-function panelBoxes(page: Page): Promise<string> {
-  return page.evaluate(() =>
-    [...document.querySelectorAll('[data-testid="dash-panel"]')]
-      .map((el) => {
-        const r = el.getBoundingClientRect()
-        return `${String(Math.round(r.x))}:${String(Math.round(r.y))}:${String(Math.round(r.width))}:${String(Math.round(r.height))}`
-      })
-      .join('|')
-  )
-}
-
-async function stepResponsive(app: ElectronApplication, page: Page): Promise<void> {
-  // 11. FIRST, the narrowest window a USER can actually make: the main window's
-  //     `minWidth: 900` (src/main/index.ts). The 2x2 must survive it intact — that is the
-  //     real-world worst case, and it is also exactly MUI's `md` boundary, so the
-  //     single-column branch below can only be reached by lifting the minimum.
-  const win = await app.browserWindow(page)
-  const wide = await win.evaluate((w) => w.getBounds())
-  await win.evaluate((w, b) => w.setBounds({ ...b, width: 900 }), wide)
-  await settleStable(() => panelBoxes(page), { timeoutMs: 15_000 })
-  await checkGrid(page, 'min window width (900)')
-  await checkHeader(page, 'min window width (900)', true)
-
-  // 12. RESPONSIVE: below md the grid collapses to ONE column of comfortably tall panels and
-  //     the REGION scrolls (the page still must not). Unreachable through the UI today
-  //     (minWidth 900 === the md breakpoint), so the test lifts the minimum to exercise the
-  //     CSS — if the window minimum or the drawer ever changes, this path is already correct.
-  await win.evaluate((w, b) => {
-    w.setMinimumSize(400, 400)
-    w.setBounds({ ...b, width: 720 })
-  }, wide)
-  await settleStable(() => panelBoxes(page), { timeoutMs: 15_000 })
-  const narrow = await narrowPanelCheck(page)
-  check('narrow: the grid collapses to a single column', narrow.cols === 1, `${narrow.cols} column(s)`)
-  check('narrow: each stacked panel keeps a usable height', narrow.minH >= 250, `shortest ${narrow.minH}px`)
-  check('narrow: the dashboard REGION is the scroller', narrow.scrolls, `region scrolls=${narrow.scrolls}`)
-  // 720px is BELOW the app's 900px minimum window: the lens line is explicitly allowed to
-  // wrap once down here (flexWrap is its overflow strategy), so the height cap admits one
-  // extra row. At and above the minimum the two-line cap (110px) stays the law.
-  await checkHeader(page, 'narrow (720)', true, 150)
-  const narrowOver = await pageOverflow(page)
-  check(
-    'narrow: …and the PAGE still does not scroll',
-    narrowOver.doc === 0 && narrowOver.content === 0,
-    `document +${narrowOver.doc}px · content +${narrowOver.content}px`
-  )
-  // Back to the wide layout — and it must come back as a clean 2x2.
-  await win.evaluate((w, b) => {
-    w.setMinimumSize(900, 600)
-    w.setBounds(b)
-  }, wide)
-  await settleStable(() => panelBoxes(page), { timeoutMs: 15_000 })
-  await checkGrid(page, 'restored wide')
-  await checkHeader(page, 'restored wide', true)
 }
 
 async function main(): Promise<void> {
