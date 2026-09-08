@@ -205,7 +205,18 @@ function applyHotbutton(doc: IniDocument, managed: ManagedSocial, hotbutton: Man
   const index = (managed.page - 1) * 12 + managed.button - 1
   const value = previous?.hotbutton?.value ?? `E${index},@-1,0000000000000000,0,,`
   managed.hotbutton = { ...hotbutton, value }
-  return writeFields(doc, sectionName(hotbutton.bar), { [slotPrefix(hotbutton)]: value })
+  const old = previous?.hotbutton
+  const moved = old && (old.bar !== hotbutton.bar || old.page !== hotbutton.page || old.button !== hotbutton.button)
+  const cleared = moved ? writeFields(doc, sectionName(old.bar), { [slotPrefix(old)]: null }) : doc
+  return writeFields(cleared, sectionName(hotbutton.bar), { [slotPrefix(hotbutton)]: value })
+}
+
+function requestedHotbutton(doc: IniDocument, request: SocialRequest, previous?: ManagedSocial): ManagedHotbutton | null | undefined {
+  const old = previous?.hotbutton
+  const dest = request.hotbar
+  if (!dest) return old
+  if (old?.bar === dest.bar && old.page === dest.page) return old
+  return findHotbutton(doc, dest)
 }
 
 function applyRequest(doc: IniDocument, request: SocialRequest, previous?: ManagedSocial): { doc: IniDocument; managed: ManagedSocial } | string {
@@ -213,7 +224,7 @@ function applyRequest(doc: IniDocument, request: SocialRequest, previous?: Manag
   if (error) return error
   const slot = previous ?? findEmptySocial(doc)
   if (!slot) return 'No empty social slot is available.'
-  const hotbutton = previous?.hotbutton ?? (request.hotbar ? findHotbutton(doc, request.hotbar) : undefined)
+  const hotbutton = requestedHotbutton(doc, request, previous)
   if (hotbutton === null) return 'The requested hotbar page has no empty button.'
   const fields = desiredFields(request)
   let next = writeFields(doc, 'socials', trackedUpdates(slot, fields, previous))

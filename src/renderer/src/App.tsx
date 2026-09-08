@@ -3,6 +3,7 @@ import { Box, CssBaseline } from '@mui/material'
 import type { AppFocus, CharacterRef } from '@shared/types'
 import TitleBar from './components/TitleBar'
 import NavDrawer from './components/NavDrawer'
+import { MacrosDestination } from './components/macros/MacrosView'
 // THE CONTENT COLUMN — everything right of the nav drawer. Moved out of this file at its 400-
 // code-line ceiling (JOS-503), where the house rule is to split rather than to ratchet; it carries
 // the app's ONE scroller plus the two fixed bands above it (the gear area's in-area tab bar,
@@ -165,13 +166,14 @@ function PlainView({
           file, not here: this switch is one branch per view and a branch needing both would have
           cost `PlainView` two points of the measured complexity ceiling. */}
       <SpellDrill view={view} viewKey={viewKey} routing={routing} />
+      <MacrosDestination view={view} viewKey={viewKey} />
     </>
   )
 }
 
 /** Catalog reference destinations remain useful without a character log. */
 function needsCharacterLog(view: View, hasCharacters: boolean): boolean {
-  return !hasCharacters && !['maps', 'mobs', 'loot', 'spell'].includes(view)
+  return !hasCharacters && !['maps', 'macros', 'mobs', 'loot', 'spell'].includes(view)
 }
 
 /** Which feature view is on screen. Preferences renders even with zero characters — it's how
