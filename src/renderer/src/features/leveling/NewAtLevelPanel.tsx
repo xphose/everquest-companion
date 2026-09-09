@@ -48,7 +48,7 @@
 // and pulses its edge for two seconds on arrival — on EVERY link, including a repeat of the same
 // level, and on no plain tab switch at all.
 
-import { type JSX, useContext, useMemo, useState } from 'react'
+import { type JSX, useMemo, useState } from 'react'
 import { Box, Paper, Stack, Typography, Chip } from '@mui/material'
 import { comboClassSet, unlocksAtLevel } from '@shared/levelUnlocks'
 import { tokenizeSpellQuery } from '@shared/spellSearch'
@@ -56,12 +56,11 @@ import { EMPTY_UNLOCK_SEARCH, searchUnlockSpells } from '@shared/unlockSearch'
 import { Tooltip } from '../../lib/Tooltip'
 import { useObservedSpellRanks } from '../../lib/useObservedSpellRanks'
 import { ProvenanceChip } from '../profiles/ClassComboChips'
-import { useComboSnap } from '../profiles/ClassComboData'
+import { useCurrentClasses } from '../../lib/useCurrentClasses'
 import { UnlockList } from './UnlockList'
 import { UnlockSearchField, UnlockSearchResultsList } from './NewAtLevelSearch'
 import { LANDING_PULSE_SX, useFocusLanding } from './useFocusLanding'
-import { useCurrentComboClasses, useLevelUnlocks } from './useLevelUnlocks'
-import { LevelingCurrentClasses } from './currentLevelingProfile'
+import { useLevelUnlocks } from './useLevelUnlocks'
 import { useSpellSets } from './useSpellSets'
 // THE LEVEL IS THE TAB'S SINCE JOS-445, not this panel's: the best-spells readout in the other
 // column reads the same number. The STEPPER became shared too (owner ask 2026-08-23) — one
@@ -132,17 +131,17 @@ export function NewAtLevelPanel({
 }: NewAtLevelPanelProps): JSX.Element {
   const { level, picked, pick: onPick } = viewed
   const data = useLevelUnlocks()
-  const combo = useCurrentComboClasses()
-  const live = useContext(LevelingCurrentClasses)
+  const selection = useCurrentClasses()
+  const combo = selection.combo
+  const live = selection.source === 'live'
   // The live spell bar (JOS-391) — read here rather than inside the row so one subscription
   // serves both lists, and so a list with no spell rows costs nothing.
   const sets = useSpellSets()
   // Which rank of each line you have been observed to hold (JOS-446), subscribed here for the
   // same reason `sets` is: one subscription for every list this panel draws.
   const ranks = useObservedSpellRanks()
-  // The same OPEN interval `useCurrentComboClasses` reduces to strings — kept whole here for the
-  // one thing the strings drop: where the loadout came from.
-  const current = useComboSnap().current
+  // The fallback interval is retained for its truthful log provenance.
+  const current = selection.logged
   // THE SEARCH (JOS-392). An empty box is the level view, byte for byte — the state below is the
   // only thing that switches the body, and nothing about the level view reads it.
   const [query, setQuery] = useState('')
@@ -224,7 +223,7 @@ export function NewAtLevelPanel({
         )}
         <Box sx={{ flexGrow: 1 }} />
         <ComboChips classes={classes} resolved={resolved} ambiguous={combo.ambiguous} />
-        {live ? <Chip size="small" label="Live" variant="outlined" sx={{ height: 18, fontSize: 10 }} />
+        {live ? <Chip size="small" label="Live classes" variant="outlined" sx={{ height: 18, fontSize: 10 }} />
           : known && current && <ProvenanceChip interval={current} />}
       </Stack>
 

@@ -11,10 +11,9 @@
 // the toast falls back to celebrating the level alone — the same shapes a class with zero
 // unlocks at that level produces, so there is no second failure path to reason about.
 
-import { useContext, useEffect, useMemo, useState } from 'react'
-import { EMPTY_UNLOCK_DATA, comboClassesOf, type ComboClasses, type LevelUnlockData } from '@shared/levelUnlocks'
-import { useComboSnap } from '../profiles/ClassComboData'
-import { LevelingCurrentClasses } from './currentLevelingProfile'
+import { useEffect, useState } from 'react'
+import { EMPTY_UNLOCK_DATA, type ComboClasses, type LevelUnlockData } from '@shared/levelUnlocks'
+import { useCurrentClasses } from '../../lib/useCurrentClasses'
 
 let pending: Promise<LevelUnlockData> | null = null
 
@@ -42,12 +41,9 @@ export function useLevelUnlocks(): LevelUnlockData {
 /**
  * The loadout the character is running NOW — the panel's chips ("which of these are mine").
  *
- * The CURRENT interval, not a `Date.now()` join: they answer the same question, and the module's
- * own `current` cannot drift a frame behind the clock. The toast takes the other form
+ * Fresh native classes win, with the CURRENT logged interval as fallback. The toast takes the other form
  * (`comboClassesAt(intervals, ding.ts)`, law 10) because a ding is a timestamped record.
  */
 export function useCurrentComboClasses(): ComboClasses {
-  const snap = useComboSnap()
-  const live = useContext(LevelingCurrentClasses)
-  return useMemo(() => live ?? comboClassesOf(snap.current), [snap, live])
+  return useCurrentClasses().combo
 }

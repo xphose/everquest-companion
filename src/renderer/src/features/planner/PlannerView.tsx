@@ -40,9 +40,9 @@
 import { type JSX, useEffect, useMemo } from 'react'
 import { Box, Chip, IconButton, Stack } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
-import { CLASS_ABBRS, MAX_COMBO_SLOTS, resolvedClasses, type ClassAbbr } from '@shared/classCombo'
+import { CLASS_ABBRS, MAX_COMBO_SLOTS, type ClassAbbr } from '@shared/classCombo'
 import { classDisplayName } from '@shared/spellLevels'
-import { useComboSnap } from '../profiles/ClassComboData'
+import { useCurrentClasses } from '../../lib/useCurrentClasses'
 import { useWishlist } from '../wishlist/useWishlist'
 import { wishFromDonor } from '../wishlist/wishSearch'
 import ChipMultiSelect from '../../components/ChipMultiSelect'
@@ -94,7 +94,7 @@ function ClassFilter({ classes }: { classes: BrowseClassesApi }): JSX.Element {
  * it thinks and the click is the user's. Applying does NOT un-pin the filter either — accepting one
  * answer is not handing it back to inference.
  */
-function DetectedChip({ offer, onApply }: { offer: ClassAbbr[]; onApply: () => void }): JSX.Element {
+function DetectedChip({ offer, source, onApply }: { offer: ClassAbbr[]; source: 'live' | 'log'; onApply: () => void }): JSX.Element {
   return (
     // No popper (JOS-143). This chip renders IMMEDIATELY after ClassFilter on a nowrap row, so its
     // card opened into the same space the chip-select's option list uses — which is the hover box
@@ -104,7 +104,7 @@ function DetectedChip({ offer, onApply }: { offer: ClassAbbr[]; onApply: () => v
       color="warning"
       variant="outlined"
       data-testid="planner-detected-chip"
-      title="Use the combo detected from your log"
+      title={source === 'live' ? 'Use the current classes read from the game' : 'Use the combo detected from your log'}
       label={`detected: ${offer.map(classDisplayName).join(', ')} - apply`}
       onClick={onApply}
       sx={{ flexShrink: 0 }}
@@ -123,17 +123,12 @@ export interface PlannerViewProps {
 
 export default function PlannerView({ onOpenLoot }: PlannerViewProps = {}): JSX.Element {
   const classes = useBrowseClasses()
-  const combo = useComboSnap()
+  const { classes: detected, source } = useCurrentClasses()
   const explainer = useExplainer()
   // The wish list is mounted HERE only so the browse can add to it and mark what is already on it.
   // Coexisting mounts stopped mattering in JOS-346: the hook holds ONE document for the window, so
   // every surface is looking at the same object rather than at its own copy of it.
   const wishlist = useWishlist()
-
-  // What the app currently believes this character is running. An unresolved slot contributes
-  // nothing, so a half-known combo yields the classes it does know and nothing it doesn't (law 1).
-  const current = combo.current
-  const detected = useMemo(() => (current === null ? [] : resolvedClasses(current)), [current])
 
   // THE BINDING (V2): a filter whose trio came from detection tracks detection. `boundClasses`
   // returns null once they agree, so this settles after one write rather than looping.
@@ -172,7 +167,7 @@ export default function PlannerView({ onOpenLoot }: PlannerViewProps = {}): JSX.
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }} data-testid="planner-view">
       <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'nowrap', mb: 1.5 }}>
         <ClassFilter classes={classes} />
-        {offer !== null && <DetectedChip offer={offer} onApply={() => classes.adopt(offer)} />}
+        {offer !== null && <DetectedChip offer={offer} source={source} onApply={() => classes.adopt(offer)} />}
         <Box sx={{ flexGrow: 1, minWidth: 8 }} />
         <IconButton
           size="small"

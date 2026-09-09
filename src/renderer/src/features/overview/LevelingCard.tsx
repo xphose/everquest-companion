@@ -320,9 +320,12 @@ export function LevelingCard({ state, onOpenLeveling }: LevelingCardProps): JSX.
   return (
     <DashCard title="Leveling" testId="overview-leveling" right={<OpenLeveling onOpenLeveling={onOpenLeveling} />}>
       {state.empty ? (
-        <QuietNote>
-          No progress recorded yet - levels of progress and credited kills appear here as you play.
-        </QuietNote>
+        <>
+          <StatTiles tiles={state.tiles} />
+          <QuietNote>
+            No progress recorded yet - levels of progress and credited kills appear here as you play.
+          </QuietNote>
+        </>
       ) : (
         <>
           <LevelingChips state={state} />

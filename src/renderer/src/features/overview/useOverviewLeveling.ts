@@ -17,6 +17,8 @@ import type { CharacterSnap, ProgressionSnap } from '@shared/types'
 import { useModule } from '../../lib/useModule'
 import { EMPTY_PROGRESSION } from '../leveling/progressionDelta'
 import { overviewLeveling, type OverviewLevelingState } from './overviewLevelingData'
+import { useCurrentClasses } from '../../lib/useCurrentClasses'
+import { currentOverviewLevel } from './currentOverviewLevel'
 
 
 /**
@@ -33,5 +35,8 @@ import { overviewLeveling, type OverviewLevelingState } from './overviewLeveling
 export function useOverviewLeveling(): OverviewLevelingState {
   const prog = useModule<ProgressionSnap>('progression') ?? EMPTY_PROGRESSION
   const level = useModule<CharacterSnap>('character')?.level
-  return useMemo(() => overviewLeveling(prog, level), [prog, level])
+  const current = useCurrentClasses()
+  const logged = useMemo(() => overviewLeveling(prog, level), [prog, level])
+  return useMemo(() => currentOverviewLevel(logged, current.liveLevel, prog.levelValue.at(-1)),
+    [logged, current.liveLevel, prog.levelValue])
 }

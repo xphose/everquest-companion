@@ -146,7 +146,7 @@ export default function LoadoutOverride({ current }: { current: ComboInterval | 
     <Stack spacing={0.75} data-testid="loadout-override">
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
         <Typography variant="caption" color="text.secondary">
-          In effect now
+          Current log range
         </Typography>
         <SlotChips slots={current.slots} />
         <ProvenanceChip interval={current} />
