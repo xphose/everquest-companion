@@ -5,6 +5,23 @@ Recommended starts with one useful next step. My gear explains what to keep,
 improve, or investigate. Browse all preserves the item search, filters, comparison,
 and wish list controls.
 
+## Automatic refresh
+
+While Gear is visible, current character facts are checked every two seconds.
+Inventory watcher events refresh exported equipment immediately, with a thirty-second
+backup check to recover from missed events or a temporary read failure. Returning to
+the window, restoring its visibility, or opening Recommended triggers a fresh check.
+
+The refresh status reports the last successful check separately from changes to the
+recommendations. Recompute advice when its inputs change; preserve the existing data
+references, expanded cards, scroll position, and explicit planning choices when they
+do not. Coalesce concurrent refresh requests and reject responses from an earlier
+character session. Stop timers and subscriptions when the view unmounts.
+
+Equipment observations come from the character's existing inventory export. New
+`/outputfile inventory` exports are picked up automatically. The check timestamp
+describes local observations; catalog scrape dates describe the item and source data.
+
 ## Recommendation contract
 
 - Follow the active character's classes and exact level. Five-level bands are a
@@ -17,7 +34,10 @@ and wish list controls.
   and focus effects must not earn their full value repeatedly. Spell focus applies
   only to eligible spells, using the shared focus rules.
 - Keep missing facts missing. An absent inventory export is not an empty character;
-  a missing item tier is not +0; an unknown source is not an easy camp.
+  an unknown source is not an easy camp. Ordinary native export rows can establish
+  base tier zero without a printed suffix, as documented in
+  [inventory upgrade tiers](research/inventory-upgrade-tiers.md). Unrelated missing
+  tier metadata remains unknown.
 - Keep manual planning separate from observed facts. Potential mode describes a
   hypothetical item tier, with acquisition and upgrade costs still visible.
 
