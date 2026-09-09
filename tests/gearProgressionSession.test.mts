@@ -27,6 +27,27 @@ test('position ticks do not republish or rescore unchanged gear facts; a level o
   assert.equal(f.states.at(-1)?.context?.level, 11)
 })
 
+test('same-character refresh preserves facts, reports completed checks and coalesces events behind a read', async () => {
+  const states: GearCharacterReading[] = []
+  const checked: (number | null)[] = []
+  const pending: ((context: GearProgressionContext) => void)[] = []
+  let now = 1000
+  const session = gearProgressionSession({ now: () => now, read: () => new Promise(resolve => pending.push(resolve)),
+    publish: state => states.push(state), checked: at => checked.push(at) })
+  session.tick(); pending[0](facts()); await drain()
+  session.tick(); session.invalidate('synthetic-one'); session.refresh(); session.refresh()
+  assert.equal(states.length, 1, 'same identity never blanks or remounts its card')
+  assert.equal(pending.length, 2)
+  pending[1](facts({ level: 20 })); await drain()
+  assert.equal(states.length, 1, 'invalidated reading cannot update even the same character')
+  assert.equal(pending.length, 3)
+  now = 2000; pending[2](facts({ sampledAt: now })); await drain()
+  assert.equal(states.length, 1, 'heartbeat facts keep their original reference')
+  assert.deepEqual(checked, [1000, 2000], 'successful checks update independently of facts')
+  session.tick(); session.stop(); pending[3](facts({ level: 30 })); await drain()
+  assert.equal(states.length, 1); assert.equal(checked.length, 2)
+})
+
 test('an in-flight old character cannot overwrite a new character, including rejection', async () => {
   const f = fixture()
   f.session.tick(); f.session.invalidate(); f.session.tick()

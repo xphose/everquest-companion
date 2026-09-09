@@ -1,54 +1,45 @@
-import { useEffect, useState } from 'react'
-import type { PlannerInventory } from '@shared/planner/inventorySlots'
-import { NO_OWNERSHIP, type OwnershipPayload } from '@shared/planner/ownership'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { gearProgressionSession, type GearCharacterReading } from './gearProgressionSession'
+import { EMPTY_GEAR_INVENTORY, gearInventorySession, type GearInventoryReading } from './gearInventorySession'
+import { GEAR_CHARACTER_INTERVAL, GEAR_INVENTORY_INTERVAL, gearRefreshCadence } from './gearRefreshCadence'
+import { gearCharacterIdentity as identity, readGearInventory } from './readGearInventory'
 
-export interface GearInventoryReading { inventory: PlannerInventory | null; ownership: OwnershipPayload; ready: boolean; error: string | null }
+export type { GearInventoryReading } from './gearInventorySession'
+interface RefreshControl { refresh: () => void }
+export type GearCharacterControl = GearCharacterReading & RefreshControl & { checkedAt: number | null }
 
-/** One in-flight read, an invalidation generation, and a finite visible wait. No macro queue side effects. */
-export function useGearProgressionCharacter(): GearCharacterReading {
+/** A fresh check is separate from changed character facts, so heartbeat checks never rescore. */
+export function useGearProgressionCharacter(): GearCharacterControl {
   const [state, setState] = useState<GearCharacterReading>({ context: null, pending: true, error: null })
+  const [checkedAt, setCheckedAt] = useState<number | null>(null)
+  const current = useRef<RefreshControl | null>(null)
+  const refresh = useCallback(() => current.current?.refresh(), [])
   useEffect(() => {
-    const session = gearProgressionSession({ read: () => window.eq.gearProgressionContext(), publish: setState })
-    const off = window.eq.onCharacter(session.invalidate)
-    session.tick()
-    const timer = window.setInterval(session.tick, 2_000)
-    return () => { session.stop(); window.clearInterval(timer); off() }
+    const session = gearProgressionSession({ read: () => window.eq.gearProgressionContext(), publish: setState, checked: setCheckedAt })
+    current.current = session
+    const off = window.eq.onCharacter(character => session.invalidate(identity(character)))
+    const stop = gearRefreshCadence({ ...session, interval: GEAR_CHARACTER_INTERVAL, window, document })
+    return () => { current.current = null; stop(); session.stop(); off() }
   }, [])
-  return state
+  return { ...state, checkedAt, refresh }
 }
 
-/** Inventory is an export, so refresh on its existing watcher event rather than polling the file. */
-export function useGearProgressionInventory(characterId: string | null): GearInventoryReading {
-  const [state, setState] = useState<GearInventoryReading>({ inventory: null, ownership: NO_OWNERSHIP, ready: false, error: null })
+/** Watcher first, with a backstop for missed events, failed reads and returning to the app. */
+export function useGearProgressionInventory(characterId: string | null): GearInventoryReading & RefreshControl {
+  const [state, setState] = useState<GearInventoryReading>(EMPTY_GEAR_INVENTORY)
+  const current = useRef<RefreshControl | null>(null)
+  const refresh = useCallback(() => current.current?.refresh(), [])
   useEffect(() => {
-    let alive = true
-    let pending = false
-    let again = false
-    let generation = 0
-    const read = async (): Promise<void> => {
-      if (!alive || !characterId) return
-      if (pending) { again = true; return }
-      pending = true
-      const own = generation
-      try {
-        const [inventory, ownership] = await Promise.all([window.eq.plannerInventory(), window.eq.gearOwnership()])
-        if (alive && own === generation) setState({ inventory, ownership, ready: true, error: null })
-      } catch {
-        if (alive && own === generation) setState({ inventory: null, ownership: NO_OWNERSHIP, ready: true, error: 'Your inventory export could not be read.' })
-      } finally {
-        pending = false
-        if (again && alive) { again = false; void read() }
-      }
-    }
-    const offInventory = window.eq.onInventoryReload(() => { generation++; void read() })
-    const offCharacter = window.eq.onCharacter(() => {
-      alive = false
-      generation++
-      setState({ inventory: null, ownership: NO_OWNERSHIP, ready: false, error: null })
+    if (!characterId) return
+    const session = gearInventorySession({ read: () => readGearInventory(characterId, window.eq), publish: setState })
+    current.current = session
+    const offInventory = window.eq.onInventoryReload(session.invalidate)
+    const offCharacter = window.eq.onCharacter(character => {
+      if (identity(character) === characterId) session.invalidate()
+      else { current.current = null; session.stop(); setState(EMPTY_GEAR_INVENTORY) }
     })
-    void read()
-    return () => { alive = false; generation++; offInventory(); offCharacter() }
+    const stop = gearRefreshCadence({ ...session, interval: GEAR_INVENTORY_INTERVAL, window, document })
+    return () => { current.current = null; stop(); session.stop(); offInventory(); offCharacter() }
   }, [characterId])
-  return state
+  return { ...state, refresh }
 }

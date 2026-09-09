@@ -7,7 +7,8 @@ import type { MapFocus } from '../maps/mapFocus'
 import GearBrowseView from './GearBrowseView'
 import { useGearIndex } from './gearData'
 import { gearAcquisitions } from './gearAcquisitionData'
-import { useGearProgressionCharacter, useGearProgressionInventory } from './useGearProgressionData'
+import { useGearProgressionCharacter, useGearProgressionInventory, type GearCharacterControl } from './useGearProgressionData'
+import { GearRefreshStatus } from './GearRefreshStatus'
 import { useGearProgressionPrefs } from './useGearProgressionPrefs'
 import { GearNextUpgrade } from './GearNextUpgrade'
 import { GearOwnedProgression, GearInventoryNotice } from './GearOwnedProgression'
@@ -55,18 +56,22 @@ function RecommendedBody({ result, selected, scrapedAt, choose, ...navigation }:
 }
 
 /** Remount only on character identity, preserving choices across sample ticks and normal map round trips. */
-function GearCharacterView({ context, ...navigation }: GearViewProps & { context: GearProgressionContext }): JSX.Element {
+function GearCharacterView({ context, character, ...navigation }: GearViewProps & { context: GearProgressionContext; character: GearCharacterControl }): JSX.Element {
   const index = useGearIndex()
   const reading = useGearProgressionInventory(context.characterId)
   const [prefs, setPrefs] = useGearProgressionPrefs(context.characterId)
   const acquisitions = useMemo(() => gearAcquisitions(index.rows), [index.rows])
   const result = useMemo(() => recommendGear({ rows: index.rows, acquisitions, character: context,
     equipped: reading.inventory?.hosts ?? null, ownership: reading.ownership.entries, options: prefs.options }),
-  [index.rows, acquisitions, context, reading.inventory, reading.ownership.entries, prefs.options])
+  [index.rows, acquisitions, context, reading.inventory?.hosts, reading.ownership.entries, prefs.options])
+  const refresh = (): void => { character.refresh(); reading.refresh() }
   const choose = (rec: GearRecommendation): void => setPrefs({ ...prefs, selected: rec.id, section: 'recommended',
     options: prefs.options.slot && prefs.options.slot !== rec.slot ? { ...prefs.options, slot: rec.slot } : prefs.options })
   return <Stack sx={{ height: '100%', minHeight: 0, minWidth: 0 }} spacing={1.5} data-testid="gear-view">
-    <Tabs value={prefs.section} onChange={(_event, value: GearSection) => setPrefs({ ...prefs, section: value })} aria-label="Gear sections"
+    <Tabs value={prefs.section} onChange={(_event, value: GearSection) => {
+      setPrefs({ ...prefs, section: value })
+      if (value === 'recommended') refresh()
+    }} aria-label="Gear sections"
       variant="scrollable" allowScrollButtonsMobile sx={{ flexShrink: 0 }}>
       <Tab value="recommended" label="Recommended" data-testid="gear-section-recommended" />
       <Tab value="owned" label="My gear" data-testid="gear-section-owned" />
@@ -75,6 +80,7 @@ function GearCharacterView({ context, ...navigation }: GearViewProps & { context
     {prefs.section === 'browse' ? <GearBrowseView onOpenLoot={navigation.onOpenLoot} /> : <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: 0.5, pb: 2 }} data-testid="gear-progression-scroll">
       <Stack spacing={2.5} sx={{ maxWidth: 1050, mx: 'auto' }}>
         <CharacterHeading context={context} result={result} preview={prefs.options.level !== undefined} />
+        <GearRefreshStatus characterAt={character.checkedAt} inventoryAt={reading.checkedAt} error={character.error ?? reading.error} refresh={refresh} />
         {!index.ready ? <Alert severity="info">Reading the item database…</Alert> : index.refused ? <Alert severity="warning">This build cannot read the item database version.</Alert>
           : prefs.section === 'owned' ? <GearOwnedProgression advice={result.myGear} reading={reading} onChoose={choose} />
             : <><RecommendedBody result={result} selected={prefs.selected} scrapedAt={index.scrapedAt} choose={choose} {...navigation} />
@@ -92,6 +98,6 @@ export default function GearView(props: GearViewProps = {}): JSX.Element {
     {!reading.context && <Alert severity={reading.error ? 'warning' : 'info'} data-testid="gear-context-waiting">
       {reading.error ?? 'Reading your current character…'}
     </Alert>}
-    <GearCharacterView key={context.characterId ?? 'none'} context={context} {...props} />
+    <GearCharacterView key={context.characterId ?? 'none'} context={context} character={reading} {...props} />
   </Stack>
 }

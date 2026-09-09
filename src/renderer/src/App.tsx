@@ -138,11 +138,9 @@ function PlainView({
           remount `key` is the whole character contract. The one prop it takes is the app's own
           router — every donor name in the pane links OUT to that item's Loot drill-down. */}
       {view === 'planner' && <PlannerView key={viewKey} onOpenLoot={routing.openLoot} />}
-      {/* GEAR (JOS-284) takes the same one prop and for the same reason: the table reads the
-          committed corpus, which is character-independent, so the remount `key` is the whole
-          character contract and every item name links OUT to that item's Loot drill-down — which
-          is where the per-item tier block is drawn. */}
-      {view === 'gear' && <GearView key={viewKey} onOpenLoot={routing.openLoot} onOpenMap={routing.openMap} />}
+      {/* Gear owns its character identity key and refresh subscriptions. A same-character
+          rebuild refreshes its facts without discarding expanded advice or scroll position. */}
+      {view === 'gear' && <GearView onOpenLoot={routing.openLoot} onOpenMap={routing.openMap} />}
       {/* WISH LIST (JOS-324's tab, JOS-326's feature) — one flat list of items this character has
           decided they want, grouped by where to go and get them. Keyed like the rest because a
           wish list is a CHARACTER's: the rebuild counter is how this app says that, and the
