@@ -1,6 +1,6 @@
 import type { ClassAbbr } from '../../shared/classCombo'
 import type { PlayerLocation } from '../../shared/playerLocation'
-import { LEGENDS_PROFILE as P, exactRead, pointerAt, readableAddress, type MemoryRead } from './profile'
+import { LEGENDS_PROFILE, exactRead, pointerAt, readableAddress, type MemoryRead, type LocationProfile } from './profile'
 import { readProfileSpells } from './spells'
 import { observeUnlockedSpellSlots } from './unlockedSpells'
 import { readProfileBuffs } from './buffs'
@@ -31,7 +31,7 @@ interface ActiveProfile {
   mask: number
 }
 
-function currentProfile(read: MemoryRead, manager: bigint): Pick<ActiveProfile, 'kind' | 'head' | 'node' | 'profile'> | null {
+function currentProfile(read: MemoryRead, manager: bigint, P: LocationProfile): Pick<ActiveProfile, 'kind' | 'head' | 'node' | 'profile'> | null {
   const head = pointerAt(read, manager)
   const kind = exactRead(read, manager + BigInt(P.profileCurrentType), 4).readUInt32LE()
   const visited = new Set<bigint>()
@@ -49,7 +49,7 @@ function currentProfile(read: MemoryRead, manager: bigint): Pick<ActiveProfile, 
   return null
 }
 
-function activeProfile(read: MemoryRead, base: bigint): ActiveProfile | null {
+function activeProfile(read: MemoryRead, base: bigint, P: LocationProfile): ActiveProfile | null {
   const owner = pointerAt(read, base + P.characterRva)
   if (!readableAddress(owner)) return null
   const descriptor = pointerAt(read, owner + BigInt(P.characterDescriptor))
@@ -57,7 +57,7 @@ function activeProfile(read: MemoryRead, base: bigint): ActiveProfile | null {
   const displacement = exactRead(read, descriptor + BigInt(P.descriptorDisplacement), 4).readInt32LE()
   if (displacement !== P.profileManagerDisplacement) return null
   const manager = owner + BigInt(P.profileManagerBias + displacement)
-  const selected = currentProfile(read, manager)
+  const selected = currentProfile(read, manager, P)
   if (!selected) return null
   const mask = exactRead(read, selected.profile + BigInt(P.classMask), 4).readUInt32LE()
   return { owner, descriptor, manager, ...selected, mask }
@@ -75,23 +75,23 @@ function sameProfile(initial: ActiveProfile, final: ActiveProfile | null): boole
  * It is not the learned-class table or a saved loadout. The chain is bounded and resolved twice;
  * any loading/swap race omits classes while the independent location read can remain useful.
  */
-export function readActivePlayerProfile(read: MemoryRead, base: bigint): Pick<PlayerLocation, 'classes' | 'spellbook' | 'memorizedSpells' | 'unlockedSpellSlots' | 'activeBuffs'> {
+export function readActivePlayerProfile(read: MemoryRead, base: bigint, P: LocationProfile = LEGENDS_PROFILE): Pick<PlayerLocation, 'classes' | 'spellbook' | 'memorizedSpells' | 'unlockedSpellSlots' | 'activeBuffs'> {
   try {
-    const initial = activeProfile(read, base)
+    const initial = activeProfile(read, base, P)
     if (!initial) return {}
     const classes = classesFromMask(initial.mask)
     if (!classes) return {}
-    const slots = observeUnlockedSpellSlots(read, base, initial.owner, initial.profile)
-    const spells = readProfileSpells(read, base, initial.profile)
-    const buffs = readProfileBuffs(read, base, initial.profile)
+    const slots = observeUnlockedSpellSlots(read, base, initial.owner, { address: initial.profile, layout: P })
+    const spells = readProfileSpells(read, base, initial.profile, P)
+    const buffs = readProfileBuffs(read, base, initial.profile, P)
     const entitlement = slots?.unchanged() ? { unlockedSpellSlots: slots.slots } : {}
-    if (!sameProfile(initial, activeProfile(read, base))) return {}
+    if (!sameProfile(initial, activeProfile(read, base, P))) return {}
     return pointerAt(read, base + P.characterRva) === initial.owner ? { classes, ...spells, ...entitlement, ...buffs } : {}
   } catch {
     return {}
   }
 }
 
-export function readActiveClasses(read: MemoryRead, base: bigint): ClassAbbr[] | undefined {
-  return readActivePlayerProfile(read, base).classes
+export function readActiveClasses(read: MemoryRead, base: bigint, P: LocationProfile = LEGENDS_PROFILE): ClassAbbr[] | undefined {
+  return readActivePlayerProfile(read, base, P).classes
 }

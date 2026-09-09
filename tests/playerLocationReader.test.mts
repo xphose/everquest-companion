@@ -4,6 +4,7 @@ import { createLocationSampler } from '../src/main/playerLocation/reader.ts'
 import { FingerprintCache, type FingerprintFiles } from '../src/main/playerLocation/fingerprint.ts'
 import { sameExecutable } from '../src/main/playerLocation/paths.ts'
 import type { LocationNative, ProcessMemory } from '../src/main/playerLocation/native.ts'
+import { LEGENDS_PROFILE, type LocationProfile } from '../src/main/playerLocation/profile.ts'
 import { locationFixture } from './playerLocationFixture.mts'
 
 const EXE = 'C:\\Games\\EverQuest Legends\\eqgame.exe'
@@ -23,7 +24,7 @@ function readerFixture() {
     openPlayerProcess: pid => { assert.equal(pid, 91); calls.opens++; return memory }
   }
   const fingerprint = {
-    supports: () => { calls.checks++; return true },
+    select: (): LocationProfile | null => { calls.checks++; return LEGENDS_PROFILE },
     close: () => { calls.cacheCloses++ }
   }
   const reader = createLocationSampler(native, { fingerprint, executable: () => EXE, now: () => 25 })
@@ -54,10 +55,10 @@ test('missing install, no game and multiple games never open a process for memor
 
 test('unsupported disk version refuses to open memory and a mapped mismatch refuses all player fields', () => {
   const fixture = readerFixture()
-  fixture.fingerprint.supports = () => false
+  fixture.fingerprint.select = () => null
   assert.equal(fixture.reader.read('root').state, 'unsupported')
   assert.equal(fixture.calls.opens, 0)
-  fixture.fingerprint.supports = () => true
+  fixture.fingerprint.select = () => LEGENDS_PROFILE
   fixture.image.writeUInt32LE(0x11111111, 0x100)
   assert.equal(fixture.reader.read('root').state, 'unsupported')
   assert.ok(fixture.reads.every(value => value.address < fixture.base + 4096n))
@@ -136,4 +137,26 @@ test('oversize game files are not read and failed fingerprinting cannot reuse an
   assert.equal(hashes, 1)
   files.inspect = () => { throw new Error('File missing') }
   assert.throws(() => cache.supports(EXE), /File missing/)
+  files.inspect = () => ({ key: '15528056', size: 15_528_056n })
+  assert.equal(cache.select(EXE), LEGENDS_PROFILE)
+  assert.equal(hashes, 2)
+})
+
+test('a failed hash drops the old selection even if the previous file identity returns', () => {
+  let key = 'original'
+  let fail = false
+  let hashes = 0
+  const files: FingerprintFiles = {
+    inspect: () => ({ key, size: 15_528_056n }),
+    digest: () => { hashes++; if (fail) throw new Error('Changed while reading'); return DIGEST }
+  }
+  const cache = new FingerprintCache(files)
+  assert.equal(cache.select(EXE), LEGENDS_PROFILE)
+  key = 'replacement'
+  fail = true
+  assert.throws(() => cache.select(EXE), /Changed while reading/)
+  key = 'original'
+  fail = false
+  assert.equal(cache.select(EXE), LEGENDS_PROFILE)
+  assert.equal(hashes, 3)
 })

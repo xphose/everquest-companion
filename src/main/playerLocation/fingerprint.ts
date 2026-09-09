@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { closeSync, fstatSync, openSync, readSync, statSync, type BigIntStats } from 'node:fs'
-import { LEGENDS_PROFILE } from './profile'
+import type { LocationProfile } from './profile'
+import { knownProfileSize, profileForFingerprint } from './profiles'
 
 export interface FileIdentity {
   key: string
@@ -26,7 +27,7 @@ function hashImage(path: string, expected: FileIdentity): string {
     if (identityOf(fstatSync(file, { bigint: true })).key !== expected.key) throw new Error('Game file changed')
     const hash = createHash('sha256')
     const bytes = Buffer.alloc(64 * 1024)
-    let remaining = LEGENDS_PROFILE.fileSize
+    let remaining = Number(expected.size)
     while (remaining > 0) {
       const count = readSync(file, bytes, 0, Math.min(bytes.length, remaining), null)
       if (count === 0) throw new Error('Game file was truncated')
@@ -48,18 +49,27 @@ const DISK: FingerprintFiles = {
 
 /** One file only. A patch, replacement, timestamp change or root change invalidates the digest. */
 export class FingerprintCache {
-  private cached: { path: string; key: string; supported: boolean } | null = null
+  private cached: { path: string; key: string; profile: LocationProfile | null } | null = null
 
   constructor(private readonly files: FingerprintFiles = DISK) {}
 
   supports(path: string): boolean {
-    const identity = this.files.inspect(path)
-    if (this.cached?.path === path && this.cached.key === identity.key) return this.cached.supported
-    this.cached = null
-    const supported = identity.size === BigInt(LEGENDS_PROFILE.fileSize) &&
-      this.files.digest(path, identity) === LEGENDS_PROFILE.sha256
-    this.cached = { path, key: identity.key, supported }
-    return supported
+    return this.select(path) !== null
+  }
+
+  select(path: string): LocationProfile | null {
+    try {
+      const identity = this.files.inspect(path)
+      if (this.cached?.path === path && this.cached.key === identity.key) return this.cached.profile
+      this.cached = null
+      const profile = knownProfileSize(identity.size)
+        ? profileForFingerprint(identity.size, this.files.digest(path, identity)) : null
+      this.cached = { path, key: identity.key, profile }
+      return profile
+    } catch (error) {
+      this.cached = null
+      throw error
+    }
   }
 
   close(): void {

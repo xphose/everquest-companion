@@ -1,4 +1,4 @@
-import { LEGENDS_PROFILE as P, exactRead, MemoryReadError, pointerAt, readableAddress, type MemoryRead } from './profile'
+import { LEGENDS_PROFILE, exactRead, MemoryReadError, pointerAt, readableAddress, type MemoryRead, type LocationProfile, type ProfileAddress } from './profile'
 
 const MAX_BUCKETS = 4096
 const MAX_BUCKET_NODES = 32
@@ -20,7 +20,7 @@ function watchedReader(read: MemoryRead): { read: MemoryRead; unchanged: () => b
   }
 }
 
-function effectTable(read: MemoryRead, table: bigint, item: boolean): bigint[] {
+function effectTable(read: MemoryRead, table: bigint, item: boolean, P: LocationProfile): bigint[] {
   // The client's lookup explicitly returns zero for a null table or an absent effect key.
   if (table === 0n) return [0n, 0n]
   const layout = item ? { size: 32, next: 24 } : { size: 48, next: 40 }
@@ -44,7 +44,8 @@ function effectTable(read: MemoryRead, table: bigint, item: boolean): bigint[] {
   return [0n, 0n]
 }
 
-function entitledSlots(read: MemoryRead, base: bigint, owner: bigint, profile: bigint): number[] | undefined {
+function entitledSlots(read: MemoryRead, base: bigint, owner: bigint, selected: ProfileAddress): number[] | undefined {
+  const { address: profile, layout: P } = selected
   const zone = owner + BigInt(P.characterZone)
   const descriptor = pointerAt(read, zone + 8n)
   if (descriptor !== base + P.characterZoneDescriptorRva) return undefined
@@ -58,17 +59,18 @@ function entitledSlots(read: MemoryRead, base: bigint, owner: bigint, profile: b
   const cache = zone + BigInt(P.effectCache)
   if (exactRead(read, cache + BigInt(P.effectCacheReady), 1)[0] !== 1 ||
     exactRead(read, cache + BigInt(P.itemEffectCacheReady), 1)[0] !== 1) return undefined
-  const item = effectTable(read, pointerAt(read, cache + BigInt(P.itemEffectTable)), true)
-  const other = effectTable(read, pointerAt(read, cache), false)
+  const item = effectTable(read, pointerAt(read, cache + BigInt(P.itemEffectTable)), true, P)
+  const other = effectTable(read, pointerAt(read, cache), false, P)
   const additional = [...item, ...other].reduce((sum, value) => sum + value, 0n)
   if (additional < 0n || additional > BigInt(P.memorizedSpellSlots - P.baseSpellSlots)) return undefined
   return Array.from({ length: P.baseSpellSlots + Number(additional) }, (_, index) => index + 1)
 }
 
-export function observeUnlockedSpellSlots(read: MemoryRead, base: bigint, owner: bigint, profile: bigint): EntitlementObservation | undefined {
+export function observeUnlockedSpellSlots(read: MemoryRead, base: bigint, owner: bigint, profile: bigint | ProfileAddress): EntitlementObservation | undefined {
   try {
     const watched = watchedReader(read)
-    const slots = entitledSlots(watched.read, base, owner, profile)
+    const selected = typeof profile === 'bigint' ? { address: profile, layout: LEGENDS_PROFILE } : profile
+    const slots = entitledSlots(watched.read, base, owner, selected)
     return slots ? { slots, unchanged: watched.unchanged } : undefined
   } catch {
     return undefined
