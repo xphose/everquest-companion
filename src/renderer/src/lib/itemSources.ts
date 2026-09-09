@@ -31,7 +31,7 @@
 // as often as a number) and its zones. No rarity — the compact catalog carries item names only —
 // and no invented drop rate.
 
-import type { ItemDropSource, MobEntry } from '@shared/types'
+import type { ItemDropSource, MobEntry, MobLoc } from '@shared/types'
 // RELATIVE value import (house law, the mobSearch.ts precedent): the `@shared` alias exists only
 // inside the vite build, and `tests/plannerSourceIndex.test.mts` reaches this module under the
 // node runner. Type-only imports are erased, so they keep the alias.
@@ -48,6 +48,8 @@ export interface ItemSource {
   levelText?: string
   /** home zone(s) from the page; `[]` when it stated none ("Various" is a real value, not a gap) */
   zones: string[]
+  /** Page coordinates; a multi-zone page does not say which zone owns these pins. */
+  loc?: MobLoc[]
 }
 
 export type SourceIndex = ReadonlyMap<string, ItemSource[]>
@@ -84,6 +86,7 @@ export function buildSourceIndex(mobs: readonly MobEntry[]): Map<string, ItemSou
     const source: ItemSource = { mob: mob.name, zones: mob.zones ?? [] }
     if (mob.page) source.mobPage = mob.page
     if (mob.level) source.levelText = mob.level
+    if (mob.loc) source.loc = mob.loc
     for (const drop of mob.drops) {
       const key = sourceItemKey(drop)
       if (key === '') continue
