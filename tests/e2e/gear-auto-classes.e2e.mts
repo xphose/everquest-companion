@@ -8,8 +8,8 @@ import { mainWindow, makeUserData, removeUserData } from './appWindow.mjs'
 import { launchOnFixture, stageFixture, type FixtureLog } from './logFixture.mjs'
 import { clearPicks, pickIn } from './gearFilterSteps.mjs'
 
-type Mode = 'live' | 'unavailable' | 'mismatch' | 'stale'
-interface Selection { classes: ClassAbbr[]; mode: Mode; reads: number }
+type Mode = 'live' | 'unavailable' | 'mismatch' | 'stale' | 'missing-level'
+interface Selection { classes: ClassAbbr[]; mode: Mode; reads: number; level: number }
 interface MainFixture { gearClassesFixture: Selection }
 const PICKER = '[data-testid="gear-classes"]'
 const AUTO = '[data-testid="gear-auto-classes"]'
@@ -20,7 +20,7 @@ async function controlWorker(app: ElectronApplication, root: string): Promise<vo
   await app.evaluate((_electron, stagedRoot) => {
     const { Worker } = process.getBuiltinModule('node:worker_threads') as typeof import('node:worker_threads')
     const state = globalThis as unknown as MainFixture
-    state.gearClassesFixture = { classes: ['MAG', 'SHM'], mode: 'unavailable', reads: 0 }
+    state.gearClassesFixture = { classes: ['MAG', 'SHM'], mode: 'unavailable', reads: 0, level: 10 }
     const original = Worker.prototype.postMessage
     Worker.prototype.postMessage = function (value, ...transfer) {
       const request = value as { type?: string; id?: number; root?: string }
@@ -32,19 +32,21 @@ async function controlWorker(app: ElectronApplication, root: string): Promise<vo
       const result = selected.mode === 'unavailable' ? { state: 'unavailable', reason: 'Staged reader unavailable.' } : {
         state: 'live', location: { classes: selected.classes,
           characterName: selected.mode === 'mismatch' ? 'OtherCharacter' : 'Primitive', zone: 'qeynos2',
-          level: 10, ns: 1, ew: 2, z: 3, heading: 0, sampledAt: Date.now() - (selected.mode === 'stale' ? 60_000 : 0) }
+          ...(selected.mode === 'missing-level' ? {} : { level: selected.level }),
+          ns: 1, ew: 2, z: 3, heading: 0, sampledAt: Date.now() - (selected.mode === 'stale' ? 60_000 : 0) }
       }
       queueMicrotask(() => this.emit('message', { id: request.id, result }))
     }
   }, root)
 }
 
-function publish(app: ElectronApplication, classes: ClassAbbr[], mode: Mode = 'live'): Promise<void> {
+function publish(app: ElectronApplication, classes: ClassAbbr[], mode: Mode = 'live', level = 10): Promise<void> {
   return app.evaluate((_electron, value) => {
     const state = (globalThis as unknown as MainFixture).gearClassesFixture
     state.classes = value.classes
     state.mode = value.mode
-  }, { classes, mode })
+    state.level = value.level
+  }, { classes, mode, level })
 }
 
 async function openGear(page: Page): Promise<void> {
@@ -139,6 +141,88 @@ async function journalConsistency(app: ElectronApplication, page: Page): Promise
   check('journal detection reset restores the latest native classes', detected.includes('Shadow Knight'))
 }
 
+async function characterConsistency(app: ElectronApplication, page: Page): Promise<void> {
+  await publish(app, TRIO)
+  await page.click('[data-testid="nav-gear"]')
+  await page.click('[data-testid="tab-character"]')
+  const identity = () => page.locator('[data-testid="character-identity"]').innerText()
+  const live = await settle(identity, text => text.includes('ENC') && text.includes('Live classes'))
+  check('Character sheet automatically shows all three native classes and live level', live.includes('Level 10') && live.includes('MAG') && live.includes('SHM'))
+  for (const level of [11, 9]) {
+    await publish(app, TRIO, 'live', level)
+    const changedLevel = await settle(() => page.locator('[data-testid="character-level"]').innerText(),
+      text => text.includes(`Level ${level}`))
+    check(`Character sheet automatically follows a live level change to ${level} without a log line`,
+      changedLevel.includes(`Level ${level}`) && changedLevel.includes('Live'))
+  }
+  await publish(app, ['PAL', 'ROG', 'DRU'])
+  const changed = await settle(identity, text => text.includes('ROG') && text.includes('DRU') && !text.includes('ENC'))
+  check('Character sheet follows a class switch without a log line', changed.includes('PAL'))
+  await publish(app, TRIO, 'missing-level')
+  const partial = await settle(identity, text => text.includes('ENC') && text.includes('From log'))
+  check('missing native level uses a labeled log level while retaining live classes', partial.includes('Live classes'))
+  for (const mode of ['unavailable', 'mismatch', 'stale'] as const) {
+    await publish(app, TRIO)
+    await settle(identity, text => text.includes('Live classes'))
+    await publish(app, TRIO, mode)
+    const fallback = await settle(identity, text => text.includes('From log') && !text.includes('Live classes'))
+    check(`Character sheet rejects ${mode} observations for both classes and level`,
+      LOG_CLASSES.every(cls => fallback.includes(cls)) && !fallback.includes('ENC'))
+  }
+}
+
+async function plannerConsistency(app: ElectronApplication, page: Page): Promise<void> {
+  const picker = '[data-testid="planner-classes"]'
+  const names = () => page.locator(`${picker} .MuiChip-label`).allTextContents().then(value => value.sort().join(','))
+  await publish(app, TRIO)
+  await page.click('[data-testid="tab-planner"]')
+  const expected = TRIO.map(classDisplayName).sort().join(',')
+  const live = await settle(names, text => text === expected)
+  check('Exaltations follows the same current native classes', live === expected)
+  await clearPicks(page, picker)
+  await pickIn(page, picker, 'Wizard')
+  await publish(app, ['PAL', 'ROG', 'DRU'])
+  const offer = await settle(() => page.locator('[data-testid="planner-detected-chip"]').innerText(), text => text.includes('Rogue'))
+  check('a manual Exaltations filter stays pinned while offering the current selection',
+    await names() === 'Wizard' && offer.includes('Druid'))
+  check('the Exaltations offer labels native provenance truthfully',
+    await page.locator('[data-testid="planner-detected-chip"]').getAttribute('title') === 'Use the current classes read from the game')
+}
+
+async function levelingConsistency(app: ElectronApplication, page: Page): Promise<void> {
+  await publish(app, TRIO)
+  await page.click('[data-testid="nav-leveling"]')
+  const chips = () => page.locator('[data-testid="new-at-level-combo-chip"]').allTextContents().then(value => value.sort().join(','))
+  const live = await settle(chips, text => text === [...TRIO].sort().join(','))
+  check('current spell unlocks use all three native classes', live === [...TRIO].sort().join(','))
+  check('the current unlock level comes from the same live profile',
+    await page.locator('[data-testid="new-at-level-value"]').innerText() === 'Level 10')
+  await publish(app, ['PAL', 'ROG', 'DRU'])
+  const changed = await settle(chips, text => text === 'DRU,PAL,ROG')
+  check('spell unlock classes follow native changes without reloading', changed === 'DRU,PAL,ROG')
+  await page.click('[data-testid="nav-overview"]')
+  const level = () => page.locator('[data-testid="overview-leveling-tile-level"]').innerText()
+  const overview = await settle(level, text => text.includes('10') && text.includes('Live'))
+  check('Overview uses the live level on its current level tile', overview.includes('10') && overview.includes('Live'))
+  await publish(app, TRIO, 'live', 11)
+  const increased = await settle(level, text => text.includes('11') && text.includes('Live'))
+  check('Overview follows a new native level without historical log changes', increased.includes('11') && increased.includes('Live'))
+}
+
+async function alertsConsistency(app: ElectronApplication, page: Page): Promise<void> {
+  await publish(app, TRIO)
+  await page.click('[data-testid="nav-alerts"]')
+  await page.click('[data-testid="alerts-add-suggestion"]')
+  await page.locator('[data-testid="suggest-search"] input').fill('mesmerization')
+  const mine = () => page.locator('[data-testid="suggest-dialog"] [aria-label^="ENC learns"][aria-label$="one of your classes"]').count()
+  const live = await settle(mine, count => count > 0)
+  check('alert spell suggestions recognize the newly selected Enchanter as one of your classes', live > 0)
+  await publish(app, ['PAL', 'ROG', 'DRU'])
+  const changed = await settle(mine, count => count === 0)
+  check('alert spell suggestions stop claiming a class after the native selection changes', changed === 0)
+  await page.keyboard.press('Escape')
+}
+
 async function session(log: FixtureLog, userData: string): Promise<void> {
   const launched = await launchOnFixture(log, { userData })
   let page: Page | null = null
@@ -150,6 +234,10 @@ async function session(log: FixtureLog, userData: string): Promise<void> {
     if (await notice.count()) await notice.click()
     await autoAndManual(launched.app, page)
     await remountAndFallback(launched.app, page)
+    await characterConsistency(launched.app, page)
+    await plannerConsistency(launched.app, page)
+    await levelingConsistency(launched.app, page)
+    await alertsConsistency(launched.app, page)
     await journalConsistency(launched.app, page)
     if (failures.length) await dumpArtifacts(page, 'gear-auto-classes-FAIL')
   } catch (cause) {

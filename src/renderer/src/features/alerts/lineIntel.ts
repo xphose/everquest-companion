@@ -1,11 +1,11 @@
 // lineIntel — the renderer's join for spell-LINE intelligence.
 //
-// Three inputs, all of which the app already carries; this file adds no IPC:
+// Three inputs, all of which the app already carries:
 //   * the spell CATALOG (spells:catalog) — per line: the DB's rank names + per-class levels,
 //   * the ALERTS module snapshot's `spellLastCast` — rank-preserving cast recency, kept live
 //     by module deltas (a cast pushes a delta, so nothing here polls),
-//   * the CLASS-COMBO snapshot — which classes are RESOLVED for the current loadout, so a
-//     level chip can say "yours" instead of "one of these".
+//   * the CURRENT class selection — fresh matching game facts with the resolved log combo as
+//     fallback, so a level chip can say "yours" instead of "one of these".
 //
 // Everything computational lives in shared/spellLines.ts (pure, tested); this is wiring plus
 // the one piece of local state the feature owns — per-offer dismissals, kept in localStorage
@@ -15,7 +15,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { AlertDef, PoisonSlowRecency, SpellCatalog, SpellCatalogEntry } from '@shared/types'
 import type { ClassAbbr } from '@shared/classCombo'
-import { resolvedClasses } from '@shared/classCombo'
 import {
   buildSpellLine,
   detectPoisonSlowOffers,
@@ -26,7 +25,7 @@ import {
   type RankUpgradeOffer,
   type SpellLine
 } from '@shared/spellLines'
-import { useComboSnap } from '../profiles/ClassComboData'
+import { useCurrentClasses } from '../../lib/useCurrentClasses'
 
 /**
  * localStorage key for offers the user waved away (session-independent, schema-free).
@@ -109,13 +108,12 @@ export function useSpellLines(
 }
 
 /**
- * The classes the combo module has RESOLVED for the CURRENT loadout (slots holding exactly
- * one candidate). Empty is the normal, honest state early on — a level chip then falls back
+ * The current native class set, or resolved log classes while the game cannot supply it.
+ * Empty is the normal, honest state early on — a level chip then falls back
  * to the minimum across every class that can cast the line, flagged ambiguous.
  */
 export function useResolvedClasses(): ClassAbbr[] {
-  const combo = useComboSnap()
-  return useMemo(() => (combo.current ? resolvedClasses(combo.current) : []), [combo])
+  return useCurrentClasses().classes
 }
 
 /** One class-level chip: the DB fact, plus whether it is a class YOUR loadout resolved to. */
