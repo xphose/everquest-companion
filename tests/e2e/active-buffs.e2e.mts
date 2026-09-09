@@ -6,9 +6,10 @@ import type { PlayerActiveBuff } from '../../src/shared/playerBuffs'
 import { buildIfStale, check, reportRun, settle } from './appHarness.mjs'
 import { mainWindow, overlayWindow } from './appWindow.mjs'
 import { launchOnFixture, stageFixture } from './logFixture.mjs'
+import { verifySingleNativeRemoval, verifyStableNativeTicks } from './activeBuffTickSteps.mjs'
 
-interface Observation { name: string; age: number; live: boolean; effects?: PlayerActiveBuff[] }
-interface MainFixture { activeEffects: Observation }
+interface Observation { name: string; age: number; live: boolean; effects?: PlayerActiveBuff[]; expiresAt?: number }
+interface MainFixture { activeEffects: Observation; activeEffectReads: number }
 interface Bridge { toggleOverlay(kind: string): Promise<boolean> }
 
 function stage(root: string, log: string): void {
@@ -26,6 +27,7 @@ async function control(app: ElectronApplication, root: string): Promise<void> {
   await app.evaluate((_electron, stagedRoot) => {
     const { Worker } = process.getBuiltinModule('node:worker_threads') as typeof import('node:worker_threads')
     const state = globalThis as unknown as MainFixture
+    state.activeEffectReads = 0
     state.activeEffects = { name: 'Primitive', age: 0, live: true, effects: [
       { spellId: 900001, kind: 'buff', slot: 1, remainingMs: 18_000_000 },
       { spellId: 900002, kind: 'song', slot: 1 }
@@ -35,9 +37,12 @@ async function control(app: ElectronApplication, root: string): Promise<void> {
       const request = value as { type?: string; id?: number; root?: string }
       if (request?.type !== 'read' || request.root !== stagedRoot || typeof request.id !== 'number') return original.call(this, value, ...transfer)
       const current = state.activeEffects
+      state.activeEffectReads++
+      const effects = current.effects?.map((effect) => effect.spellId === 900001 && current.expiresAt !== undefined
+        ? { ...effect, remainingMs: Math.max(0, current.expiresAt - Date.now()) } : effect)
       const result = current.live ? { state: 'live', location: { characterName: current.name, zone: 'qeynos2',
         ns: 1, ew: 2, z: 3, heading: 0, sampledAt: Date.now() - current.age,
-        ...(current.effects === undefined ? {} : { activeBuffs: current.effects }) } } : { state: 'unavailable', reason: 'Staged disconnect.' }
+        ...(effects === undefined ? {} : { activeBuffs: effects }) } } : { state: 'unavailable', reason: 'Staged disconnect.' }
       queueMicrotask(() => this.emit('message', { id: request.id, result }))
     }
   }, root)
@@ -65,16 +70,18 @@ async function verify(app: ElectronApplication, main: Page): Promise<void> {
   check('already-active effects have names without a cast or owned-spell input', await page.locator('[data-testid="active-self-effect"]').count() === 2)
   check('native remaining time is approximate', (await page.locator('[data-spell-id="900001"]').innerText()).includes('~5h'))
   check('unknown duration is Active, without an invented permanent label', (await page.locator('[data-spell-id="900002"]').innerText()).endsWith('Active'))
-  await publish(app, { effects: [{ spellId: 900001, kind: 'buff', slot: 1, remainingMs: 6000 }] })
+  await verifyStableNativeTicks(app, page)
+  await publish(app, { expiresAt: undefined, effects: [{ spellId: 900001, kind: 'buff', slot: 1, remainingMs: 6000 }] })
   await contains(page, '~6s')
   check('a removed effect leaves without needing a log line', await page.locator('[data-testid="active-self-effect"]').count() === 1)
+  await verifySingleNativeRemoval(page)
   await publish(app, { effects: [{ spellId: 900099, kind: 'buff', slot: 1 }] })
   await contains(page, 'Spell 900099')
   await publish(app, { effects: [] })
   await contains(page, 'No active effects on you.')
   check('known-empty effects do not ask the player to cast', !(await page.locator('body').innerText()).includes('Watching for buffs you cast'))
   for (const patch of [{ effects: undefined }, { effects: [{ spellId: 900001, kind: 'buff' as const, slot: 1 }], name: 'Other' },
-    { name: 'Primitive', age: 5000 }, { age: 0, live: false }]) {
+    { name: 'Primitive', age: 5000 }, { age: -5000 }, { age: 0, live: false }]) {
     await publish(app, patch)
     await fallback(page)
   }
