@@ -20,6 +20,7 @@ import { IPC } from '../shared/ipc'
 import type { ExaltPlan, PlannerDonor, PlannerItemHit } from '../shared/planner/types'
 import type { PlannerInventory } from '../shared/planner/inventorySlots'
 import type { GearIndexPayload } from '../shared/planner/gear'
+import type { GearProgressionContext } from '../shared/gearProgressionTypes'
 import type { GearSet } from '../shared/planner/gearSet'
 import type { OwnershipPayload } from '../shared/planner/ownership'
 import type { WishList } from '../shared/planner/wishlist'
@@ -59,6 +60,7 @@ export const plannerApi = {
    *  `GEAR_INDEX_VERSION` before reading: a payload from a version this build does not know is
    *  refused rather than mis-drawn. */
   gearIndex: (): Promise<GearIndexPayload> => ipcRenderer.invoke(IPC.gearIndex),
+  gearProgressionContext: (): Promise<GearProgressionContext> => ipcRenderer.invoke(IPC.gearProgressionContext),
 
   /** THE OWNERSHIP INDEX (JOS-285): every thing the active character's newest `/outputfile
    *  inventory` dump names, keyed the way the gear index and the loot history are keyed, plus the

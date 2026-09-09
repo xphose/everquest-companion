@@ -575,6 +575,7 @@ export const IPC = {
   // cannot change while the app runs, and every plus-state the user asks for is a PURE MAP over
   // them (shared/planner/gearScale.ts), never another round trip.
   gearIndex: 'gear:index',
+  gearProgressionContext: 'gear:progression-context',
 
   // ---- gear planner (JOS-285, phase 4) ----
   // renderer -> main: THE OWNERSHIP INDEX for the active character — every thing their newest

@@ -19,7 +19,7 @@ test('owned-only parser reads independent timing, class, target, effect fields a
   const spells = parseOwnedSpells([row(94), row(95)].join('\r\n'), [94])
   assert.equal(spells.length, 1)
   assert.deepEqual(spells[0], { id: 94, name: 'Example Flame', castMs: 2500, recoveryMs: 1500, recastMs: 6000, mana: 17,
-    durationTicks: 4, targetType: 5, classLevels: { MAG: 8, ENC: 12 },
+    durationTicks: 4, durationFormula: 0, targetType: 5, classLevels: { MAG: 8, ENC: 12 },
     effects: [{ effect: 0, base: -10, calc: 101, max: 55 }, { effect: 50, base: -5, calc: 100, max: 5 }] })
 })
 
