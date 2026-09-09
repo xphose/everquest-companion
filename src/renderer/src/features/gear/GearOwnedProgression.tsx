@@ -25,7 +25,7 @@ function OwnedRow({ advice, onChoose }: { advice: GearOwnedAdvice; onChoose: (re
       <Stack direction="row" alignItems="center" useFlexGap gap={1.5} sx={{ width: '100%', minWidth: 0 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="caption" color="text.secondary">{friendlySlot(advice.slot)}</Typography>
-          <Typography variant="body1" fontWeight={600} sx={{ overflowWrap: 'anywhere' }}>{advice.name}{advice.tier === undefined ? '' : ` +${advice.tier}`}</Typography>
+          <Typography variant="body1" fontWeight={600} sx={{ overflowWrap: 'anywhere' }}>{advice.name}{advice.tier ? ` +${advice.tier}` : ''}</Typography>
           <Typography variant="body2" color="text.secondary">{advice.benefit}</Typography>
         </Box>
         <Chip label={LABELS[advice.action]} size="small" color={advice.action === 'keep' ? 'success' : advice.action === 'unknown' ? 'default' : 'primary'} variant="outlined" />

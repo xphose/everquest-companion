@@ -195,9 +195,9 @@ test('bag contents and exaltation sockets are never mistaken for equipment', () 
   assert.ok(hosts.length < children.length, 'the hosts must be the small top-level set, not the walk')
 })
 
-test('the tier rides beside the name: `+N` is stated or it is unknown, never 0', () => {
+test('the tier rides beside the name, including known ordinary base exports at zero', () => {
   for (const h of hosts) {
     if (h.tier === undefined) continue
-    assert.ok(Number.isInteger(h.tier) && h.tier > 0, `${h.name} has a nonsense tier ${String(h.tier)}`)
+    assert.ok(Number.isInteger(h.tier) && h.tier >= 0 && h.tier <= 10, `${h.name} has a nonsense tier ${String(h.tier)}`)
   }
 })

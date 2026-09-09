@@ -260,8 +260,8 @@ test('a +N variant is its own ROW under the shared key, never its own key', () =
   const crown = ownershipRowsFor(index, 'Crown of King Tranix')
   assert.deepEqual(
     crown.map((r) => r.tier),
-    [2, undefined, 2],
-    'absent means the name carried no suffix — NOT +0'
+    [2, 0, 2],
+    'the ordinary native export omits the suffix for the base copy'
   )
   assert.equal(highestTier(crown), 2)
   assert.deepEqual(
@@ -278,10 +278,10 @@ test('a +N variant is its own ROW under the shared key, never its own key', () =
   const tunic = ownershipRowsFor(index, 'Brigandine Tunic')
   assert.deepEqual(
     tunic.map((r) => r.tier),
-    [1, undefined]
+    [1, 0]
   )
   assert.equal(highestTier(tunic), 1)
-  assert.equal(highestTier(ownershipRowsFor(index, 'Spacious Rucksack')), undefined)
+  assert.equal(highestTier(ownershipRowsFor(index, 'Spacious Rucksack')), 0)
 
   // Every spelling of the name reaches the same rows.
   assert.equal(ownershipRowsFor(index, 'crown of king tranix +9').length, 3)
@@ -364,12 +364,12 @@ test('the real dump indexes into the places the client filed it under', () => {
   assert.equal(places.has('unknown'), false, 'every base token in the real dump classifies')
 
   // The three `Boots of the Long Road` keyring rows the outputs header counts by hand:
-  // base once, `+1` twice — one key, three rows, two of them tiered.
+  // base once, `+1` twice — one key, three rows at their respective full tiers.
   const boots = ownershipRowsFor(index, 'Boots of the Long Road')
   assert.equal(boots.length, 3)
   assert.deepEqual(
     boots.map((r) => r.tier),
-    [undefined, 1, 1]
+    [0, 1, 1]
   )
   assert.ok(
     boots.every((r) => r.place === 'keyring'),
@@ -414,9 +414,8 @@ test('the real dump`s names key the same way loot history keys them', () => {
     assert.equal(ownershipKey(base), itemCountKey(base), e.name)
   }
 
-  // A row's tier and loot history's variant level are the same number on a `+N` name; the ONE
-  // difference is the base case, where `itemVariantLevel` says 0 and this index says "the name
-  // stated nothing". Assert both halves so neither can drift.
+  // Export-derived full tiers can be re-spelled as canonical +N names for the shared loot key.
+  // Unknown special rows remain suffix-free; the raw loot parser itself still makes no base inference.
   for (const r of allRows(index)) {
     const spelled = `${r.name}${lootSuffix(r)}`
     assert.equal(itemVariantLevel(spelled), r.tier ?? 0, r.rawName)
