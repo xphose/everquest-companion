@@ -83,6 +83,18 @@ test('allowedExternalUrl accepts exactly the links the app produces today', () =
   )
 })
 
+test('official game patch citations open only their documented subtree', () => {
+  const allowed = 'https://www.everquestlegends.com/patch-notes/eql-update-notes-9-09-2026'
+  assert.equal(allowedExternalUrl(allowed), allowed)
+  for (const refused of [
+    'https://www.everquestlegends.com/home',
+    'https://www.everquestlegends.com/patch-notes-elsewhere/x',
+    'https://www.everquestlegends.com/patch-notes/../account',
+    'https://www.everquestlegends.com.evil.test/patch-notes/x',
+    'http://www.everquestlegends.com/patch-notes/x'
+  ]) assert.equal(allowedExternalUrl(refused), null)
+})
+
 test('the github.com entry is scoped to THIS repo, not to the host (JOS-263)', () => {
   // The owner's ruling on the JOS-254 widening: github.com is not one site the way a wiki is, so
   // the entry buys exactly one repo's subtree. Everything else on the host is refused — starting

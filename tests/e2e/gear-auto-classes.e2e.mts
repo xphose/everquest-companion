@@ -50,6 +50,7 @@ function publish(app: ElectronApplication, classes: ClassAbbr[], mode: Mode = 'l
 async function openGear(page: Page): Promise<void> {
   await page.click('[data-testid="nav-gear"]')
   await page.click('[data-testid="tab-gear"]')
+  await page.click('[data-testid="gear-section-browse"]')
   await page.waitForSelector(PICKER, { timeout: 30_000 })
 }
 
@@ -94,10 +95,13 @@ async function remountAndFallback(app: ElectronApplication, page: Page): Promise
   await page.click('[data-testid="nav-overview"]')
   await page.waitForSelector('[data-testid="gear-view"]', { state: 'detached' })
   const reads = () => app.evaluate(() => (globalThis as unknown as MainFixture).gearClassesFixture.reads)
-  const stopped = await reads()
+  const before = await reads()
   await publish(app, TRIO)
-  await sleep(750)
-  check('the class reader stops polling while Gear, Maps, and journal are unmounted', await reads() === stopped)
+  // GameConnectionStatus now owns an independent, always-mounted reader. A stopped shared worker
+  // would be a regression; Gear's own session cleanup is tested separately at its lifecycle seam.
+  const continued = await settle(reads, count => count > before, { timeoutMs: 5_000 })
+  check('global game status keeps its shared reader active after Gear unmounts', continued > before &&
+    await page.locator('[data-testid="game-connection"]').getAttribute('data-state') === 'connected')
   await openGear(page)
   await expectGear(page, TRIO, 'automatic mode survives remount and reads the latest selection')
   check('following mode persists as an unpinned filter', await page.evaluate(() => localStorage.getItem('eq.gear.classes')) === null)

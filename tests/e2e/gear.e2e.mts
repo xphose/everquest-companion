@@ -281,7 +281,8 @@ async function stepMount(page: Page): Promise<boolean> {
     if (noLogs) note('no character logs on this machine — the app shows its fresh-machine empty state')
     return false
   }
-  check('clicking the Gear nav row mounts the table with no plan and no selection first', mounted)
+  await page.click('[data-testid="gear-section-browse"]', { timeout: 30_000 })
+  check('Browse all mounts the table with no plan and no item selection required', mounted)
   return true
 }
 

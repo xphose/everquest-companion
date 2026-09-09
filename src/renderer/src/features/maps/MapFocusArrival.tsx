@@ -28,8 +28,13 @@ export function useMapFocusArrival(props: MapFocusProps, onJump: (target: JumpTa
   return target
 }
 
+function locationLabel(focus: MapFocus | null, zone: ZoneShort | null): string | undefined {
+  return focus?.zone === zone ? focus?.label : undefined
+}
+
 export function MapFocusArrival({ nav, focus, zone }: { nav?: NavBack; focus: MapFocus | null; zone: ZoneShort | null }): JSX.Element | null {
-  const label = focus?.zone === zone ? focus?.label : undefined
+  const label = locationLabel(focus, zone)
+  const gear = focus?.source === 'gear'
   const back = (): boolean => nav?.back() ?? false
   useBackTarget(back)
   if (!nav?.origin && !label) return null
@@ -37,6 +42,6 @@ export function MapFocusArrival({ nav, focus, zone }: { nav?: NavBack; focus: Ma
     {nav?.origin && <Button size="small" startIcon={<ArrowBackIcon />} data-testid="maps-origin-back" onClick={back} sx={{ flexShrink: 0 }}>
       Back to {nav.origin.label}
     </Button>}
-    {label && <Typography variant="caption" noWrap title={label} data-testid="maps-quest-focus">Quest location: {label}</Typography>}
+    {label && <Typography variant="caption" noWrap title={label} data-testid={gear ? 'maps-gear-focus' : 'maps-quest-focus'}>{gear ? 'Gear source' : 'Quest location'}: {label}</Typography>}
   </Stack>
 }
