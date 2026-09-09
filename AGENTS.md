@@ -34,6 +34,14 @@ docs/agents-archive.md.
   route through `config.ts effectiveEqRoot()/eqLogsDir()`.
 - Active character: resolve it from the current session. Never commit a developer's
   character name, live file path, or account information as a default or fixture.
+- Current character level and selected classes: prefer fresh, identity-matched native
+  observations through the shared current-player selectors (`useCurrentClasses` in
+  renderer views). Label any log fallback clearly. Do not replace historical log
+  intervals, recorded encounters, or explicit planning filters with current facts.
+- Native client support: select an immutable layout by exact executable size and
+  SHA-256, then verify its mapped PE identity. A patch needs independently verified
+  fields and synthetic regression fixtures before registration. Never bypass the
+  version guard, guess offsets at runtime, or publish private diagnostic samples.
 
 ## Public repository privacy and portability
 
