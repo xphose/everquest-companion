@@ -77,6 +77,7 @@ export const EXTERNAL_LINK_ALLOWLIST: readonly ExternalLinkRule[] = [
   { host: 'eqlwiki.com' },
   { host: 'www.eqlwiki.com' },
   { host: 'wiki.project1999.com' },
+  { host: 'www.everquestlegends.com', pathPrefix: '/patch-notes' },
   { host: 'github.com', pathPrefix: '/jmoyers/everquest-companion' }
 ]
 
