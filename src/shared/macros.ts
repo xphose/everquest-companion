@@ -12,6 +12,8 @@ export interface MacroSpell {
   targetType: number
   effects: { effect: number; base: number; calc?: number; max?: number }[]
   durationTicks?: number
+  /** Client duration formula; durationTicks is its cap, not necessarily the actual duration. */
+  durationFormula?: number
 }
 export interface MacroPlayer {
   /** Exact observed player name; required when a recipe explicitly targets the player. */

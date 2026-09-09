@@ -33,6 +33,7 @@ import itemsJson from '../data/items.json'
 // JOS-452 — the worn-focus resolution, memoized on the dump's identity in its own module because
 // the spell card's handler reads the same answer (src/main/planner/wornFocusCurrent.ts says why).
 import { currentWornFocus } from '../planner/wornFocusCurrent'
+import { gearProgressionContext } from '../gearProgression/runtime'
 
 let index: PlannerIndex | null = null
 let gear: GearIndexPayload | null = null
@@ -98,6 +99,7 @@ export function registerPlannerIpc(): void {
   // the renderer scales it to any plus-state itself (shared/planner/gearScale.ts), so no upgrade
   // slider ever comes back here.
   ipcMain.handle(IPC.gearIndex, (): GearIndexPayload => gearIndex())
+  ipcMain.handle(IPC.gearProgressionContext, gearProgressionContext)
 
   // What the active character OWNS, keyed the way the gear index is (JOS-285). Re-asked by the
   // renderer on every `inventory:autoReloaded`; re-folded here only when the file itself moved.

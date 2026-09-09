@@ -28,7 +28,7 @@ function parseRow(fields: string[]): MacroSpell {
   return { id: integer(fields[0], 1), name: fields[1], classLevels,
     castMs: integer(fields[8], 0, 3_600_000), recoveryMs: integer(fields[9], 0, 3_600_000),
     recastMs: integer(fields[10], 0, 86_400_000), mana: integer(fields[14]), targetType: integer(fields[30]),
-    effects: effects(fields[172]), durationTicks: integer(fields[12]) }
+    effects: effects(fields[172]), durationTicks: integer(fields[12]), durationFormula: integer(fields[11]) }
 }
 
 /** Verified client caret columns; only owned IDs leave this parser. A malformed or duplicate
