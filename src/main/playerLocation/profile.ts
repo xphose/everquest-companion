@@ -2,7 +2,7 @@
 // Profile provenance: https://github.com/ChrisTitusTech/plazmic-legends/blob/main/docs/research/legends-2026-09-02-profile.md
 // Verified against the installed executable and one live local-player sample on 2026-09-08.
 // An updated game must acquire a separately verified profile before any player offsets are used.
-export const LEGENDS_PROFILE = {
+export const LEGENDS_PROFILE = Object.freeze({
   sha256: 'f1c6ab2f07a5d08e62bb936061fd01049fa7b64ce8ddac50c57009162088a9f9',
   fileSize: 15_528_056,
   machine: 0x8664,
@@ -63,9 +63,16 @@ export const LEGENDS_PROFILE = {
   zoneTable: 0x30,
   zoneEntryId: 0x0c,
   zoneShortName: 0x10
-} as const
+} as const)
 
-export type LocationProfile = typeof LEGENDS_PROFILE
+/** Profiles share a verified layout schema, not one build's literal addresses. */
+export type LocationProfile = {
+  readonly [Key in keyof typeof LEGENDS_PROFILE]:
+    (typeof LEGENDS_PROFILE)[Key] extends bigint ? bigint :
+      (typeof LEGENDS_PROFILE)[Key] extends string ? string : number
+}
+
+export interface ProfileAddress { address: bigint; layout: LocationProfile }
 
 /** The only remote-memory primitive. A partial read is always failure. */
 export type MemoryRead = (address: bigint, size: number) => Buffer | null
@@ -93,16 +100,16 @@ export function pointerAt(read: MemoryRead, address: bigint): bigint {
 }
 
 /** Check the loaded image too: an old running process can outlive a patched disk image. */
-export function matchesMappedImage(read: MemoryRead, base: bigint): boolean {
+export function matchesMappedImage(read: MemoryRead, base: bigint, profile: LocationProfile = LEGENDS_PROFILE): boolean {
   const dos = exactRead(read, base, 64)
   if (dos.readUInt16LE() !== 0x5a4d) return false
   const offset = dos.readUInt32LE(0x3c)
   if (offset < 64 || offset > 4096 - 88) return false
   const pe = exactRead(read, base + BigInt(offset), 88)
   return pe.readUInt32LE() === 0x4550 &&
-    pe.readUInt16LE(4) === LEGENDS_PROFILE.machine &&
-    pe.readUInt32LE(8) === LEGENDS_PROFILE.timestamp &&
+    pe.readUInt16LE(4) === profile.machine &&
+    pe.readUInt32LE(8) === profile.timestamp &&
     pe.readUInt16LE(20) >= 64 &&
-    pe.readUInt16LE(24) === LEGENDS_PROFILE.optionalMagic &&
-    pe.readUInt32LE(80) === LEGENDS_PROFILE.imageSize
+    pe.readUInt16LE(24) === profile.optionalMagic &&
+    pe.readUInt32LE(80) === profile.imageSize
 }

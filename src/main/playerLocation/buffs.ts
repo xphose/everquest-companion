@@ -1,11 +1,11 @@
 import type { PlayerLocation } from '../../shared/playerLocation'
 import { PLAYER_BUFF_SLOTS, PLAYER_SONG_SLOTS, type PlayerActiveBuff } from '../../shared/playerBuffs'
-import { LEGENDS_PROFILE as P, exactRead, readableAddress, type MemoryRead } from './profile'
+import { LEGENDS_PROFILE, exactRead, readableAddress, type MemoryRead, type LocationProfile } from './profile'
 import { readSpellManager } from './spells'
 
 const OBSERVED_SLOTS = PLAYER_BUFF_SLOTS + PLAYER_SONG_SLOTS
 
-function readEffects(read: MemoryRead, address: bigint): Buffer {
+function readEffects(read: MemoryRead, address: bigint, P: LocationProfile): Buffer {
   const result = Buffer.alloc(OBSERVED_SLOTS * P.effectBytes)
   for (let offset = 0; offset < result.length; offset += 4096) {
     const length = Math.min(4096, result.length - offset)
@@ -14,7 +14,7 @@ function readEffects(read: MemoryRead, address: bigint): Buffer {
   return result
 }
 
-function decodeBuffs(bytes: Buffer, maximumId: number): PlayerActiveBuff[] | null {
+function decodeBuffs(bytes: Buffer, maximumId: number, P: LocationProfile): PlayerActiveBuff[] | null {
   const buffs: PlayerActiveBuff[] = []
   for (let index = 0; index < OBSERVED_SLOTS; index++) {
     const offset = index * P.effectBytes
@@ -29,26 +29,32 @@ function decodeBuffs(bytes: Buffer, maximumId: number): PlayerActiveBuff[] | nul
   return buffs
 }
 
+function effectsAddress(header: Buffer, P: LocationProfile): bigint | null {
+  const address = header.readBigUInt64LE()
+  // A different table shape is unknown, never a truncation reported as an authoritative list.
+  return readableAddress(address) && header.readInt32LE(8) === P.effectsCount &&
+    header.readInt32LE(12) === P.effectsCount ? address : null
+}
+
 /**
  * Only the supported current player's 62 long and 30 short effects, excluding the final record.
  * Two complete raw passes, stable header and spell manager reject loading/fade/reallocation races.
  * The surrounding reader rechecks active owner/profile/class and player identity after this read.
  * At most 14 reads / 29,496 bytes, each <=4096 bytes. No timer is inferred for negative sentinels.
  */
-export function readProfileBuffs(read: MemoryRead, base: bigint, profile: bigint): Pick<PlayerLocation, 'activeBuffs'> {
+export function readProfileBuffs(read: MemoryRead, base: bigint, profile: bigint, P: LocationProfile = LEGENDS_PROFILE): Pick<PlayerLocation, 'activeBuffs'> {
   try {
-    const manager = readSpellManager(read, base)
+    const manager = readSpellManager(read, base, P)
     if (!manager) return {}
     const headerAddress = profile + BigInt(P.effectsHeader)
     const header = exactRead(read, headerAddress, 16)
-    const address = header.readBigUInt64LE()
-    // A different table shape is unknown, never a truncation reported as an authoritative list.
-    if (!readableAddress(address) || header.readInt32LE(8) !== P.effectsCount || header.readInt32LE(12) !== P.effectsCount) return {}
-    const bytes = readEffects(read, address)
-    const activeBuffs = decodeBuffs(bytes, manager.maximumId)
-    if (!activeBuffs || !bytes.equals(readEffects(read, address))) return {}
+    const address = effectsAddress(header, P)
+    if (!address) return {}
+    const bytes = readEffects(read, address, P)
+    const activeBuffs = decodeBuffs(bytes, manager.maximumId, P)
+    if (!activeBuffs || !bytes.equals(readEffects(read, address, P))) return {}
     if (!header.equals(exactRead(read, headerAddress, 16))) return {}
-    const final = readSpellManager(read, base)
+    const final = readSpellManager(read, base, P)
     if (final?.pointer !== manager.pointer || final.maximumId !== manager.maximumId) return {}
     return { activeBuffs }
   } catch {

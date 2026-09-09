@@ -2,7 +2,7 @@ import { realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import type { PlayerLocationResult } from '../../shared/playerLocation'
 import { FingerprintCache } from './fingerprint'
-import { matchesMappedImage } from './profile'
+import { matchesMappedImage, type LocationProfile } from './profile'
 import type { LocationNative, ProcessMemory } from './native'
 import { sameExecutable } from './paths'
 import { samplePlayer } from './sample'
@@ -17,19 +17,19 @@ export interface LocationSampler {
 }
 
 interface SamplerOptions {
-  fingerprint?: Pick<FingerprintCache, 'supports' | 'close'>
+  fingerprint?: Pick<FingerprintCache, 'select' | 'close'>
   executable?: (root: string) => string
   now?: () => number
 }
 
-function sampleProcess(memory: ProcessMemory, executable: string, now: () => number): PlayerLocationResult {
+function sampleProcess(memory: ProcessMemory, executable: string, now: () => number, profile: LocationProfile): PlayerLocationResult {
   // Re-check the handle's path after opening: a PID can be reused between enumeration and open.
   const path = memory.imagePath()
   if (!path || !sameExecutable(path, executable)) return READ_UNAVAILABLE
   const base = memory.imageBase()
   if (!base) return READ_UNAVAILABLE
-  if (!matchesMappedImage(memory.read, base)) return UNSUPPORTED_BUILD
-  return samplePlayer(memory.read, base, now)
+  if (!matchesMappedImage(memory.read, base, profile)) return UNSUPPORTED_BUILD
+  return samplePlayer(memory.read, base, now, profile)
 }
 
 /** All filesystem work and process calls happen synchronously on the worker, never on main. */
@@ -46,11 +46,12 @@ export function createLocationSampler(native: LocationNative, options: SamplerOp
       const pids = native.matchingProcesses(executable)
       if (pids.length === 0) return { state: 'not-running', reason: 'Waiting for EverQuest to start.' }
       if (pids.length > 1) return { state: 'ambiguous', reason: 'More than one game is running from this installation.' }
-      if (!fingerprint.supports(executable)) return UNSUPPORTED_BUILD
+      const profile = fingerprint.select(executable)
+      if (!profile) return UNSUPPORTED_BUILD
       const memory = native.openPlayerProcess(pids[0])
       if (!memory) return { state: 'unavailable', reason: 'Windows could not grant read access to the game location.' }
       try {
-        return sampleProcess(memory, executable, now)
+        return sampleProcess(memory, executable, now, profile)
       } finally {
         memory.close()
       }
