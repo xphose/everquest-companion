@@ -9,7 +9,7 @@ const LABELS: Record<GearOwnedAdvice['action'], string> = { keep: 'Keep', improv
 
 export function GearInventoryNotice({ reading }: { reading: GearInventoryReading }): JSX.Element {
   if (!reading.ready) return <Alert severity="info">Reading your equipment export…</Alert>
-  if (reading.error) return <Alert severity="warning">{reading.error} Run <strong>/outputfile inventory</strong> in game to try again.</Alert>
+  if (reading.error) return <Alert severity="warning">{reading.error}</Alert>
   if (!reading.inventory) return <Alert severity="info" data-testid="gear-inventory-missing">
     Let’s see what you own. Type <strong>/outputfile inventory</strong> in game. Your equipment and spare copies will appear here automatically.
   </Alert>

@@ -9,6 +9,7 @@ import { buildIfStale, check, dumpArtifacts, failures, reportRun, settle } from 
 import { mainWindow } from './appWindow.mjs'
 import { launchOnFixture, stageFixture, type FixtureLog } from './logFixture.mjs'
 import { gearProgressionJourney, gearProgressionInventory, gearProgressionLayout } from './gearProgressionSteps.mjs'
+import { gearProgressionRefresh } from './gearRefreshSteps.mjs'
 
 interface Reading { classes: ClassAbbr[]; level: number; mismatch: boolean; stale: boolean }
 interface MainFixture { gearProgressionReading: Reading }
@@ -83,6 +84,7 @@ async function main(): Promise<void> {
     await gearProgressionJourney(page)
     await gearProgressionInventory(page, log)
     await gearProgressionLayout(launched.app, page)
+    await gearProgressionRefresh(launched.app, page, log)
     await unavailableContext(launched.app, page)
     check('Gear progression emits no renderer runtime errors', errors.length === 0, errors.join('\n'))
     if (failures.length) await dumpArtifacts(page, 'gear-progression-FAIL')
