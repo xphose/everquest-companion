@@ -15,6 +15,7 @@ import { OVERLAY_KINDS } from '@shared/types'
 import { OVERLAY_KIND_LABEL } from '@shared/overlayLabels'
 import { track } from '../lib/telemetry'
 import PerfChip from './PerfChip'
+import GameConnectionStatus from './GameConnectionStatus'
 import { isDragSurfaceDoubleClick } from './titleBarDrag'
 
 /**
@@ -401,7 +402,9 @@ export default function TitleBar({
           JOS-432's characterization, which is why it can be dark on a perfectly healthy app whose
           log is simply quiet. The testid is how `log-switch-nudge.e2e.mts` asserts that a switch
           taken from the nudge really did light it on the new character's next line. */}
-      {live && <CircleIcon data-testid="live-dot" sx={{ fontSize: 12, color: 'success.main' }} />}
+      {live && <CircleIcon data-testid="live-dot" titleAccess="Log activity" sx={{ fontSize: 12, color: 'success.main' }} />}
+
+      <GameConnectionStatus character={character} />
 
       {/* The performance HUD (docs/plans/perf-profiling.md P3). Renders NOTHING at all unless
           the user turned it on in Preferences → Performance — no placeholder, no reserved slot,
