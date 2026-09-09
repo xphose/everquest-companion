@@ -93,7 +93,7 @@ test('only the Location table says what is WORN — a second table never dresses
   assert.ok(worn)
   assert.equal(worn.item?.name, 'Real Helm')
   assert.deepEqual(sheet.unplaced, [])
-  assert.deepEqual(equippedHosts(dump), [{ slot: 'HEAD', name: 'Real Helm' }])
+  assert.deepEqual(equippedHosts(dump), [{ slot: 'HEAD', name: 'Real Helm', tier: 0 }])
 
   // …and coverage follows the same split: the stored row is not evidence about what is equipped.
   assert.deepEqual(storagesCoveredBy(dump), ['equip'])

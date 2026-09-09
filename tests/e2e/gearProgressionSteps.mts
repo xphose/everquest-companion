@@ -51,13 +51,22 @@ export async function gearProgressionJourney(page: Page): Promise<void> {
 export async function gearProgressionInventory(page: Page, log: FixtureLog): Promise<void> {
   await page.locator('[data-testid="gear-section-owned"]').click()
   check('My gear explains the missing inventory export', await page.locator('[data-testid="gear-inventory-missing"]').count() === 1)
-  const dump = 'Location\tName\tID\tCount\tSlots\nHead\tCloth Cap +1\t1\t1\t0\nEar\tBrass Earring +1\t2\t1\t0\nEar\tBrass Earring +2\t2\t1\t0\nAny Slot\tCloth Cap +1\t1\t1\t0\nAny Slot\tCloth Cap +2\t1\t1\t0\nGeneral1\tCloth Cap +1\t1\t1\t0\n'
+  const dump = 'Location\tName\tID\tCount\tSlots\nHead\tCloth Cap +1\t1\t1\t0\nEar\tBrass Earring\t2\t1\t0\nEar\tBrass Earring +2\t2\t1\t0\nFace\tRaw-Hide Mask\t3\t1\t0\nAny Slot\tCloth Cap +1\t1\t1\t0\nAny Slot\tCloth Cap +2\t1\t1\t0\nGeneral 1\tCloth Cap\t1\t1\t0\n'
   writeFileSync(join(log.installDir, 'Primitive_freeport-Inventory.txt'), dump)
-  const count = await settle(() => page.locator('[data-testid="gear-owned-row"]').count(), value => value === 5, { timeoutMs: 20_000 })
-  check('a new inventory export automatically fills all real worn cells', count === 5)
+  const count = await settle(() => page.locator('[data-testid="gear-owned-row"]').count(), value => value === 6, { timeoutMs: 20_000 })
+  check('a new inventory export automatically fills all real worn cells', count === 6)
+  for (const slot of ['EAR', 'FACE']) {
+    const text = await page.locator(`[data-testid="gear-owned-row"][data-slot="${slot}"]`).innerText()
+    check(`ordinary base gear in ${slot} gets usable advice without a +0 label`, !text.includes('Needs details') && !text.includes(' +0'))
+  }
   check('paired and Any slots remain separate cells', await page.locator('[data-testid="gear-owned-row"][data-slot="EAR2"]').count() === 1 && await page.locator('[data-testid="gear-owned-row"][data-slot="ANY2"]').count() === 1)
   await page.locator('[data-testid="gear-owned-row"][data-slot="HEAD"]').click()
   check('owned gear includes a concrete merge guide', await page.locator('[data-testid="gear-merge-details"]').count() > 0)
+  const head = page.locator('[data-testid="gear-owned-row"][data-slot="HEAD"]')
+  check('an ordinary spare base copy contributes merge XP', (await head.innerText()).includes('1 spare copy (1 XP)'))
+  writeFileSync(join(log.installDir, 'Primitive_freeport-Inventory.txt'), dump.replace('Head\tCloth Cap +1\t', 'Head\tCloth Cap\t'))
+  const updated = await settle(() => head.innerText(), text => text.includes('Improve +0 → +1'), { timeoutMs: 20_000 })
+  check('rewriting an upgraded item as a base item automatically refreshes its known tier', updated.includes('Improve +0 → +1') && !updated.includes('Needs details'))
   await page.locator('[data-testid="gear-section-browse"]').click()
   await page.locator('[data-testid="gear-search"] input').fill('cloth cap')
   const found = await settle(() => page.locator('[data-testid="gear-row"]').count(), value => value > 0)

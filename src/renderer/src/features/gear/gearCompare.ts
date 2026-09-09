@@ -191,7 +191,7 @@ export function compareText(entry: StatCompare): string {
 
 /** `Thelvorn, Blade of Light +5` — the worn copy as the dump names it, tier and all. */
 export function hostText(host: PlannerInventoryHost): string {
-  return host.tier === undefined ? host.name : `${host.name} +${String(host.tier)}`
+  return host.tier ? `${host.name} +${String(host.tier)}` : host.name
 }
 
 // ---- when the dump is from -----------------------------------------------------------------

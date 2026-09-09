@@ -19,8 +19,8 @@
 //    equipped are two ROWS under one key — survives all the way to the cell. `ownedFacts` groups
 //    by (place, +N) and NEVER folds two plus-states into "you have 2". `Equipped · Bank +2` is
 //    what the dump said; "2 owned" is a different, worse sentence that no reader can undo. A place
-//    with no stated `+N` renders as the bare place name, because an unsuffixed name said NOTHING
-//    and printing `+0` would be this file inventing a plus-state (phase 1, `tier` is optional).
+//    at base tier renders as the bare place name, preserving the ordinary export's uncluttered
+//    spelling. An unknown tier also stays undecorated; it never acquires an invented suffix.
 //
 // 2. AN `(Exaltation)` ROW IS NOT A COPY. The client files a socketed exaltation under the NAME OF
 //    THE ITEM IT CAME FROM: `Feet-Slot7  Golden Efreeti Boots (Exaltation)` is a gem socketed into
@@ -197,7 +197,7 @@ export function ownershipFor(map: GearOwnershipMap, row: Pick<GearRow, 'key'>): 
 
 /** `Bank +2`, or `Bank` when the name stated no plus, or `Keyring +1 x2` for two of them. */
 export function factText(fact: OwnedFact): string {
-  const tier = fact.tier === undefined ? '' : ` +${String(fact.tier)}`
+  const tier = fact.tier ? ` +${String(fact.tier)}` : ''
   const many = fact.count > 1 ? ` x${String(fact.count)}` : ''
   return `${placeLabel(fact.place)}${tier}${many}`
 }

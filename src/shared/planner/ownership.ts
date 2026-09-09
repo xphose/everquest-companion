@@ -47,8 +47,8 @@
 // them would answer "do you own a Cloak of Flames" and destroy "at what +N", which is half
 // the question — and with phase 0 (`shared/itemUpgrade.ts`) every stat depends on the plus
 // state, so a planner that loses the tier cannot compute anything. `tier` is therefore
-// per-row and OPTIONAL: absent means the name carried no suffix, NOT `+0` (the same rule
-// `InventoryHost.tier` and `itemTierFromName` already state).
+// per-row and OPTIONAL: ordinary native export names without a suffix establish base tier 0;
+// special or malformed names can remain unknown. Raw suffix parsing and loot names are separate.
 //
 // ---------------------------------------------------------------------------
 // BAG CONTENTS vs EXALTATION SOCKETS (both are `-Slot<n>`; keep them apart)
@@ -102,6 +102,7 @@ import {
   type KeyRingEntry
 } from '../outputs/inventory'
 import { itemTierFromName, itemTierKey } from '../itemStats'
+import { inventoryExportTier } from '../outputs/inventoryTier'
 import { SLOT_OF_LOCATION } from './inventorySlots'
 import type { EquipSlot } from './types'
 
@@ -158,7 +159,7 @@ export interface OwnershipRow {
    * `equippedHosts`' job and is deliberately not repeated here.
    */
   slot?: EquipSlot | null
-  /** the ` +N` the name stated. ABSENT means the name carried none — NOT `+0`. */
+  /** Verified full export tier; ordinary unsuffixed items are 0 and unknown formats remain absent. */
   tier?: number
   /** how many copies this row states (a Count of 0 or nonsense is 1; a keyring row is 1) */
   count: number
@@ -226,7 +227,8 @@ function rowFromEntry(entry: InventoryEntry, parent: InventoryEntry | undefined)
     itemId: entry.itemId,
     line: entry.line
   }
-  if (parsed.tier !== undefined) row.tier = parsed.tier
+  const tier = inventoryExportTier(entry)
+  if (tier !== undefined) row.tier = tier
   if (entry.place.kind === 'equip') row.slot = SLOT_OF_LOCATION[entry.place.token]
   if (parent) row.parentName = parent.parsedName.base
   return row
@@ -250,7 +252,8 @@ function rowFromKeyRing(entry: KeyRingEntry): OwnershipRow {
     itemId: entry.itemId,
     line: entry.line
   }
-  if (parsed.tier !== undefined) row.tier = parsed.tier
+  const tier = inventoryExportTier(entry)
+  if (tier !== undefined) row.tier = tier
   return row
 }
 
@@ -394,9 +397,7 @@ export function ownedCount(rows: readonly OwnershipRow[]): number {
 }
 
 /**
- * The best plus level among these rows. `undefined` when no row's name stated one — which is
- * NOT `+0`: an un-suffixed name is a name that said nothing, and phase 0's scaler needs to
- * know the difference.
+ * The best known full tier among these export rows; undefined when every row remains unknown.
  */
 export function highestTier(rows: readonly OwnershipRow[]): number | undefined {
   let best: number | undefined

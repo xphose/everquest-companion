@@ -39,6 +39,7 @@ import {
   type InventoryEntry
 } from '../outputs/inventory'
 import type { EquipLocationToken } from '../outputs/inventory'
+import { inventoryExportTier } from '../outputs/inventoryTier'
 import { ANY_CELLS, cellsForSlot, type EquipSlot, type PlanSlotId } from './types'
 import type { WornFocus } from '../wornFocus'
 
@@ -77,7 +78,7 @@ export interface InventoryHost {
   slot: PlanSlotId
   /** the item's own name — ` +N`, `*` and ` (Exaltation)` already split off */
   name: string
-  /** the ` +N` merge tier the dump stated; absent means the name carried none, NOT tier 0 */
+  /** Verified full export tier, including ordinary unsuffixed base items at 0; absent means unknown. */
   tier?: number
 }
 
@@ -225,7 +226,8 @@ export function equippedHosts(dump: InventoryDump): InventoryHost[] {
     filled.add(cell)
     const parsed = parseItemName(entry.name)
     const host: InventoryHost = { slot: cell, name: parsed.base }
-    if (parsed.tier !== undefined) host.tier = parsed.tier
+    const tier = inventoryExportTier(entry)
+    if (tier !== undefined) host.tier = tier
     out.push(host)
   }
   return out
