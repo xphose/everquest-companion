@@ -191,6 +191,19 @@ export function readGearStats(block: ItemStatBlock): GearStatReading {
   return out
 }
 
+/** Only explicit equipment keys count. A click/proc's reqLevel is a different requirement. */
+export function readGearRequiredLevel(block: ItemStatBlock): number | undefined {
+  let required: number | undefined
+  for (const row of block.stats) {
+    const key = normalizeStatKey(row.key)
+    if (key !== 'REQUIRED_LEVEL' && key !== 'REQ_LEVEL') continue
+    const text = row.value.trim().replace(/[,.;]$/, '')
+    const level = /^\d+$/.test(text) ? Number(text) : NaN
+    if (Number.isSafeInteger(level) && level > 0) required = Math.max(required ?? 0, level)
+  }
+  return required
+}
+
 // ---- the build ------------------------------------------------------------------------------
 
 interface Acc {
@@ -338,6 +351,7 @@ function pageRow(
   if (slots.length === 0) return null
 
   const read = readGearStats(block)
+  const requiredLevel = readGearRequiredLevel(block)
   foldReading(acc, read)
   // LAYER 3 is keyed by the PAGE's canonical key (`eraDerive.ts` walks pages, not alias keys), while
   // the row's key comes from the item NAME. They differ on the 196 `|itemname` alias pages, and the
@@ -352,6 +366,7 @@ function pageRow(
     flags: [...block.flags],
     quest: k.quest,
     playerCrafted: k.playerCrafted === true,
+    ...(requiredLevel === undefined ? {} : { requiredLevel }),
     stats: read.stats,
     effects: block.effects.map((e) => gearEffect(e, spells, acc)),
     ...optionalFields(k, read, synthesizesVoidSave(block, ANY_UPGRADED), acc.derived.get(itemKey(entry.page)))

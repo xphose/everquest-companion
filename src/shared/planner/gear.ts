@@ -183,6 +183,8 @@ export interface GearRow {
   flags: string[]
   quest: boolean
   playerCrafted: boolean
+  /** Explicit equipment minimum from the stat block; independent of effect activation levels. */
+  requiredLevel?: number
   /** weapon skill as written ("1H Slashing", "Archery"); absent on non-weapons */
   skill?: string
   /** `Range:` verbatim when it is NOT a single number ("50 / 75 / 100", 30 arrow pages) */
