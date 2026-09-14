@@ -152,6 +152,10 @@ messages, and Git author/committer metadata.
   row (spec · signature · occurrences · disposition), integrators append on
   sighting, and a flake at 3+ occurrences must have a fix ticket or chip —
   "green on re-run" is a report line, never a resolution. Known rows:
+  - `deploymentConfig.test.mts` Node runner transport · "Unable to deserialize
+    cloned data due to invalid or unsupported version" in `internal/test_runner/runner`
+    · 1 sighting (2026-09-14, Adventure overlay verification), no product assertion
+    failure · standalone 7/7 and subsequent full suite 4,691/3 passed; watch.
   - `sky-filters.e2e` · remount race · **RESOLVED 9816cd34 (JOS-279)**
     (`tests/e2e/viewRemount.mts` holds the precondition); a SECOND distinct
     cause with the guard holding · 1 sighting 2026-08-13 · watch. Both rows
