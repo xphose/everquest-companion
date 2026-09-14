@@ -2,7 +2,7 @@ import type { QuestJournalCatalogEntry } from './catalog'
 import type { RecoveryRecord } from './recovery'
 
 export type QuestJournalState = 'active' | 'completed' | 'ready' | 'unknown'
-export type QuestJournalFilter = 'all' | 'tracked' | QuestJournalState
+export type QuestJournalFilter = 'all' | 'todo' | 'tracked' | QuestJournalState
 
 export interface QuestJournalQuery {
   search?: string

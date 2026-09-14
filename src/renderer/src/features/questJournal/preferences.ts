@@ -12,9 +12,9 @@ export interface JournalPreferences {
   selectedId: string | null
 }
 
-const STATES: readonly string[] = ['all', 'tracked', 'active', 'ready', 'completed', 'unknown']
+const STATES: readonly string[] = ['all', 'todo', 'tracked', 'active', 'ready', 'completed', 'unknown']
 export const DEFAULT_JOURNAL_PREFS: JournalPreferences = {
-  search: '', state: 'all', zone: '', className: '', level: '', sort: 'recommended', offset: 0, selectedId: null
+  search: '', state: 'todo', zone: '', className: '', level: '', sort: 'recommended', offset: 0, selectedId: null
 }
 
 export function journalPreferenceKey(characterId: string | null): string {
@@ -27,7 +27,7 @@ export function normalizeJournalPreferences(value: unknown): JournalPreferences 
   const text = (key: string): string => typeof row[key] === 'string' ? row[key].slice(0, 500) : ''
   return {
     search: text('search'), zone: text('zone'), className: text('className'), level: text('level'),
-    state: STATES.includes(text('state')) ? text('state') as QuestJournalFilter : 'all',
+    state: STATES.includes(text('state')) ? text('state') as QuestJournalFilter : DEFAULT_JOURNAL_PREFS.state,
     sort: row.sort === 'name' ? 'name' : 'recommended',
     offset: typeof row.offset === 'number' && Number.isSafeInteger(row.offset) && row.offset >= 0 ? row.offset : 0,
     selectedId: typeof row.selectedId === 'string' ? row.selectedId.slice(0, 500) : null
@@ -44,6 +44,11 @@ export function readJournalPreferences(characterId: string | null): JournalPrefe
 
 export function writeJournalPreferences(characterId: string | null, prefs: JournalPreferences): void {
   localStorage.setItem(journalPreferenceKey(characterId), JSON.stringify(prefs))
+}
+
+/** Catalog options can be absent during a refresh; retain the user's saved selection. */
+export function journalFilterOptions(value: string, options: string[] = []): string[] {
+  return value && !options.includes(value) ? [value, ...options] : options
 }
 
 /** UI serialization only. Main owns filtering, suitability, ordering and page bounds. */

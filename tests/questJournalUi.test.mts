@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { DEFAULT_JOURNAL_PREFS, journalPreferenceKey, journalQuery, normalizeJournalPreferences } from '../src/renderer/src/features/questJournal/preferences'
+import { DEFAULT_JOURNAL_PREFS, journalFilterOptions, journalPreferenceKey, journalQuery, normalizeJournalPreferences } from '../src/renderer/src/features/questJournal/preferences'
 import { journalMapFocus, journalMobTarget, locationText } from '../src/renderer/src/features/questJournal/navigation'
 import { afterBack, afterLink, originTop } from '../src/renderer/src/navOrigin'
 
@@ -19,6 +19,15 @@ test('journal search, status, facets, order and paging are forwarded to the main
   assert.equal(journalQuery({ ...prefs, level: 'NaN' }).level, undefined)
   assert.equal(journalQuery({ ...prefs, level: '' }).level, undefined)
   assert.equal(journalQuery({ ...prefs, level: '-1' }).level, undefined)
+})
+
+test('fresh discovery omits completed quests while explicit All and temporarily missing saved facets survive', () => {
+  assert.equal(normalizeJournalPreferences({}).state, 'todo')
+  assert.equal(normalizeJournalPreferences({ state: 'all' }).state, 'all')
+  assert.deepEqual(journalFilterOptions('Oggok'), ['Oggok'])
+  assert.deepEqual(journalFilterOptions('Oggok', ['Oggok', 'Grobb']), ['Oggok', 'Grobb'])
+  assert.deepEqual(journalFilterOptions('Shaman', ['Paladin']), ['Shaman', 'Paladin'])
+  assert.deepEqual(journalFilterOptions(''), [])
 })
 
 test('a quest location opens only an exact catalog zone with the native map coordinate convention', () => {

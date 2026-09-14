@@ -1,4 +1,46 @@
 {
+  "Froglock Tadpole Fleshies": {
+    "source": {
+      "url": "https://eqlwiki.com/Froglock_Tadpole_Fleshies",
+      "snapshotAt": "2026-08-22T19:51:37.602Z",
+      "cachePageId": 15386,
+      "cacheSha256": "0026e759d6f43ff1295444756744c9c5090d9d047a9adc7207754d54e7c5fc4f"
+    },
+    "notes": [
+      "The bundled walkthrough requires faction higher than Indifferent with the quest giver.",
+      "The final hand-in is four Froglok Tadpole Flesh to Zulort. Experience can corroborate this hand-in; a particular spell reward is not guaranteed.",
+      "The source allows stacked items. Automatic recognition uses the exact four-item hand-in described here."
+    ],
+    "steps": [
+      {
+        "id": "speak-zulort",
+        "kind": "pickup",
+        "text": "Speak to Zulort in Oggok about helping. The source requires faction higher than Indifferent.",
+        "manualOnly": true,
+        "locations": [
+          { "name": "Zulort", "zone": "Oggok", "sourceUrl": "https://eqlwiki.com/Froglock_Tadpole_Fleshies" }
+        ]
+      },
+      {
+        "id": "collect-flesh",
+        "kind": "collect",
+        "text": "Collect four Froglok Tadpole Flesh.",
+        "manualOnly": false,
+        "items": [{ "name": "Froglok Tadpole Flesh", "quantity": 4 }],
+        "locations": []
+      },
+      {
+        "id": "return-flesh",
+        "kind": "turn-in",
+        "text": "Give four Froglok Tadpole Flesh to Zulort in Oggok.",
+        "manualOnly": true,
+        "items": [{ "name": "Froglok Tadpole Flesh", "quantity": 4 }],
+        "locations": [
+          { "name": "Zulort", "zone": "Oggok", "sourceUrl": "https://eqlwiki.com/Froglock_Tadpole_Fleshies" }
+        ]
+      }
+    ]
+  },
   "Blackburrow Brewers": {
     "source": {
       "url": "https://eqlwiki.com/Blackburrow_Brewers",

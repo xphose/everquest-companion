@@ -5,7 +5,7 @@ import type { JournalAction } from '../features/questJournal/useQuestJournal'
 import { adventureJournalSession, EMPTY_JOURNAL } from './journalSession'
 
 const characterId = (character: CharacterRef | null): string | null => character ? `${character.name}_${character.server}`.toLowerCase() : null
-export type AdventureQuestMode = 'tracked' | 'active' | 'all'
+export type AdventureQuestMode = 'tracked' | 'active' | 'todo' | 'completed'
 
 /** A small per-window query state over the main journal service; no second progress store. */
 export function useAdventureJournal() {

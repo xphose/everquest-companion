@@ -81,8 +81,12 @@ export function useQuestJournal(context: QuestJournalContext) {
     alive.current = true
     const timer = setInterval(refresh, 5000)
     const offInventory = window.eq.onInventoryReload(refresh)
+    const offProgress = window.eq.onProgress(refresh)
+    const offModule = window.eq.onModuleChanged(({ moduleId }) => {
+      if (['*', 'tasks', 'turnins', 'loot'].includes(moduleId)) refresh()
+    })
     const offCharacter = window.eq.onCharacter(() => { alive.current = false; setResult(null) })
-    return () => { alive.current = false; clearInterval(timer); offInventory(); offCharacter() }
+    return () => { alive.current = false; clearInterval(timer); offInventory(); offProgress(); offModule(); offCharacter() }
   }, [refresh])
   useEffect(() => {
     let current = true

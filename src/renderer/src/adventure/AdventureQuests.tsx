@@ -34,7 +34,7 @@ export function AdventureQuests({ journal, onMap }: { journal: AdventureJournal;
       </Box>
     </> : <>
       <Tabs value={journal.mode} onChange={(_, next: AdventureQuestMode) => journal.setMode(next)} variant="fullWidth" sx={{ minHeight: 34, '& .MuiTab-root': { minHeight: 34, py: 0.5 } }}>
-        <Tab label="Tracked" value="tracked" /><Tab label="Active" value="active" /><Tab label="Find" value="all" />
+        <Tab label="Tracked" value="tracked" /><Tab label="Active" value="active" /><Tab label="Find" value="todo" /><Tab label="Completed" value="completed" />
       </Tabs>
       <TextField size="small" label="Find a quest" value={journal.search} onChange={(event) => journal.setSearch(event.target.value)} />
       <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}><QuestRows journal={journal} /></Box>
