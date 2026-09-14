@@ -258,25 +258,44 @@ fn pending_xp_publishes_nothing_until_the_completed_trade_and_epoch_clears_it() 
 #[test]
 fn parsed_log_replay_and_live_append_derive_the_same_optional_evidence() {
     let parser = Parser::new(Clock::new(eqlog::Tz::UTC), None, None);
-    let lines = [
-        "[Mon Aug 03 12:00:00 2026] You offered 4 Bone Chips to Quest Giver.",
-        "[Mon Aug 03 12:00:02 2026] Your faction standing with Quest Guild has been adjusted by 1.",
-        "[Mon Aug 03 12:00:02 2026] You gain experience! (0.086%)",
-        "[Mon Aug 03 12:00:02 2026] You complete the trade with Quest Giver.",
-    ];
+    let fixture = include_str!("../../../../tests/fixtures/quest-rewarded-handin.log");
+    let replay_into = |module: &mut TurnInsModule, live: bool| {
+        for (index, raw) in fixture.lines().enumerate() {
+            let mut parsed = Ev::new();
+            assert!(parser.parse_event(raw, index as i64 + 1, &mut parsed));
+            let (_, payload) = parsed.done();
+            module.on_event(&Event::typed(payload), live);
+        }
+    };
     let mut replay = TurnInsModule::new();
     let mut live = TurnInsModule::new();
-    for (index, raw) in lines.iter().enumerate() {
-        let mut parsed = Ev::new();
-        assert!(parser.parse_event(raw, index as i64 + 1, &mut parsed));
-        let (_, payload) = parsed.done();
-        let event = Event::typed(payload);
-        replay.on_event(&event, false);
-        live.on_event(&event, true);
-    }
+    replay_into(&mut replay, false);
+    replay_into(&mut live, true);
     assert_eq!(replay.snapshot(), live.snapshot());
     let row = &replay.snapshot()["state"][0];
     assert_eq!(row["experienceAt"], row["ts"]);
     assert!(row["experienceAt"].is_i64());
-    assert_eq!(row["itemCounts"]["Bone Chips"], 4);
+    assert_eq!(row["itemCounts"]["Froglok Tadpole Flesh"], 4);
+    assert_eq!(row["npc"], "Zulort");
+    replay.reset();
+    replay_into(&mut replay, false);
+    assert_eq!(
+        replay.snapshot(),
+        live.snapshot(),
+        "replay replaces, never duplicates, evidence"
+    );
+}
+
+#[test]
+fn a_new_transaction_after_zoning_cannot_inherit_the_previous_zones_combat() {
+    let state = rows(vec![
+        json!({"kind":"death","ts":1_000}),
+        offer(1_100, "First Giver"),
+        json!({"kind":"zone","ts":2_000}),
+        offer(2_100, "Quest Giver"),
+        xp(3_000, false),
+        trade(3_000, "Quest Giver"),
+    ]);
+    assert_eq!(state.as_array().unwrap().len(), 1);
+    assert_eq!(state[0]["experienceAt"], 3_000);
 }
