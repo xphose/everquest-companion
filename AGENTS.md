@@ -1772,8 +1772,8 @@ plumbing proven). Reuses the tier-2 lifecycle via
   feed it the same snapshot IPC) — but the live client HAS no exclusive
   mode: its own Fullscreen setting is a BORDERLESS fullscreen window
   (owner-verified, JOS-375), so the escape hatch has never been needed and
-  the telemetry member is named `fullscreen`, not `exclusive`. ONE
-  overlay.html bundle, kind read from
+  the telemetry member is named `fullscreen`, not `exclusive`. The lightweight
+  overlays share the MUI-free overlay.html bundle, kind read from
   `?kind=`; each kind has its own persisted config (`store overlays.<kind>`)
   and can run simultaneously; all overlay IPC channels take the kind as
   first arg. Interactive mode adds a dense selector + a mini drill-down;
@@ -1785,6 +1785,10 @@ plumbing proven). Reuses the tier-2 lifecycle via
   The toast is the ONE kind that defaults OPEN (owner, 2026-08-05; schema
   v9 corrects stores written at the old default) and has NO SOUND of its
   own — the seeded boss/quest ALERTS speak on the same events.
+  Adventure is the separate Map and Quests workspace requested for single-screen
+  play. Its dedicated renderer may use the normal app theme and shared map UI;
+  its restricted preload must not expose the full app bridge. Keep the existing
+  meters' bundle lightweight. See `docs/adventure-overlay.md`.
 - **SCROLLING AND CLICK-THROUGH CANNOT BOTH BE TRUE OF THE SAME PIXEL (JOS-138).**
   Pinned is `setIgnoreMouseEvents(true, {forward:true})`, and `forward`
   forwards mouse MOVES and nothing else — a wheel notch goes to the game.
@@ -1800,12 +1804,15 @@ plumbing proven). Reuses the tier-2 lifecycle via
   trade at the other extreme. Honest limits + full story:
   docs/agents-archive.md.
 - **THE OVERLAY FLOOR IS ONE RECTANGLE, AND IT IS MEASURED (JOS-278).**
-  `OVERLAY_MIN_SIZE` in `overlayLayout.ts` (140x90) is the minimum for EVERY
-  kind — never per-kind (the busiest chrome is what the number must survive),
+  `OVERLAY_MIN_SIZE` in `overlayLayout.ts` (140x90) is the minimum for the
+  lightweight kinds (the busiest chrome is what the number must survive),
   and it exists so a window can never be dragged tiny and lost. **Do not change
   this number from a constant — change it from a measurement**
   (tests/e2e/overlayMinSizeSteps.mts is the instrument). Full measurement
-  story: docs/agents-archive.md.
+  story: docs/agents-archive.md. Adventure is the explicit exception: its map,
+  search and quest workspace needs a larger minimum, measured in its own Electron
+  test. This exception must not increase the minimum or alter saved bounds for
+  existing meters and notifications.
 - **THE BUFF/TIMER OVERLAY'S BAR IS A CLAIM, AND ITS ABSENCE IS THE HONEST HALF**
   (JOS-89, docs/plans/buff-timer-overlay.md). ONE law decides every row: **a
   duration `spells.json` STATES becomes a receding countdown; a duration
