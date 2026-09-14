@@ -15,7 +15,7 @@
 // window rectangle — Electron-free, like `pointerWatch.ts` beside it, so the whole policy is a
 // node test rather than something to alt-tab into and check by eye.
 //
-// ================================ THE THREE ANSWERS, AND WHY ================================
+// ================================ THE FOUR ANSWERS, AND WHY ================================
 // They are not a taste: each one mirrors the sensor that kind's renderer ALREADY runs, because the
 // promise of this change is that nothing about the interaction moves — only its plumbing.
 //
@@ -24,6 +24,8 @@
 //     (`capture('selector', …)` in OverlayHeader.tsx) precisely so a pinned meter's BARS stay
 //     genuinely click-through, which is what pinning is for. Two rectangles: the header strip, and
 //     the scroll grip along the right edge (overlayScale.tsx `SCROLL_GRIP_W`).
+//   'header' — Adventure keeps only the header reachable. Unlock before searching, panning or
+//     scrolling; its pinned body, including the right edge, belongs to the game.
 //   'window' — the LIST kinds (events, buffs, debuffs). Their renderers hold capture over the
 //     WHOLE window while hovered (`onEnter`/`onLeave` on the root), which overlayScale.tsx already
 //     names as "the same trade taken at the other extreme". One rectangle: the window.
@@ -55,7 +57,7 @@ export interface ZoneRect {
 }
 
 /** Which sensor a kind's renderer runs, and therefore which rectangles main watches for it. */
-export type HotZoneStyle = 'chrome' | 'window' | 'none'
+export type HotZoneStyle = 'chrome' | 'header' | 'window' | 'none'
 
 /**
  * The kinds whose renderer holds capture over its WHOLE window while hovered — the list-shaped
@@ -81,6 +83,9 @@ const WHOLE_WINDOW_KINDS: OverlayKind[] = ['events', 'buffs', 'debuffs']
  */
 export const CHROME_STRIP_PX = 40
 
+/** Adventure's shared 35px header plus its 1px root border; its body has no scroll grip. */
+export const ADVENTURE_HEADER_PX = 36
+
 /**
  * HOW WIDE THE SCROLL GRIP BAND IS, in the same px.
  *
@@ -92,6 +97,7 @@ export const GRIP_BAND_PX = 23
 
 /** Which sensor this kind runs. */
 export function hotZoneStyle(kind: OverlayKind): HotZoneStyle {
+  if (kind === 'adventure') return 'header'
   if (isStripKind(kind)) return 'none'
   return WHOLE_WINDOW_KINDS.includes(kind) ? 'window' : 'chrome'
 }
@@ -118,8 +124,10 @@ export function overlayHotZones(kind: OverlayKind, bounds: ZoneRect, zoom = 1): 
   if (style === 'none') return []
   if (style === 'window') return [{ ...bounds }]
   const scale = zoom > 0 ? zoom : 1
-  const stripH = Math.min(Math.round(CHROME_STRIP_PX * scale), bounds.height)
+  const headerPx = style === 'header' ? ADVENTURE_HEADER_PX : CHROME_STRIP_PX
+  const stripH = Math.min(Math.round(headerPx * scale), bounds.height)
   const zones: ZoneRect[] = [{ x: bounds.x, y: bounds.y, width: bounds.width, height: stripH }]
+  if (style === 'header') return zones
   const gripW = Math.min(Math.round(GRIP_BAND_PX * scale), bounds.width)
   const gripH = bounds.height - stripH
   if (gripH > 0) {
