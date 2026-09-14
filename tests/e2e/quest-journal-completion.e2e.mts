@@ -29,6 +29,7 @@ async function adventure(app: ElectronApplication, main: Page): Promise<Page> {
   if (!page) {
     await main.getByRole('button', { name: 'Floating DPS overlays', exact: true }).click()
     await main.locator('[data-testid="overlay-menu-adventure"]').click()
+    await main.keyboard.press('Escape')
     page = await overlayWindow(app, 'adventure')
   }
   if (!page) throw new Error('Adventure did not open')
@@ -51,7 +52,7 @@ async function showUnfinished(main: Page, overlay: Page): Promise<void> {
   await overlay.getByRole('textbox', { name: 'Find a quest' }).fill(QUEST)
   await overlay.locator(ADVENTURE_ROW).filter({ hasText: QUEST }).waitFor()
   check('an untracked unfinished quest is visible in both discovery lists', await main.locator(ROW).count() === 1 &&
-    await main.locator('[data-testid="quest-journal-track"]').innerText() === 'Track quest')
+    await main.locator('[data-testid="quest-journal-track"]').textContent() === 'Track quest')
 }
 
 function appendReward(log: FixtureLog): void {
@@ -75,7 +76,7 @@ async function completedViews(main: Page, overlay: Page): Promise<void> {
   await overlay.locator(OVERLAY_DETAIL).waitFor()
   check('the completed quest remains readable without a tracking requirement',
     (await overlay.locator(OVERLAY_DETAIL).innerText()).includes('Completion recorded') &&
-    await overlay.locator('[data-testid="adventure-track"]').innerText() === 'Track quest')
+    await overlay.locator('[data-testid="adventure-track"]').textContent() === 'Track quest')
   await mainFilter(main, 'All quests')
   check('an explicit All query still includes completed quests', await settle(() => main.locator(ROW).count(), count => count === 1) === 1)
 }

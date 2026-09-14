@@ -121,7 +121,7 @@ export function rewardedFinalTrades(
   })
   const completed = new Map<string, TurnInEvent>()
   for (const trade of turnins) {
-    const experienceAt = (trade as TurnInEvent & { experienceAt?: number }).experienceAt
+    const experienceAt = trade.experienceAt
     if (experienceAt === undefined || !Number.isFinite(experienceAt) || experienceAt > trade.ts || trade.ts - experienceAt > 5000) continue
     const matching = guides.filter(({ final }) => tradeMatchesFinal(final, trade))
     if (matching.length !== 1 || !matching[0].identifiable || !matching[0].entry.expReward) continue
