@@ -58,7 +58,7 @@ rebuild, and preserve selections and expanded details when facts are unchanged.
 
 The `adventure` overlay uses a separate renderer entry with the normal app theme
 and shared map components. Existing meters keep their lightweight, MUI-free entry.
-A dedicated preload exposes only the map, journal, current-character, engine and
+A dedicated preload exposes only the map, journal, current-character, served-module and
 own-window operations this workspace needs; it does not load the full app bridge.
 
 Use the existing overlay lifecycle, hardened web preferences, guarded focus policy,

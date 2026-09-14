@@ -157,32 +157,14 @@ messages, and Git author/committer metadata.
     cause with the guard holding · 1 sighting 2026-08-13 · watch. Both rows
     at full length: docs/agents-archive.md.
   - `live_surfaces.rs` timer hydration ×1; **RESOLVED 9dbf7ab**. Details: docs/agents-archive.md.
-  - `engined tests/perf_snapshot.rs` · `perf.snapshot was refused: Unavailable
-    "the fold did not answer within 5000 ms"` from the `until` poll while the
-    engine is still loading its spell catalog on a starved CI runner · 1
-    sighting (2026-09-04, v1.16.0 tag run, two tests at once; the main-push
-    run of the same commit was green) · HARDENED same day: `until` reads that
-    one refusal as "not yet" and keeps polling to `PATIENCE`; every other
-    refusal still panics.
-  - `engined tests/combat.rs` live-meter tests · the fight closes before the
-    test's hit lands (`Drop` op where an edit was expected; segment "fight"
-    not "current"), plus one harness connect timeout · 1 sighting (2026-09-04,
-    v1.16.0 tag engine job, second attempt, three tests; same commit green on
-    the main push) · MECHANISM KNOWN: `Staged::line` stamps relative to TEST
-    START while closure is judged on the wall clock (`FALLBACK_IDLE_MS` 60 s),
-    so a runner that takes over a minute to go live has already idled the
-    fight · chip filed: anchor live stamps to go-live.
+  - `engined tests/perf_snapshot.rs` · catalog startup refusal under CI load · 1 sighting (2026-09-04) · HARDENED: `until` retries that refusal through `PATIENCE`; every other refusal still panics. Details: docs/agents-archive.md.
+  - `engined tests/combat.rs` · live fixture predates go-live; fight idles before hit; connect timeout · 1 sighting (2026-09-04) · chip: anchor live stamps to go-live. Details: docs/agents-archive.md.
   - `combat-dashboard.e2e` · narrow-window resize never lands, settleStable
     settles on stale geometry · 6 sightings 2026-08-10→26, including
     STANDALONE (the full-sweep-only pattern is broken) · fix shape diagnosed
     (wait for bounds to differ before settling); ticket JOS-232 filed —
     priority raised.
-  - `window-bounds.e2e` · close-time bounds write never lands under sweep
-    load ("closing the window writes down where it was left — (none)",
-    cascades into both relaunch-bounds checks) · 2 sightings (2026-08-12
-    40-spec sweep, JOS-260; 2026-08-13 sweep, JOS-279 — green standalone
-    after, both) · load-sensitive persistence-on-close, unrelated to the
-    change under test; report line.
+  - `window-bounds.e2e` · close-time bounds persistence under sweep load · 2 sightings (2026-08-12/13, JOS-260/279), green standalone · report line. Details: docs/agents-archive.md.
   - `respawn-timers.e2e` · two clock reads made the learned gap 181 s where
     four assertions spell `3m 00s` (1 sighting) · **RESOLVED 0572c77f** —
     both deaths stamp off ONE captured `now`; the assertions were never
@@ -191,21 +173,13 @@ messages, and Git author/committer metadata.
     been closed" · 1 sighting (2026-08-13 sweep, JOS-279; six green serially
     after, none in the next sweep) · a host/load event, not one spec's race —
     a second sighting is a runner-concurrency ticket.
-  - `engine-boots.e2e` · the clean-shutdown claim failed once under a full
-    sweep · 1 sighting (2026-08-26, JOS-501; green standalone ×3 same day) ·
-    under concurrent launches the wait for the stdin-close exit is what loses
-    a race with the runner's teardown. Report line until a second sighting;
-    if it recurs, the suspect is the wait, not the contract.
+  - `engine-boots.e2e` · stdin-close exit wait races sweep teardown · 1 sighting (2026-08-26, JOS-501), green standalone x3 · if it recurs, suspect the wait, not the contract. Details: docs/agents-archive.md.
   - `engined/tests/combat.rs` fixture clock · **RESOLVED JOS-531**: startup
     precedes fixture timestamps. Details: docs/agents-archive.md.
   - `sky-achievements.e2e` counts startup · 1 sighting (2026-09-07) ·
     **RESOLVED a65586c**: await progress within the original deadline.
     Details: docs/agents-archive.md.
-  - `presenceWorker.test` first-tick dedup · watches the REAL machine; fails
-    while EverQuest runs with a player at the keyboard · 3 sightings
-    (2026-08-10 ×2, 2026-08-12 JOS-239 worker mid-session, green on final
-    run) · needs hermetics without weakening the once-then-heartbeat pin;
-    chip filed — satisfies the 3+ rule via the chip.
+  - `presenceWorker.test` first-tick dedup · real game/keyboard dependency · 3 sightings (2026-08-10/12, JOS-239) · chip filed: hermetic input without weakening once-then-heartbeat. Details: docs/agents-archive.md.
   - `perf.e2e` heartbeat boundary · the probe asked about the WRONG window
     (5 sightings, full-sweep only) · **RESOLVED 0523dd90 (JOS-279)** — now
     `probeWindowMs`, plus a three-valued verdict so the naive fix's mirror

@@ -3837,3 +3837,39 @@ post-mortem: docs/agents-archive.md.
   capped classes still dings for nothing and remains evidence-only); the e2e
   per-checkout lockfile; copyText still serializing the melee-rounds footer
   the Rounds panel replaced.
+
+## Flake ledger incident detail archived 2026-09-14
+
+The active ledger remains in AGENTS.md with signatures, occurrence counts and dispositions. These original incident narratives are preserved verbatim.
+
+  - `engined tests/perf_snapshot.rs` · `perf.snapshot was refused: Unavailable
+    "the fold did not answer within 5000 ms"` from the `until` poll while the
+    engine is still loading its spell catalog on a starved CI runner · 1
+    sighting (2026-09-04, v1.16.0 tag run, two tests at once; the main-push
+    run of the same commit was green) · HARDENED same day: `until` reads that
+    one refusal as "not yet" and keeps polling to `PATIENCE`; every other
+    refusal still panics.
+  - `engined tests/combat.rs` live-meter tests · the fight closes before the
+    test's hit lands (`Drop` op where an edit was expected; segment "fight"
+    not "current"), plus one harness connect timeout · 1 sighting (2026-09-04,
+    v1.16.0 tag engine job, second attempt, three tests; same commit green on
+    the main push) · MECHANISM KNOWN: `Staged::line` stamps relative to TEST
+    START while closure is judged on the wall clock (`FALLBACK_IDLE_MS` 60 s),
+    so a runner that takes over a minute to go live has already idled the
+    fight · chip filed: anchor live stamps to go-live.
+  - `window-bounds.e2e` · close-time bounds write never lands under sweep
+    load ("closing the window writes down where it was left — (none)",
+    cascades into both relaunch-bounds checks) · 2 sightings (2026-08-12
+    40-spec sweep, JOS-260; 2026-08-13 sweep, JOS-279 — green standalone
+    after, both) · load-sensitive persistence-on-close, unrelated to the
+    change under test; report line.
+  - `engine-boots.e2e` · the clean-shutdown claim failed once under a full
+    sweep · 1 sighting (2026-08-26, JOS-501; green standalone ×3 same day) ·
+    under concurrent launches the wait for the stdin-close exit is what loses
+    a race with the runner's teardown. Report line until a second sighting;
+    if it recurs, the suspect is the wait, not the contract.
+  - `presenceWorker.test` first-tick dedup · watches the REAL machine; fails
+    while EverQuest runs with a player at the keyboard · 3 sightings
+    (2026-08-10 ×2, 2026-08-12 JOS-239 worker mid-session, green on final
+    run) · needs hermetics without weakening the once-then-heartbeat pin;
+    chip filed — satisfies the 3+ rule via the chip.
