@@ -68,6 +68,7 @@ test('every kind gets the zone style its own renderer sensor implies', () => {
     'heal-overall': 'chrome',
     xp: 'chrome',
     respawn: 'chrome',
+    adventure: 'header',
     // The LIST kinds hold capture over their whole window while hovered (`onMouseEnter={onEnter}`
     // on the root) — overlayScale.tsx calls it the same trade taken at the other extreme.
     events: 'window',
@@ -115,6 +116,21 @@ test('a window kind publishes its window, and a strip publishes nothing', () => 
   for (const kind of ['toast', 'alertBanner', 'conCard'] as OverlayKind[]) {
     assert.deepEqual(overlayHotZones(kind, WINDOW), [], kind)
   }
+})
+
+test('Adventure publishes only its header: the entire pinned body remains click-through', () => {
+  for (const zoom of [1, 1.25, 2]) {
+    const zones = overlayHotZones('adventure', WINDOW, zoom)
+    const headerHeight = Math.round(36 * zoom)
+    assert.deepEqual(zones, [{ ...WINDOW, height: headerHeight }])
+    assert.ok(pointInHoverZone(WINDOW.x + WINDOW.width - 5, WINDOW.y + 12, zones[0]), 'pin remains reachable')
+    for (const x of [WINDOW.x + 1, WINDOW.x + 190, WINDOW.x + WINDOW.width - 1]) {
+      assert.equal(zones.some((zone) => pointInHoverZone(x, WINDOW.y + headerHeight, zone)), false)
+      assert.equal(zones.some((zone) => pointInHoverZone(x, WINDOW.y + 200, zone)), false)
+    }
+  }
+  assert.deepEqual(overlayHotZones('adventure', { ...WINDOW, height: 20 }), [{ ...WINDOW, height: 20 }])
+  assert.deepEqual(overlayHotZones('adventure', WINDOW, 0), [{ ...WINDOW, height: 36 }])
 })
 
 test('the zones never claim a pixel the window does not own', () => {

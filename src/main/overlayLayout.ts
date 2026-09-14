@@ -26,6 +26,7 @@
 // display big enough for the full grid (anything 1080p or larger) is untouched at 380x320.
 
 import { OVERLAY_KINDS, type OverlayKind } from '../shared/types'
+import { clampInto } from './displayFit'
 
 export interface Size {
   width: number
@@ -42,6 +43,7 @@ export interface Bounds extends Size {
  * rate · total` bar row without ellipsis, tall enough for ~8 event-log lines plus chrome.
  */
 const DEFAULT_SIZE: Size = { width: 380, height: 320 }
+const ADVENTURE_SIZE: Size = { width: 640, height: 660 }
 
 /**
  * THE FLOOR EVERY OVERLAY KIND SHARES — how small the user is allowed to drag one (JOS-278).
@@ -81,6 +83,16 @@ const DEFAULT_SIZE: Size = { width: 380, height: 320 }
  * pane scrolls, so at the floor they truncate rather than overlap.
  */
 export const OVERLAY_MIN_SIZE: Size = { width: 140, height: 90 }
+
+/** Search and quest details need readable controls, independently of the compact meters. */
+export function overlayMinimumSize(kind: OverlayKind): Size {
+  return kind === 'adventure' ? { width: 420, height: 480 } : { ...OVERLAY_MIN_SIZE }
+}
+
+export function overlayMinimumBounds(kind: OverlayKind, bounds: Bounds): Bounds {
+  const minimum = overlayMinimumSize(kind)
+  return { ...bounds, width: Math.max(minimum.width, bounds.width), height: Math.max(minimum.height, bounds.height) }
+}
 
 /**
  * THE TOAST IS NOT A METER, and its geometry says so (docs/plans/celebration-toasts.md §3).
@@ -181,6 +193,7 @@ const BANNER_TOP_FRACTION = 1 / 3
  * tall card would become the size of every empty window from then on.
  */
 export function overlayDefaultSize(kind: OverlayKind, workArea?: Bounds): Size {
+  if (kind === 'adventure') return { ...ADVENTURE_SIZE }
   if (kind === 'toast') return { ...TOAST_SIZE }
   if (kind === 'alertBanner') return { ...BANNER_SIZE }
   if (kind === 'conCard') return { ...CON_CARD_SIZE }
@@ -314,7 +327,7 @@ export function isStripKind(kind: OverlayKind): boolean {
  * None holds a slot in the meter grid, so none may consume an index either: adding one that did
  * would shift every meter's reserved slot out from under a user who has never opened it.
  */
-export const METER_KINDS: OverlayKind[] = OVERLAY_KINDS.filter((k) => !isStripKind(k))
+export const METER_KINDS: OverlayKind[] = OVERLAY_KINDS.filter((k) => !isStripKind(k) && k !== 'adventure')
 
 // ============================================================================================
 // JOS-406 — A STRIP'S WINDOW IS ITS CARD, SO THE WINDOW SCALES WITH THE TEXT.
@@ -467,7 +480,16 @@ function meterSize(workArea: Bounds): Size {
  * once a column is full. Clamped to the work area as a last resort on a display too small to
  * hold even one full column.
  */
+function adventureBounds(workArea: Bounds): Bounds {
+  return clampInto({
+    ...ADVENTURE_SIZE,
+    x: workArea.x + workArea.width - ADVENTURE_SIZE.width - MARGIN,
+    y: workArea.y + MARGIN
+  }, workArea)
+}
+
 export function defaultOverlayBounds(kind: OverlayKind, workArea: Bounds): Bounds {
+  if (kind === 'adventure') return adventureBounds(workArea)
   if (kind === 'toast') return toastBounds(workArea)
   if (kind === 'alertBanner') return bannerBounds(workArea)
   if (kind === 'conCard') return conCardBounds(workArea)
@@ -502,6 +524,7 @@ export function defaultOverlayBounds(kind: OverlayKind, workArea: Bounds): Bound
  * Electron's default rather than a compile error in the middle of the window factory.
  */
 export const OVERLAY_TITLE: Partial<Record<OverlayKind, string>> = {
+  adventure: 'Adventure Overlay',
   fight: 'Fight Overlay',
   overall: 'Zone Overlay',
   events: 'Event Log Overlay',

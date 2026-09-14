@@ -35,6 +35,8 @@ export interface LogTailMark {
 }
 
 export interface StoreShape {
+  /** Optional local accelerator; absent uses the default, empty explicitly disables it. */
+  adventureShortcut?: string
   /**
    * Schema version of THIS file (src/main/storeMigrations.ts). Absent ⇒ pre-framework ⇒ 1.
    * Every persisted-shape change bumps CURRENT_SCHEMA_VERSION and ships a migration in the

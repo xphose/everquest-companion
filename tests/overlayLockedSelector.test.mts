@@ -90,9 +90,9 @@ test('THE HOOK NOTE SURVIVES WHERE THE DECISION LIVES', () => {
 
 test('THE PIN IS REVEALED BY A HIT TEST, and it is scoped to the chrome — not the window', () => {
   const zones = src('../src/main/overlayHotZone.ts')
-  // The three answers, each mirroring the sensor that kind's renderer already runs. A meter that
+  // Each answer mirrors the sensor that kind's renderer already runs. A meter that
   // published its whole window would take back exactly the click-through P3 exists to protect.
-  assert.match(zones, /export type HotZoneStyle = 'chrome' \| 'window' \| 'none'/)
+  assert.match(zones, /export type HotZoneStyle = 'chrome' \| 'header' \| 'window' \| 'none'/)
   assert.match(zones, /const WHOLE_WINDOW_KINDS: OverlayKind\[\] = \['events', 'buffs', 'debuffs'\]/)
   // The strips never had a hover sensor and must never grow one here: their capture is their queue's.
   assert.match(zones, /if \(isStripKind\(kind\)\) return 'none'/)

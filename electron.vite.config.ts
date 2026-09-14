@@ -104,6 +104,7 @@ export default defineConfig(({ command }) => ({
         input: {
           index: resolve(__dirname, 'src/preload/index.ts'),
           overlay: resolve(__dirname, 'src/preload/overlay.ts'),
+          adventure: resolve(__dirname, 'src/preload/adventure.ts'),
           cursor: resolve(__dirname, 'src/preload/cursor.ts'),
           tray: resolve(__dirname, 'src/preload/tray.ts')
         }
@@ -149,6 +150,7 @@ export default defineConfig(({ command }) => ({
         input: {
           index: resolve(__dirname, 'src/renderer/index.html'),
           overlay: resolve(__dirname, 'src/renderer/overlay.html'),
+          adventure: resolve(__dirname, 'src/renderer/adventure.html'),
           cursor: resolve(__dirname, 'src/renderer/cursor.html'),
           tray: resolve(__dirname, 'src/renderer/tray.html')
         }

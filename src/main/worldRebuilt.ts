@@ -30,8 +30,15 @@ import type { CharacterRef, OverlayKind } from '../shared/types'
 // the mote rates — and needs the rebuild signal below at least as much as the timer windows do:
 // its whole subject is a fold over months of log, and a window open at launch hydrates part-way
 // through one.
-export const MODULE_READING_OVERLAYS: OverlayKind[] = ['events', 'buffs', 'debuffs', 'xp', 'respawn']
+export const MODULE_READING_OVERLAYS: OverlayKind[] = ['events', 'buffs', 'debuffs', 'xp', 'respawn', 'adventure']
 export const COMBAT_READING_OVERLAYS: OverlayKind[] = ['fight', 'overall', 'heal-fight', 'heal-overall']
+
+/** Inventory and quest progress are shared by the main pages and Adventure. */
+export function sendToAdventureAndMain(channel: string, ...args: unknown[]): void {
+  sendToMain(channel, ...args)
+  const window = getOverlayWindow('adventure')
+  if (window && !window.isDestroyed()) window.webContents.send(channel, ...args)
+}
 
 /** Combat meters need activity and world resets, not every module cursor. */
 export function sendToCombatOverlays(channel: string, ...args: unknown[]): void {

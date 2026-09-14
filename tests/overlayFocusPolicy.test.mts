@@ -208,3 +208,17 @@ test('THE COMPANION WINDOW IS ASKED OF ELECTRON, and only ever read', () => {
   // fake `screen` in tests/presenceDip.test.mts).
   assert.match(presence, /side === 'eq' \? \{ observed: true, eqBounds: toDip\(rec\.rect\) \}/)
 })
+
+test('Adventure shortcut visibility releases capture, respects presence, and never raises focus', () => {
+  const windows = src('../src/main/windows.ts')
+  const toggle = body(windows, 'export function toggleAdventureOverlay(')
+  assert.match(toggle, /applyOverlayLocked\('adventure', getOverlayConfig\('adventure'\)\.locked\)/)
+  assert.match(toggle, /!E2E && !overlaysHiddenNow/)
+  assert.match(toggle, /w\.showInactive\(\)/)
+  assert.match(toggle, /raiseCursorRing\(\)/)
+  assert.doesNotMatch(toggle, /\.focus\(|\.show\(|\.close\(|\.destroy\(/)
+  const restore = body(windows, 'function mayRestoreOverlay(')
+  assert.match(restore, /shortcutHides\(kind\)/, 'presence cannot resurrect a shortcut-hidden window')
+  const ignore = body(windows, 'export function setOverlayIgnoreMouse(')
+  assert.match(ignore, /overlaysParkedNow \|\| shortcutHides\(kind\) \|\| ignore/)
+})
