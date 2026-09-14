@@ -1,9 +1,10 @@
 import type { JSX } from 'react'
 import { Button, MenuItem, Stack, TextField } from '@mui/material'
 import type { QuestJournalFilter, QuestJournalQueryResult } from '@shared/questJournal/journal'
-import { DEFAULT_JOURNAL_PREFS, type JournalPreferences } from './preferences'
+import { DEFAULT_JOURNAL_PREFS, journalFilterOptions, type JournalPreferences } from './preferences'
 
 const FILTERS: { value: QuestJournalFilter; label: string }[] = [
+  { value: 'todo', label: 'To do' },
   { value: 'all', label: 'All quests' }, { value: 'tracked', label: 'Tracked' },
   { value: 'active', label: 'In progress' }, { value: 'ready', label: 'Ready to turn in' },
   { value: 'completed', label: 'Completed' }, { value: 'unknown', label: 'Not yet known' }
@@ -33,12 +34,12 @@ export function JournalFilters({ prefs, result, update }: {
         <TextField select size="small" label="Zone" value={prefs.zone} sx={{ flex: '1 1 170px', maxWidth: 280 }}
           data-testid="quest-journal-zone-filter" onChange={(event) => filter({ zone: event.target.value })}>
           <MenuItem value="">All zones</MenuItem>
-          {result?.zones.map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+          {journalFilterOptions(prefs.zone, result?.zones).map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
         </TextField>
         <TextField select size="small" label="Class" value={prefs.className} sx={{ flex: '1 1 140px', maxWidth: 220 }}
           data-testid="quest-journal-class-filter" onChange={(event) => filter({ className: event.target.value })}>
           <MenuItem value="">All classes</MenuItem>
-          {result?.classes.map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+          {journalFilterOptions(prefs.className, result?.classes).map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
         </TextField>
         <TextField size="small" type="number" label="Minimum level up to" value={prefs.level}
           data-testid="quest-journal-level-filter" sx={{ width: 165 }} slotProps={{ htmlInput: { min: 1, max: 125 } }}

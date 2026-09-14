@@ -61,7 +61,7 @@ export function sanitizeProgress(value: unknown): QuestJournalProgress {
   return { version: 1, quests, profile: sanitizeProfile(r?.profile), recovery: sanitizeRecovery(r?.recovery) }
 }
 
-const FILTERS = new Set(['all', 'tracked', 'active', 'completed', 'ready', 'unknown'])
+const FILTERS = new Set(['all', 'todo', 'tracked', 'active', 'completed', 'ready', 'unknown'])
 
 function boundedInteger(value: unknown, fallback: number, max: number): number {
   return typeof value === 'number' && Number.isFinite(value)

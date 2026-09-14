@@ -5,7 +5,7 @@ import type {
 } from '../../shared/questJournal/journal'
 import type { ClassUnlockClaim } from '../../shared/outputs/achievements'
 import type { TurnInEvent } from '../../shared/types'
-import { achievementCompletion, finalTrade, matchObserved, nameKey, observedTaskId, readyForTurnIn, stepProgress } from './progress'
+import { achievementCompletion, finalTrade, matchObserved, nameKey, observedTaskId, readyForTurnIn, rewardedFinalTrades, stepProgress } from './progress'
 import { allowsClass, compareRewards, recommend, type JournalWornItem } from './recommend'
 import { normalizedClass, sanitizeManual, sanitizeQuery } from './validate'
 import { recoveredLabel, recoveredState, usesRecovery } from './recovery/state'
@@ -22,11 +22,17 @@ export interface JournalModelInput {
   completedSky: Set<string>
 }
 
-function manualFor(input: JournalModelInput, id: string): QuestJournalManual {
+interface JournalModel extends JournalModelInput { rewardedTrades: ReadonlyMap<string, TurnInEvent> }
+
+function withCompletionEvidence(input: JournalModelInput): JournalModel {
+  return { ...input, rewardedTrades: rewardedFinalTrades(input.catalog, input.turnins) }
+}
+
+function manualFor(input: JournalModel, id: string): QuestJournalManual {
   return sanitizeManual(input.progress.quests[id])
 }
 
-function catalogRow(input: JournalModelInput, entry: QuestJournalCatalogEntry): QuestJournalRow {
+function catalogRow(input: JournalModel, entry: QuestJournalCatalogEntry): QuestJournalRow {
   const manual = manualFor(input, entry.id)
   const observed = matchObserved(entry, input.observed)
   const steps = stepProgress(entry, manual, input.inventory)
@@ -38,7 +44,7 @@ function catalogRow(input: JournalModelInput, entry: QuestJournalCatalogEntry): 
   return {
     id: entry.id, name: entry.name,
     state: completed ? 'completed' : ready ? 'ready' : active ? 'active' : 'unknown',
-    stateLabel: completed ? 'Completed' : ready ? 'Ready based on inventory evidence' :
+    stateLabel: completed ? completionLabel(input, entry) : ready ? 'Ready based on inventory evidence' :
       manual.status === 'active' ? 'Active · marked by you' : handedIn ? 'Turn-in recorded · outcome unknown' :
         usesRecovery(observed, recovery) ? recoveredLabel(recovery) : taskLabel(observed),
     tracked: manual.tracked === true, minLevel: entry.minLevel, startZone: entry.startZone,
@@ -48,7 +54,7 @@ function catalogRow(input: JournalModelInput, entry: QuestJournalCatalogEntry): 
 }
 
 /** A previous run's hand-in remains history; it cannot check off the current run's steps. */
-function currentHandIn(input: JournalModelInput, entry: QuestJournalCatalogEntry): TurnInEvent | undefined {
+function currentHandIn(input: JournalModel, entry: QuestJournalCatalogEntry): TurnInEvent | undefined {
   if (manualFor(input, entry.id).status === 'active') return undefined
   const assignedAt = matchObserved(entry, input.observed)?.assignedAt
   const trade = finalTrade(entry, input.turnins)
@@ -58,14 +64,37 @@ function currentHandIn(input: JournalModelInput, entry: QuestJournalCatalogEntry
   return trade
 }
 
-function isCompleted(input: JournalModelInput, entry: QuestJournalCatalogEntry): boolean {
+function isCompleted(input: JournalModel, entry: QuestJournalCatalogEntry): boolean {
   const status = manualFor(input, entry.id).status
   if (status !== undefined) return status === 'completed'
   const task = matchObserved(entry, input.observed)
   const recovery = input.progress.recovery?.[entry.id]
-  if (task || recovery) return recoveredState(manualFor(input, entry.id), task, recovery) === 'completed'
+  if (recoveredState(manualFor(input, entry.id), task, recovery) === 'completed') return true
+  if (currentRewardedTrade(input, entry)) return true
+  if (task || recovery) return false
   return achievementCompletion(entry, input.claims) ||
     input.completedSky.has(entry.id)
+}
+
+/** Newer task activity or a recovered active baseline starts a different run. */
+function currentRewardedTrade(input: JournalModel, entry: QuestJournalCatalogEntry): TurnInEvent | undefined {
+  if (manualFor(input, entry.id).status !== undefined) return undefined
+  const trade = input.rewardedTrades.get(entry.id)
+  if (!trade) return undefined
+  const task = matchObserved(entry, input.observed)
+  if (lastTaskObservation(task) > trade.ts) return undefined
+  const recovery = input.progress.recovery?.[entry.id]
+  return recovery?.state === 'active' && recovery.recoveredAt > trade.ts ? undefined : trade
+}
+
+function lastTaskObservation(task: QuestJournalObservedTask | undefined): number {
+  if (!task) return 0
+  return task.lastObservedAt ?? Math.max(...[task.assignedAt, task.updatedAt, task.completedAt,
+    task.removedAt, task.failedAt].map(value => value ?? 0))
+}
+
+function completionLabel(input: JournalModel, entry: QuestJournalCatalogEntry): string {
+  return currentRewardedTrade(input, entry) ? 'Completed · hand-in and experience recorded' : 'Completed'
 }
 
 function taskLabel(task: QuestJournalObservedTask | undefined): string {
@@ -77,7 +106,7 @@ function taskLabel(task: QuestJournalObservedTask | undefined): string {
   return 'Task activity recorded'
 }
 
-function taskRow(input: JournalModelInput, task: QuestJournalObservedTask): QuestJournalRow {
+function taskRow(input: JournalModel, task: QuestJournalObservedTask): QuestJournalRow {
   const id = observedTaskId(task.name)
   const manual = manualFor(input, id)
   const recovery = input.progress.recovery?.[id]
@@ -93,7 +122,7 @@ function taskRow(input: JournalModelInput, task: QuestJournalObservedTask): Ques
 
 interface Candidate { row: QuestJournalRow; entry?: QuestJournalCatalogEntry }
 
-function retainedTaskRow(input: JournalModelInput, id: string): QuestJournalRow {
+function retainedTaskRow(input: JournalModel, id: string): QuestJournalRow {
   const recovery = input.progress.recovery?.[id]
   const manual = manualFor(input, id)
   const row = taskRow(input, { name: recovery?.name ?? id.slice(5) })
@@ -107,7 +136,7 @@ function retainedTaskRow(input: JournalModelInput, id: string): QuestJournalRow 
   return row
 }
 
-function candidates(input: JournalModelInput): Candidate[] {
+function candidates(input: JournalModel): Candidate[] {
   const names = new Set(input.catalog.map((entry) => nameKey(entry.name)))
   const rows: Candidate[] = input.catalog.map((entry) => ({ row: catalogRow(input, entry), entry }))
   for (const task of input.observed) {
@@ -124,12 +153,17 @@ function candidates(input: JournalModelInput): Candidate[] {
 
 function matches(candidate: Candidate, query: QuestJournalQuery): boolean {
   const { row, entry } = candidate
-  if (query.state === 'tracked' && !row.tracked) return false
-  if (query.state && !['all', 'tracked'].includes(query.state) && row.state !== query.state) return false
+  if (!matchesState(row, query.state)) return false
   if (!matchesLevel(row, query.level)) return false
   if (query.zone && !matchesZone(entry, query.zone)) return false
   if (!matchesClass(entry, query.className ?? '')) return false
   return !query.search || nameKey(searchText(candidate)).includes(nameKey(query.search))
+}
+
+function matchesState(row: QuestJournalRow, state: QuestJournalQuery['state']): boolean {
+  if (state === 'tracked') return row.tracked
+  if (state === 'todo') return row.state !== 'completed'
+  return !state || state === 'all' || row.state === state
 }
 
 function matchesLevel(row: QuestJournalRow, level: number | undefined): boolean {
@@ -165,7 +199,8 @@ function rowRank(row: QuestJournalRow): number {
   return 6
 }
 
-export function queryJournal(input: JournalModelInput, raw: unknown): QuestJournalQueryResult {
+export function queryJournal(rawInput: JournalModelInput, raw: unknown): QuestJournalQueryResult {
+  const input = withCompletionEvidence(rawInput)
   const query = sanitizeQuery(raw)
   const rows = candidates(input).filter((candidate) => matches(candidate, query)).map((candidate) => candidate.row)
   rows.sort((a, b) => (query.sort === 'name' ? 0 : rowRank(a) - rowRank(b)) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
@@ -175,7 +210,7 @@ export function queryJournal(input: JournalModelInput, raw: unknown): QuestJourn
     total: rows.length, offset: query.offset, limit: query.limit, zones, classes }
 }
 
-function evidenceFor(input: JournalModelInput, entry: QuestJournalCatalogEntry | undefined, id: string): string[] {
+function evidenceFor(input: JournalModel, entry: QuestJournalCatalogEntry | undefined, id: string): string[] {
   const manual = manualFor(input, id)
   const evidence: string[] = []
   if (manual.status) evidence.push(`You marked this quest ${manual.status}.`)
@@ -192,7 +227,12 @@ function evidenceFor(input: JournalModelInput, entry: QuestJournalCatalogEntry |
   return evidence
 }
 
-function handInEvidence(input: JournalModelInput, entry: QuestJournalCatalogEntry): string[] {
+function handInEvidence(input: JournalModel, entry: QuestJournalCatalogEntry): string[] {
+  const rewarded = currentRewardedTrade(input, entry)
+  if (rewarded) {
+    const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(rewarded.ts)
+    return [`Completion recorded: the exact final items were handed to the named NPC at ${date}, with experience awarded during that trade. Only this curated quest matches that hand-in.`]
+  }
   const trade = finalTrade(entry, input.turnins)
   if (!trade) return []
   const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(trade.ts)
@@ -200,7 +240,8 @@ function handInEvidence(input: JournalModelInput, entry: QuestJournalCatalogEntr
   return [`The log records the exact final items handed to the named NPC at ${date}. A closed trade alone does not confirm the quest reward or success.`]
 }
 
-export function detailJournal(input: JournalModelInput, id: string): QuestJournalDetailResult {
+export function detailJournal(rawInput: JournalModelInput, id: string): QuestJournalDetailResult {
+  const input = withCompletionEvidence(rawInput)
   const entry = input.catalog.find((candidate) => candidate.id === id)
   const observed = entry ? matchObserved(entry, input.observed) : input.observed.find((task) => observedTaskId(task.name) === id)
   const manual = manualFor(input, id)
@@ -211,7 +252,7 @@ export function detailJournal(input: JournalModelInput, id: string): QuestJourna
     nextStep: nextStep(input, entry, row), inventoryRefreshSuggested: input.context.inventory.state !== 'available' || input.context.inventory.refreshSuggested === true }
 }
 
-function detailSteps(input: JournalModelInput, entry: QuestJournalCatalogEntry, manual: QuestJournalManual): QuestJournalDetailResult['steps'] {
+function detailSteps(input: JournalModel, entry: QuestJournalCatalogEntry, manual: QuestJournalManual): QuestJournalDetailResult['steps'] {
   const steps = stepProgress(entry, manual, input.inventory)
   if (!currentHandIn(input, entry)) return steps
   return steps.map((step, index) => {
@@ -221,7 +262,7 @@ function detailSteps(input: JournalModelInput, entry: QuestJournalCatalogEntry, 
   })
 }
 
-function nextStep(input: JournalModelInput, entry: QuestJournalCatalogEntry | undefined, row: QuestJournalRow | null): string | undefined {
+function nextStep(input: JournalModel, entry: QuestJournalCatalogEntry | undefined, row: QuestJournalRow | null): string | undefined {
   if (row?.state === 'completed') return 'Completion recorded. You can keep this quest tracked for a repeat run.'
   const objective = recoveredNextStep(input, row)
   if (objective) return objective
@@ -232,7 +273,7 @@ function nextStep(input: JournalModelInput, entry: QuestJournalCatalogEntry | un
   return guidedNextStep(input, entry, row)
 }
 
-function recoveredNextStep(input: JournalModelInput, row: QuestJournalRow | null): string | undefined {
+function recoveredNextStep(input: JournalModel, row: QuestJournalRow | null): string | undefined {
   if (row?.state !== 'active') return undefined
   const recovery = input.progress.recovery?.[row.id]
   const observed = input.observed.find((task) => nameKey(task.name) === nameKey(row.name))
@@ -243,7 +284,7 @@ function recoveredNextStep(input: JournalModelInput, row: QuestJournalRow | null
   return `From recovered objectives: ${objective.text}${count}`
 }
 
-function guidedNextStep(input: JournalModelInput, entry: QuestJournalCatalogEntry, row: QuestJournalRow | null): string | undefined {
+function guidedNextStep(input: JournalModel, entry: QuestJournalCatalogEntry, row: QuestJournalRow | null): string | undefined {
   if (currentHandIn(input, entry)) return 'Hand-in recorded. Check the NPC response and reward; the outcome is not confirmed by this trade alone.'
   const steps = entry.guide?.steps ?? []
   if (row?.state === 'unknown') return steps.find((step) => step.kind === 'pickup')?.text

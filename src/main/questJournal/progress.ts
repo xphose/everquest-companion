@@ -105,6 +105,32 @@ function tradeMatchesFinal(final: QuestJournalStep, trade: TurnInEvent): boolean
   return counts?.complete === true && Object.values(held).reduce((sum, count) => sum + count, 0) === counts.required
 }
 
+/** A reward attached by the engine corroborates success only for one curated final hand-in.
+ * Match against every guide before checking its XP reward: another quest with the same
+ * requirements is still ambiguous, even when its reward metadata is incomplete. */
+export function rewardedFinalTrades(
+  catalog: readonly QuestJournalCatalogEntry[], turnins: TurnInEvent[]
+): ReadonlyMap<string, TurnInEvent> {
+  const guides = catalog.flatMap((entry) => {
+    const final = entry.guide?.steps.at(-1)
+    if (final?.kind !== 'turn-in' || !final.items?.length) return []
+    const identifiable = !final.items.some((item) => item.variant)
+    // Unknown same-name variants can make another quest ambiguous, never identifiable.
+    const items = final.items.map(({ name, quantity }) => ({ name, quantity }))
+    return [{ entry, final: { ...final, items }, identifiable }]
+  })
+  const completed = new Map<string, TurnInEvent>()
+  for (const trade of turnins) {
+    const experienceAt = (trade as TurnInEvent & { experienceAt?: number }).experienceAt
+    if (experienceAt === undefined || !Number.isFinite(experienceAt) || experienceAt > trade.ts || trade.ts - experienceAt > 5000) continue
+    const matching = guides.filter(({ final }) => tradeMatchesFinal(final, trade))
+    if (matching.length !== 1 || !matching[0].identifiable || !matching[0].entry.expReward) continue
+    const id = matching[0].entry.id
+    if (trade.ts >= (completed.get(id)?.ts ?? -Infinity)) completed.set(id, trade)
+  }
+  return completed
+}
+
 function tradeCounts(trade: TurnInEvent): Record<string, number> {
   const counted = (trade as TurnInEvent & { itemCounts?: Record<string, number> }).itemCounts
   const held: Record<string, number> = {}
