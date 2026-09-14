@@ -240,11 +240,8 @@ test('overlaysEnabled is a SET of closed kinds — deduped, canonically ordered'
   invalid({ ...SAMPLES[7], overlaysEnabled: 'fight' }, 'overlaysEnabled')
 })
 
-test('the overlay-kind list is the SAME set the app uses (the duplication cannot rot)', () => {
-  // telemetry.ts may import nothing at all, so it re-declares the kinds. This is the tripwire
-  // that keeps the copy honest: adding a sixth overlay to the app fails here until the schema
-  // (and therefore TELEMETRY.md) learns about it.
-  assert.deepEqual([...TELEMETRY_OVERLAY_KINDS].sort(), [...OVERLAY_KINDS].sort())
+test('telemetry names deployed overlay kinds and excludes Adventure under schema skew', () => {
+  assert.deepEqual([...TELEMETRY_OVERLAY_KINDS].sort(), OVERLAY_KINDS.filter((kind) => kind !== 'adventure').sort())
 })
 
 /**

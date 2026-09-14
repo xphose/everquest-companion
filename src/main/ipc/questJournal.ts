@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { IPC } from '../../shared/ipc'
+import { sendToAdventureAndMain } from '../worldRebuilt'
 import { activeCharId, getActiveCharacter } from '../session'
 import { engineRequest, engineServeReadiness, engineWorldToken } from '../dataServer/engineClientHost'
 import { effectiveEqRoot } from '../log/config'
@@ -26,7 +27,11 @@ function world(): JournalWorld {
 }
 
 const journalDeps: JournalServiceDeps = {
-  world, catalog: getQuestJournalCatalog, now: Date.now, getProgress, setProgress,
+  world, catalog: getQuestJournalCatalog, now: Date.now, getProgress,
+  setProgress: (characterId, progress) => {
+    setProgress(characterId, progress)
+    if (characterId === activeCharId()) sendToAdventureAndMain(IPC.onProgress, progress)
+  },
   livePlayer: readActivePlayer,
   files: (character) => journalFiles(effectiveEqRoot(), character, itemsJson as unknown as ItemDbFile),
   snapshot: (module) => journalSnapshots.read(module, engineWorldToken(), async () => {

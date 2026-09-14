@@ -87,7 +87,7 @@ test('an OLD store reaches today with no con-card key either, however far back i
 })
 
 test('THE SHIPPED DEFAULT IS ON, and it is the only one of the strips that is', () => {
-  const store = src('../src/main/store.ts')
+  const store = src('../src/main/storeOverlayDefaults.ts')
   // The declaration itself, because that line is the whole feature's "ships on" claim.
   assert.match(store, /conCard: \{ open: true, locked: true,/)
   assert.match(store, /alertBanner: \{ open: false, locked: true,/, 'the banner still ships off')

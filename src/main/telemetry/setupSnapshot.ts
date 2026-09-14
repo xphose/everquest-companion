@@ -35,7 +35,7 @@ import { app, screen } from 'electron'
 import { statSync } from 'fs'
 import { cpus, totalmem } from 'os'
 import { resolveAlertAudio } from '../../shared/speechText'
-import { OVERLAY_KINDS } from '../../shared/types'
+import { TELEMETRY_OVERLAY_KINDS } from '../../shared/telemetry'
 import type { TelemetryOverlayKind, TelemetryVoiceEngine } from '../../shared/telemetry'
 // ONE READER FOR `eqclient.ini` (JOS-368). It was private to this file until a second consumer
 // arrived — the perf block a feedback report carries (`feedback/perf.ts`) — and a second parse of
@@ -197,12 +197,9 @@ function logBytes(): number {
   return path === undefined ? 0 : statSync(path).size
 }
 
-/** The overlay windows this install has OPEN. No cast is needed and that is the point:
- *  `OVERLAY_KINDS` and the schema's `TELEMETRY_OVERLAY_KINDS` are pinned equal
- *  (tests/telemetryContract.test.mts), so the app's own union assigns straight across — the day
- *  someone adds an overlay without teaching the schema, this stops compiling. */
+/** Only overlay kinds understood by the deployed telemetry schema may leave this process. */
 function openOverlays(): TelemetryOverlayKind[] {
-  return OVERLAY_KINDS.filter((kind) => getOverlayConfig(kind).open)
+  return TELEMETRY_OVERLAY_KINDS.filter((kind) => getOverlayConfig(kind).open)
 }
 
 /**

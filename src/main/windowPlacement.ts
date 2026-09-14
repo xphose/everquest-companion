@@ -32,7 +32,7 @@
 
 import { screen } from 'electron'
 import { centerIn, fitToDisplays, type DisplayArea, type Rect, type Size } from './displayFit'
-import { defaultOverlayBounds } from './overlayLayout'
+import { defaultOverlayBounds, overlayMinimumBounds } from './overlayLayout'
 import type { OverlayKind } from '../shared/types'
 
 /**
@@ -88,7 +88,7 @@ function primaryWorkArea(): Rect | null {
  * `null` means there is no display information to place against. Callers keep whatever they have.
  */
 export function overlayFittedBounds(kind: OverlayKind, stored?: Rect): Rect | null {
-  const fitted = stored ? fitToDisplays(stored, displayAreas()) : null
+  const fitted = stored ? fitToDisplays(overlayMinimumBounds(kind, stored), displayAreas()) : null
   if (fitted) return fitted
   const workArea = primaryWorkArea()
   return workArea ? defaultOverlayBounds(kind, workArea) : null

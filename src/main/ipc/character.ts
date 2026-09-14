@@ -21,7 +21,8 @@ import {
 } from '../session'
 import { getProgress, setEqInstallDir, setInventory, setQuestTurnIns } from '../store'
 import { setItemOverride } from '../storeItemOverrides'
-import { getMainWindow, sendToMain } from '../windows'
+import { getMainWindow } from '../windows'
+import { sendToAdventureAndMain } from '../worldRebuilt'
 
 export function registerCharacterIpc(): void {
   ipcMain.handle(IPC.getCharacter, () => getActiveCharacter())
@@ -133,16 +134,16 @@ export function registerCharacterIpc(): void {
     // line, which re-asks the registry on `inventory:reload` and on nothing else — kept showing
     // the age they had before the click. That is the reported symptom (a stale timestamp) wearing
     // the fix's own clothes, so both pushes go out here exactly as `loadInventoryNow` sends them.
-    sendToMain(IPC.onInventoryReload, { path: res.path, loadedAt: res.loadedAt })
+    sendToAdventureAndMain(IPC.onInventoryReload, { path: res.path, loadedAt: res.loadedAt })
     // Keep other views consistent (Plane of Sky derives held-item counts too).
-    sendToMain(IPC.onProgress, progress)
+    sendToAdventureAndMain(IPC.onProgress, progress)
     return { ok: true as const, path: res.path, loadedAt: res.loadedAt, progress }
   })
   ipcMain.handle(IPC.setQuestTurnIns, (_e, questKey: string, instants: number[]) => {
     const progress = setQuestTurnIns(activeCharId(), questKey, instants)
     // Push so a turn-in recorded in one view (or detected from the log) reaches every other
     // view without a refetch race.
-    sendToMain(IPC.onProgress, progress)
+    sendToAdventureAndMain(IPC.onProgress, progress)
     return progress
   })
   // ONE item's held count, stated (or taken back) by hand — JOS-186. Pushed like every other
@@ -151,7 +152,7 @@ export function registerCharacterIpc(): void {
     IPC.setItemOverride,
     (_e, key: string, name: string, count: number | null) => {
       const progress = setItemOverride(activeCharId(), key, name, count)
-      sendToMain(IPC.onProgress, progress)
+      sendToAdventureAndMain(IPC.onProgress, progress)
       return progress
     }
   )
