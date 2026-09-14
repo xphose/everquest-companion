@@ -22,7 +22,7 @@
 // from the state where nothing is open — which is exactly the state that question gets asked in.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type JSX, type MouseEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
-import { Box, IconButton, Stack } from '@mui/material'
+import { Box, Button, IconButton, Stack } from '@mui/material'
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar'
 import type { MapData, ZoneShort } from '@shared/maps'
 import type { PlayerLocation } from '@shared/playerLocation'
@@ -74,7 +74,8 @@ export function useSearchJump(args: {
   /** The zone actually ON SCREEN (`data.zone`), never the one being fetched. */
   zone: ZoneShort | undefined
   pick: (zone: ZoneShort) => void
-}): { marker: Marker | null; onJump: (to: JumpTarget) => void } {
+  persistent?: boolean
+}): { marker: Marker | null; onJump: (to: JumpTarget) => void; clear: () => void } {
   const { vp, zone, pick } = args
   const { centerOn, zoomedIn, view, size } = vp
   const [marker, setMarker] = useState<Marker | null>(null)
@@ -92,6 +93,7 @@ export function useSearchJump(args: {
 
   const onJump = useCallback(
     (to: JumpTarget) => {
+      setMarker(null)
       if (to.zone === zone) {
         if (to.at) jump(to.at.x, to.at.y)
         return
@@ -103,6 +105,8 @@ export function useSearchJump(args: {
     [zone, jump, pick]
   )
 
+  useEffect(() => { setMarker(null) }, [zone])
+
   useEffect(() => {
     if (pending?.at == null || zone !== pending.zone || size.w <= 0) return
     jump(pending.at.x, pending.at.y)
@@ -111,16 +115,16 @@ export function useSearchJump(args: {
 
   // Transient by design: a marker that never fades becomes a second, permanent map symbol.
   useEffect(() => {
-    if (marker == null) return
+    if (marker == null || args.persistent) return
     const t = setTimeout(() => {
       setMarker(null)
     }, MARKER_MS)
     return () => {
       clearTimeout(t)
     }
-  }, [marker])
+  }, [marker, args.persistent])
 
-  return { marker, onJump }
+  return { marker, onJump, clear: () => { setMarker(null); setPending(null) } }
 }
 
 /** One of the two ring/pip marks. Same symbol, different lifetimes — see each call site. */
@@ -239,6 +243,7 @@ function MapSurface({
       onWheelCapture={onExplore}
       sx={{
         position: 'relative',
+        isolation: 'isolate',
         flexGrow: 1,
         minHeight: 0,
         overflow: 'hidden',
@@ -286,6 +291,7 @@ function PaneReopen({ onOpen }: { onOpen: () => void }): JSX.Element {
 }
 
 export interface MapBodyProps {
+  compact?: boolean
   /** The map on screen, or null — in which case `empty` stands in its place. */
   data: MapData | null
   /** What to draw instead of a surface: the quiet picker state, or nothing while it loads. */
@@ -312,7 +318,7 @@ export default function MapBody(props: MapBodyProps): JSX.Element {
   const { data, empty, vp, hostRef, layers, bands, floor, pane, zoneName, marker, onJump } = props
   const { locMarker } = props
   return (
-    <Stack direction="row" spacing={1.5} sx={{ position: 'relative', flexGrow: 1, minHeight: 0 }}>
+    <Stack direction="row" spacing={props.compact ? 0 : 1.5} sx={{ position: 'relative', flexGrow: 1, minHeight: 0 }}>
       {data != null ? (
         <MapSurface
           data={data}
@@ -327,12 +333,15 @@ export default function MapBody(props: MapBodyProps): JSX.Element {
           onExplore={props.onExplore}
           zones={props.zones}
           onJump={onJump}
-          pane={paneOverlay(pane)}
+          pane={paneOverlay(props.compact ? { ...pane, open: true } : pane)}
         />
       ) : (
         empty
       )}
+      {props.compact && <Button size="small" variant="contained" data-testid="maps-find" onClick={() => pane.setOpen(!pane.open)}
+        sx={{ position: 'absolute', top: 4, right: 4, zIndex: 4 }}>Find NPC / place</Button>}
       {pane.open ? (
+        <Box sx={props.compact ? { position: 'absolute', top: 38, right: 0, bottom: 0, width: 'min(300px, 75%)', bgcolor: '#171a21', display: 'flex', zIndex: 3, '& > *': { width: '100%' } } : { display: 'contents' }}>
         <MapMobPane
           zoneName={zoneName}
           hasMap={data != null}
@@ -343,15 +352,16 @@ export default function MapBody(props: MapBodyProps): JSX.Element {
           query={pane.query}
           onQuery={pane.setQuery}
           selectedId={pane.selectedId}
-          onSelect={pane.select}
-          onHit={onJump}
+          onSelect={(row) => { props.onExplore(); pane.select(row); if (props.compact) pane.setOpen(false) }}
+          onHit={(target) => { onJump(target); if (props.compact) pane.setOpen(false) }}
           pinsCapped={pane.pinsCapped}
           onClose={() => {
             pane.setOpen(false)
           }}
         />
+        </Box>
       ) : (
-        <PaneReopen
+        !props.compact && <PaneReopen
           onOpen={() => {
             pane.setOpen(true)
           }}

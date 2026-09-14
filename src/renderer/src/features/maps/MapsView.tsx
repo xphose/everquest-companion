@@ -68,6 +68,7 @@ import {
 } from './zoneFollow'
 import { Tooltip } from '../../lib/Tooltip'
 import { MapFocusArrival, useMapFocusArrival, type MapFocusProps } from './MapFocusArrival'
+import { CompactMapToolbar } from './CompactMapToolbar'
 
 /** A stand-in extent for the frames where no map is loaded. Never drawn; keeps the hook honest. */
 const EMPTY_BOUNDS: MapBounds = { minX: -1, maxX: 1, minY: -1, maxY: 1, minZ: 0, maxZ: 0 }
@@ -121,7 +122,7 @@ function zoneLongName(zone: ZoneShort | null, raw: string | undefined): string |
  * clears the map and says which name it could not place (law 1); the toolbar's selector is still
  * right there, so it is a question, not a dead end.
  */
-function useZoneSelection(raw: string | undefined, liveZone?: string): {
+function useZoneSelection(raw: string | undefined, liveZone?: string, compact = false): {
   zone: ZoneShort | null
   auto: ZoneShort | null
   mode: ZoneMode
@@ -132,10 +133,10 @@ function useZoneSelection(raw: string | undefined, liveZone?: string): {
   // Has the log said where the character is AT ALL? A fresh log (or a replay that has not reached
   // a zone line yet) is not a zone change, and must never overwrite what was remembered.
   const stated = liveZone !== undefined || (raw != null && raw !== '')
-  const [sel, setSel] = useState<ZoneSelection>(loadZoneSelection)
+  const [sel, setSel] = useState<ZoneSelection>(() => compact ? { zone: null, mode: 'follow' } : loadZoneSelection())
   useEffect(() => {
-    saveZoneSelection(sel)
-  }, [sel])
+    if (!compact) saveZoneSelection(sel)
+  }, [sel, compact])
   useEffect(() => {
     if (!stated) return
     setSel((prev) => onCharacterZone(prev, auto))
@@ -350,11 +351,11 @@ function useMapOpenTracking(data: MapData | null): void {
   }, [loaded])
 }
 
-function useMapIdentity() {
+function useMapIdentity(compact: boolean) {
   const character = useModule<CharacterSnap>('character')
   const raw = character?.zone
   const player = useMapPlayer(character?.character?.name)
-  const selection = useZoneSelection(raw, player.location?.zone)
+  const selection = useZoneSelection(raw, player.location?.zone, compact)
   return { raw, player, ...selection }
 }
 
@@ -364,8 +365,14 @@ function useSelectedMap(zone: ZoneShort | null, prefs: MapPackPrefs) {
   return { ...map, data: map.data?.zone === zone ? map.data : null }
 }
 
-export default function MapsView(props: MapFocusProps): JSX.Element {
-  const { raw, player, zone, auto, mode, pick, followCurrent } = useMapIdentity()
+function mapPresentation(compact: boolean) {
+  return { Toolbar: compact ? CompactMapToolbar : MapToolbar, Header: compact ? () => null : MapsHeader, spacing: compact ? 0.5 : 1.5 }
+}
+
+export default function MapsView(props: MapFocusProps & { compact?: boolean }): JSX.Element {
+  const compact = props.compact === true
+  const { Toolbar, Header, spacing } = mapPresentation(compact)
+  const { raw, player, zone, auto, mode, pick, followCurrent } = useMapIdentity(compact)
   const [prefs, setPrefs] = useState<MapPackPrefs>(loadPackPrefs)
   const [layers, setLayers] = useState<LayerMask>(DEFAULT_LAYERS)
 
@@ -392,7 +399,7 @@ export default function MapsView(props: MapFocusProps): JSX.Element {
   const vp = useMapViewport({ bounds: data?.bounds ?? EMPTY_BOUNDS, id: data?.zone ?? '', hostRef })
   const playerLocation = locationOnMap(player.location, data?.zone)
   usePlayerCentering(playerLocation, player, vp)
-  const { marker, onJump: jump } = useSearchJump({ vp, zone: data?.zone, pick })
+  const { marker, onJump: jump, clear: clearTarget } = useSearchJump({ vp, zone: data?.zone, pick, persistent: compact })
   const releaseCenter = player.setCentered
   const onJump = useCallback((target: JumpTarget) => {
     releaseCenter(false)
@@ -407,22 +414,22 @@ export default function MapsView(props: MapFocusProps): JSX.Element {
   // THE SIDEBAR. Open by default, remembered in `eq.maps.pane`, closed from its own header. Its
   // filtered rows are derived ONCE and read by both the list and the surface's pins.
   const zoneName = zoneLongName(zone, raw)
-  const pane = useZonePane({ vp, data, zoneName, prefs, zones })
+  const pane = useZonePane({ vp, data, zoneName, prefs, zones, compact })
 
   return (
-    <Stack spacing={1.5} sx={{ height: '100%' }}>
+    <Stack spacing={spacing} sx={{ height: '100%', minHeight: 0 }}>
       <MapFocusArrival nav={props.nav} focus={focus} zone={zone} />
-      <MapsHeader title={headerTitle(zone, raw)} zone={zone} data={data} />
-      <MapLiveControls {...player} onEnabled={player.setEnabled} onCentered={player.setCentered}
-        onCenter={() => { player.center(); followCurrent() }} />
+      <Header title={headerTitle(zone, raw)} zone={zone} data={data} />
+      <MapLiveControls {...player} compact={compact} onEnabled={player.setEnabled} onCentered={player.setCentered}
+        onCenter={() => { player.center(); clearTarget(); followCurrent() }} />
       {/* ALWAYS RENDERED, because the Zone selector inside it is how you leave the map you are
           on. Everything else in the bar is gated on `hasMap`. */}
-      <MapToolbar
+      <Toolbar
         zones={zones}
         zone={zone}
         onPick={(next) => { player.setCentered(false); pick(next) }}
         mode={mode}
-        onFollowCurrent={followCurrent}
+        onFollowCurrent={() => { clearTarget(); followCurrent() }}
         hasMap={data != null}
         // A map could still be drawn here ⇒ the bar holds the row its drawing controls will need,
         // so the pane below does not move when they arrive (JOS-205; `DrawnRow` measured it).
@@ -447,6 +454,7 @@ export default function MapsView(props: MapFocusProps): JSX.Element {
         onFit={() => { player.setCentered(false); vp.fit() }}
       />
       <MapBody
+        compact={compact}
         data={data}
         zones={zones}
         // Nothing is claimed before the pack listing and the first fetch have answered — a

@@ -86,7 +86,7 @@ export const OVERLAY_MIN_SIZE: Size = { width: 140, height: 90 }
 
 /** Search and quest details need readable controls, independently of the compact meters. */
 export function overlayMinimumSize(kind: OverlayKind): Size {
-  return kind === 'adventure' ? { width: 420, height: 360 } : { ...OVERLAY_MIN_SIZE }
+  return kind === 'adventure' ? { width: 420, height: 480 } : { ...OVERLAY_MIN_SIZE }
 }
 
 export function overlayMinimumBounds(kind: OverlayKind, bounds: Bounds): Bounds {

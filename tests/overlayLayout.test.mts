@@ -53,10 +53,10 @@ const overlaps = (a: Bounds, b: Bounds): boolean =>
 test('Adventure has room for map search and quest details without shrinking the meter grid', () => {
   assert.equal(METER_KINDS.includes('adventure'), false)
   assert.deepEqual(overlayDefaultSize('adventure'), { width: 640, height: 660 })
-  assert.deepEqual(overlayMinimumSize('adventure'), { width: 420, height: 360 })
+  assert.deepEqual(overlayMinimumSize('adventure'), { width: 420, height: 480 })
   assert.deepEqual(overlayMinimumSize('fight'), OVERLAY_MIN_SIZE)
   const small = { x: 100, y: 120, width: 140, height: 90 }
-  assert.deepEqual(overlayMinimumBounds('adventure', small), { ...small, width: 420, height: 360 })
+  assert.deepEqual(overlayMinimumBounds('adventure', small), { ...small, width: 420, height: 480 })
   for (const wa of Object.values(WORK_AREAS)) {
     const bounds = defaultOverlayBounds('adventure', wa)
     assert.ok(bounds.x >= wa.x && bounds.y >= wa.y)

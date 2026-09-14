@@ -228,13 +228,14 @@ export function useZonePane(args: {
   prefs: MapPackPrefs
   /** Every stem an installed pack provides — so a cross-zone row knows whether it has a map. */
   zones: readonly ZoneShort[]
+  compact?: boolean
 }): ZonePaneState {
   const { vp, data, zoneName, prefs, zones } = args
-  const [open, setOpenState] = useState<boolean>(loadPaneOpen)
+  const [open, setOpenState] = useState<boolean>(() => args.compact ? false : loadPaneOpen())
   const setOpen = useCallback((next: boolean) => {
     setOpenState(next)
-    savePaneOpen(next)
-  }, [])
+    if (!args.compact) savePaneOpen(next)
+  }, [args.compact])
 
   const { centerOn, zoomedIn, view } = vp
   const onCenter = useCallback(

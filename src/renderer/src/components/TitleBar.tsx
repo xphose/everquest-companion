@@ -122,6 +122,7 @@ function CaptionButton({
 // nowhere in the menu you open to find it. The descriptions stay because they are this menu's own
 // job: a row here has to say what the window is FOR, and nowhere else needs that sentence.
 const OVERLAY_MENU_ROWS: readonly (readonly [OverlayKind, string])[] = [
+  ['adventure', 'Find places and follow quests over the game'],
   ['fight', 'Current fight + fight selector'],
   ['overall', 'Zone total + zone selector'],
   ['heal-fight', 'Healing + absorption, current fight'],
@@ -184,7 +185,7 @@ function OverlayMenu({ overlayState }: { overlayState: Record<OverlayKind, boole
    */
   const toggle = (kind: OverlayKind): void => {
     void window.eq.toggleOverlay(kind).then((open) => {
-      track({ t: 'overlayToggle', kind, open })
+      if (kind !== 'adventure') track({ t: 'overlayToggle', kind, open })
     })
   }
 
