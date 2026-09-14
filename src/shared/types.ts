@@ -374,6 +374,8 @@ export interface TurnInEvent {
   items: string[]
   /** Explicit offered quantities; older snapshots contain only item names. */
   itemCounts?: Record<string, number>
+  /** Unambiguous solo XP after the offer and within 5 seconds before this trade closed. */
+  experienceAt?: number
 }
 
 /** A level-up ("You have gained a level! Welcome to level N!"). */
