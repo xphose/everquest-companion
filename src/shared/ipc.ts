@@ -1,6 +1,8 @@
 // Central registry of IPC channel names so main/preload/renderer stay in sync.
 
 export const IPC = {
+  adventureShortcutGet: 'adventure:shortcutGet',
+  adventureShortcutSet: 'adventure:shortcutSet',
   // ---- module transport (the one pattern for loot/turnins/kills/leveling/character) ----
   // renderer -> main
   getModuleSnapshot: 'module:getSnapshot',

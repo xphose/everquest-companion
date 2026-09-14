@@ -36,7 +36,7 @@ import { pushLogDir } from './dataServer/definePush'
 import { baseName } from '../shared/outputs/baseline'
 import { loadInventory } from './inventory/parseInventory'
 import { loadAchievements, watchOutputKind, type OutputKindWatch } from './outputs'
-import { sendWorldRebuilt } from './worldRebuilt'
+import { sendWorldRebuilt, sendToAdventureAndMain } from './worldRebuilt'
 import {
   getActiveLogPath,
   getEqInstallDir,
@@ -538,8 +538,8 @@ function loadInventoryNow(ref: CharacterRef, why: 'startup' | 'watch'): void {
     logInfo(
       `[everquest-companion] Inventory ${why === 'startup' ? 'loaded at startup' : 'auto-reloaded'}: ${res.path}`
     )
-    sendToMain(IPC.onInventoryReload, { path: res.path, loadedAt: res.loadedAt })
-    sendToMain(IPC.onProgress, getProgress(activeCharId()))
+    sendToAdventureAndMain(IPC.onInventoryReload, { path: res.path, loadedAt: res.loadedAt })
+    sendToAdventureAndMain(IPC.onProgress, getProgress(activeCharId()))
   })
 }
 
@@ -568,7 +568,7 @@ function loadAchievementsNow(ref: CharacterRef, why: 'startup' | 'watch'): void 
         why === 'startup' ? 'loaded at startup' : 'auto-reloaded'
       }: ${res.path} (${String(res.unlocks.length)} class-unlock rewards earned)`
     )
-    sendToMain(IPC.onProgress, getProgress(activeCharId()))
+    sendToAdventureAndMain(IPC.onProgress, getProgress(activeCharId()))
   })
 }
 

@@ -43,6 +43,8 @@ import { installImageCacheProtocol } from './imageCache'
 import { bundledImageRoots, findBundledImagesDir } from './bundledImages'
 import { installSpeechCacheProtocol } from './speech/cache'
 import { registerIpc } from './ipc'
+import { registerAdventureIpc } from './ipc/adventure'
+import { startAdventureShortcut, stopAdventureShortcut } from './adventureShortcut'
 import { DATA_READY_MS, logSpellDbSummary } from './appSpellDb'
 import { markStartupPhase, startPerfSampler, stopPerf } from './perf'
 import { stopEnginePerfWatch } from './enginePerfWatch'
@@ -225,6 +227,8 @@ if (!gotSingleInstanceLock) {
       `[everquest-companion] Channel '${CHANNEL}' - userData ${USER_DATA}, error log ${errorLogPath()}`
     )
     registerIpc()
+    registerAdventureIpc()
+    startAdventureShortcut()
     registerDevTriageIpc()
     // Trust boundary, installed BEFORE the first window exists: the catch-all fires for every
     // webContents this process will ever create (main window, each overlay, anything a future
@@ -438,6 +442,7 @@ if (!gotSingleInstanceLock) {
  * cover. A thread cannot outlive its process, so both the hazard and its workaround are gone.
  */
 app.on('before-quit', () => {
+  teardownStep('main:stopAdventureShortcut', stopAdventureShortcut)
   teardownStep('main:stopPresence', stopPresenceEffects)
   // …and the data-server engine, on BOTH quit events and for a stronger version of the reason the
   // presence watcher is: the engine is a CHILD PROCESS, and Windows does not kill children with

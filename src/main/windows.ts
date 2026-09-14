@@ -27,7 +27,7 @@ import { IPC } from '../shared/ipc'
 import { installBackButton } from './appBack'
 import { E2E } from './e2e'
 import { logError, logInfo } from './errorLog'
-import { OVERLAY_MIN_SIZE, OVERLAY_TITLE, isStripKind, overlayDefaultSize } from './overlayLayout'
+import { OVERLAY_TITLE, isStripKind, overlayDefaultSize, overlayMinimumSize } from './overlayLayout'
 // WHERE AN OVERLAY IS, HOW TALL IT IS, AND WHICH OF THAT IS WRITTEN DOWN (JOS-187 + JOS-386). Its
 // own module for the reason overlaySnapDrag.ts and OVERLAY_TITLE are: this file is at the
 // 400-code-line ceiling, and a persistence policy over pure geometry was never its subject.
@@ -116,6 +116,12 @@ const opaqueStripWindow: Partial<Record<OverlayKind, boolean>> = {}
  *  ABSENT READS AS IDLE (hence every check spells `!== false`), because an empty window is a
  *  strip's resting state and nothing has told us otherwise until its renderer's first signal. */
 const opaqueStripIdle: Partial<Record<OverlayKind, boolean>> = {}
+// Shortcut visibility is temporary: closing/opening remains the persisted preference.
+let adventureHidden = false
+
+function shortcutHides(kind: OverlayKind): boolean {
+  return kind === 'adventure' && adventureHidden
+}
 
 /** The main window while it exists (null before creation / after close). */
 export function getMainWindow(): BrowserWindow | null {
@@ -582,7 +588,7 @@ export function setOverlayIgnoreMouse(kind: OverlayKind, ignore: boolean): void 
   // live card takes the mouse again the moment the user is back in the game. A parked overlay also
   // publishes no hot zones at all (`overlayWantsHoverZones`), so nothing can ask it to capture.
   overlayDesiredIgnore[kind] = ignore
-  const effective = overlaysParkedNow || ignore
+  const effective = overlaysParkedNow || shortcutHides(kind) || ignore
   // ONE SHAPE, TWO VALUES, NO SECOND ARGUMENT — see the hook note above.
   w.setIgnoreMouseEvents(effective)
   applyOpaqueStripVisibility(kind, ignore)
@@ -751,9 +757,15 @@ export function reconcileOverlayDisplays(): void {
 }
 
 export function createOverlayWindow(kind: OverlayKind): void {
+  if (kind === 'adventure') adventureHidden = false
   const existing = overlayWindows[kind]
   if (existing && !existing.isDestroyed()) {
-    if (!E2E) existing.show()
+    applyOverlayLocked(kind, getOverlayConfig(kind).locked)
+    if (!E2E && !overlaysHiddenNow) {
+      existing.showInactive()
+      assertTopmost(existing)
+      raiseCursorRing()
+    }
     return
   }
   // OPAQUE-OVERLAY COMPATIBILITY MODE (JOS-40; automatic under Wine since JOS-31). Read here, at
@@ -775,8 +787,8 @@ export function createOverlayWindow(kind: OverlayKind): void {
     // THE FLOOR IS NOT A NUMBER THIS FILE OWNS (JOS-278). It is derived from what the overlay
     // chrome can render without losing a control off an edge, so it lives beside the other
     // overlay geometry — and beside the argument for it — in overlayLayout.ts.
-    minWidth: OVERLAY_MIN_SIZE.width,
-    minHeight: OVERLAY_MIN_SIZE.height,
+    minWidth: overlayMinimumSize(kind).width,
+    minHeight: overlayMinimumSize(kind).height,
     // THE CEILING IS THE SCREEN FOR A STRIP (JOS-406). 720x820 is a sane ceiling for a PANEL — a
     // meter dragged past it is a window nobody wanted — but a strip's window is its card times the
     // text scale, and the con card's 530 at 2.0 is 1060: the cap would silently refuse the second
@@ -833,7 +845,7 @@ export function createOverlayWindow(kind: OverlayKind): void {
     // Same hardened posture as the main window — one definition, every window (see
     // WEB_PREFERENCES). The overlay's preload is the LEANER bridge (preload/overlay.ts), but
     // its window-level privileges must not be a second, weaker opinion.
-    webPreferences: WEB_PREFERENCES(join(__dirname, '../preload/overlay.js'))
+    webPreferences: WEB_PREFERENCES(join(__dirname, `../preload/${kind === 'adventure' ? 'adventure' : 'overlay'}.js`))
   })
   overlayWindows[kind] = w
 
@@ -861,7 +873,7 @@ export function createOverlayWindow(kind: OverlayKind): void {
     // A HISTORICAL REPLAY holds the same door shut (JOS-62): an overlay that first painted mid-fold
     // would be showing half-parsed state over the game, and the fold's end shows it properly (with
     // its locked mode re-applied) via `applyOverlayReplayGate` + the presence pass beside it.
-    if (E2E) return
+    if (E2E || shortcutHides(kind) || overlaysHiddenNow) return
     // An OPAQUE strip opens HIDDEN and is brought up by its own queue (see
     // applyOpaqueStripVisibility). Showing it here would put a solid rectangle over the game for
     // the moment between first paint and the renderer's first capture signal — the very thing
@@ -907,11 +919,31 @@ export function createOverlayWindow(kind: OverlayKind): void {
   })
 
   const rendererUrl = process.env.ELECTRON_RENDERER_URL
+  const page = kind === 'adventure' ? 'adventure.html' : 'overlay.html'
   if (rendererUrl) {
-    void w.loadURL(`${rendererUrl}/overlay.html?kind=${kind}`)
+    void w.loadURL(`${rendererUrl}/${page}?kind=${kind}`)
   } else {
-    void w.loadFile(join(__dirname, '../renderer/overlay.html'), { search: `kind=${kind}` })
+    void w.loadFile(join(__dirname, `../renderer/${page}`), { search: `kind=${kind}` })
   }
+}
+
+export function adventureOverlayShown(): boolean {
+  return isOverlayOpen('adventure') && !adventureHidden
+}
+
+/** The shortcut preserves the window and its view without asking the OS to move focus. */
+export function toggleAdventureOverlay(): void {
+  const w = getOverlayWindow('adventure')
+  if (!w || w.isDestroyed()) { setOverlayOpen('adventure', true); return }
+  adventureHidden = !adventureHidden
+  applyOverlayLocked('adventure', getOverlayConfig('adventure').locked)
+  if (adventureHidden) w.hide()
+  else if (!E2E && !overlaysHiddenNow) {
+    w.showInactive()
+    assertTopmost(w)
+    raiseCursorRing()
+  }
+  overlayHoverStale?.()
 }
 
 /** Open/close a kind's overlay and persist + broadcast its new open-state. Returns it. */
@@ -1037,6 +1069,11 @@ export function parkOverlays(parked: boolean): void {
  * this function is ALSO the restore path afterwards, which is why the re-show re-asserts the
  * locked mode from the persisted config rather than remembering anything of its own.
  */
+function mayRestoreOverlay(kind: OverlayKind, w: BrowserWindow): boolean {
+  if (E2E || w.isVisible() || shortcutHides(kind)) return false
+  return !(isStripKind(kind) && opaqueStripWindow[kind] === true && opaqueStripIdle[kind] !== false)
+}
+
 export function setOverlaysHidden(hidden: boolean): void {
   // THE EDGE IS NARRATED, THE RE-STATEMENTS ARE NOT (JOS-424). This function is called on every
   // presence change and is idempotent by design, so only a genuine change of the visibility this
@@ -1061,10 +1098,9 @@ export function setOverlaysHidden(hidden: boolean): void {
       if (w.isVisible()) w.hide()
       continue
     }
-    if (E2E || w.isVisible()) continue
     // An OPAQUE strip with nothing queued must not come back as a solid rectangle: its
     // visibility belongs to its queue, and the next card brings it up (JOS-40).
-    if (isStripKind(kind) && opaqueStripWindow[kind] === true && opaqueStripIdle[kind] !== false) continue
+    if (!mayRestoreOverlay(kind, w)) continue
     w.showInactive()
     // A gate restore can land while presence has the overlays PARKED (JOS-427) — the user may be
     // alt-tabbed away while a character-switch fold ends. The show must come up at the park's

@@ -30,6 +30,8 @@ import {
   STRIP_KINDS,
   defaultOverlayBounds,
   overlayDefaultSize,
+  overlayMinimumSize,
+  overlayMinimumBounds,
   scaledStripBounds,
   stripLayoutBounds,
   type Bounds
@@ -47,6 +49,21 @@ const WORK_AREAS: Record<string, Bounds> = {
 
 const overlaps = (a: Bounds, b: Bounds): boolean =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+
+test('Adventure has room for map search and quest details without shrinking the meter grid', () => {
+  assert.equal(METER_KINDS.includes('adventure'), false)
+  assert.deepEqual(overlayDefaultSize('adventure'), { width: 640, height: 660 })
+  assert.deepEqual(overlayMinimumSize('adventure'), { width: 420, height: 360 })
+  assert.deepEqual(overlayMinimumSize('fight'), OVERLAY_MIN_SIZE)
+  const small = { x: 100, y: 120, width: 140, height: 90 }
+  assert.deepEqual(overlayMinimumBounds('adventure', small), { ...small, width: 420, height: 360 })
+  for (const wa of Object.values(WORK_AREAS)) {
+    const bounds = defaultOverlayBounds('adventure', wa)
+    assert.ok(bounds.x >= wa.x && bounds.y >= wa.y)
+    assert.ok(bounds.x + bounds.width <= wa.x + wa.width)
+    assert.ok(bounds.y + bounds.height <= wa.y + wa.height)
+  }
+})
 
 test('every METER kind opens at ONE uniform default size', () => {
   const sizes = METER_KINDS.map((k) => overlayDefaultSize(k))
@@ -191,14 +208,15 @@ test('a display narrower than the strip still lands it on-screen', () => {
  * window shows the strip as a black rectangle — the JOS-40 report, and shared/graphicsPrefs.ts is
  * the answer to it). It pins the size, which is the half that lives here.
  */
-test('a first-open overlay is a small window on any display — never a screen-filling one', () => {
+test('a first-open overlay leaves game space; Adventure reserves readable map and quest room', () => {
   for (const [name, wa] of Object.entries(WORK_AREAS)) {
     for (const kind of OVERLAY_KINDS) {
       const b = defaultOverlayBounds(kind, wa)
       assert.ok(b.width < wa.width, `${name}/${kind}: as wide as the whole work area`)
       assert.ok(b.height < wa.height, `${name}/${kind}: as tall as the whole work area`)
       const share = (b.width * b.height) / (wa.width * wa.height)
-      assert.ok(share < 0.25, `${name}/${kind}: covers ${(share * 100).toFixed(1)}% of the display`)
+      const budget = kind === 'adventure' ? 0.5 : 0.25
+      assert.ok(share < budget, `${name}/${kind}: covers ${(share * 100).toFixed(1)}% of the display`)
       assert.ok(b.x >= wa.x && b.y >= wa.y, `${name}/${kind}: starts off-screen`)
       assert.ok(
         b.x + b.width <= wa.x + wa.width && b.y + b.height <= wa.y + wa.height,
