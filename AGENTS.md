@@ -42,6 +42,11 @@ docs/agents-archive.md.
   SHA-256, then verify its mapped PE identity. A patch needs independently verified
   fields and synthetic regression fixtures before registration. Never bypass the
   version guard, guess offsets at runtime, or publish private diagnostic samples.
+- Quest persistence: retain compact, validated automatic quest evidence per character
+  and server even when the journal is closed. Keep it separate from manual corrections
+  and recovery records. Preserve event timestamps and repeat-attempt precedence;
+  replay must be idempotent. Never seed the engine fold with this saved history or
+  archive raw logs, inventory snapshots, or private diagnostic data in the repository.
 
 ## Public repository privacy and portability
 

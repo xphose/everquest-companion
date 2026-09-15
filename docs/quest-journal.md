@@ -30,6 +30,30 @@ character's `/who` row confirms the stated classes. Ambiguous slots stay unknown
 and profile correction** supplies an optional fallback; **Use detected profile**
 returns to automatic detection. Filters change what you browse, not your character.
 
+## Saved progress
+
+The companion automatically saves observed task activity and verified quest
+completions on this computer, separately for each character and server. Saving
+continues while the journal panel is closed. The main journal and Adventure
+overlay read the same saved history.
+
+Saved quest history survives companion restarts, character switches, and a
+replaced or truncated log. It remains available while the log engine loads or
+is unavailable. Tracking, manual corrections, checked guide steps, and reviewed
+recovery data remain saved alongside it. Search, filters, and the selected quest
+are also remembered for each character.
+
+An observed completion stays evidence from the game; it is not turned into a
+manual correction. A later assignment starts a new attempt, so a previous
+completion cannot finish that attempt for you. Earlier completion evidence is
+still retained. Replaying the same log does not add duplicate completions or
+overwrite newer quest activity.
+
+Collected-item counts continue to follow available inventory evidence. Owning
+an item does not permanently complete a quest or prove that it was accepted.
+History can preserve only evidence the companion has read; **Recover character**
+remains available for earlier quests that were never observed.
+
 ## Recover existing quests
 
 Select your character, then choose **Recover character**. Matching character exports
@@ -72,7 +96,8 @@ manual corrections remain.
   evidence, or an explicit correction.
 - **Completed** requires a recorded task completion, a supported earned Sky quest
   achievement, existing Sky completion history, reviewed recovered quest history,
-  or an explicit correction.
+  an explicit correction, or a verified unique final hand-in corroborated by its
+  experience reward. Saved automatic evidence remains available after log loss.
 - **Ready to turn in** means the available item evidence satisfies a structured
   guide's distinguishable requirements. Check the guide's faction and other conditions.
 - **Progress unknown** means there is insufficient evidence. It does not mean you
