@@ -18,7 +18,7 @@ export interface WikiRefreshCheckpoint {
 }
 export function validWikiTitle(value: unknown): value is string {
   if (typeof value !== 'string' || value.length === 0 || value.length > 512) return false
-  if (['__proto__', 'constructor', 'prototype'].includes(value.toLowerCase())) return false
+  if (!titleKey(value) || ['__proto__', 'constructor', 'prototype'].includes(titleKey(value).toLowerCase())) return false
   for (let i = 0; i < value.length; i++) if (value.charCodeAt(i) < 32) return false
   return !/[|[\]{}<>#]/.test(value)
 }

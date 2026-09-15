@@ -17,7 +17,8 @@ export interface WikiParsedPage {
 }
 /** MediaWiki's first-letter case rule; the remainder of a page title is case-sensitive. */
 export const titleKey = (title: string): string => {
-  const normalized = title.replace(/_/g, ' ').trim()
+  // A leading colon escapes namespace/transclusion syntax; it is not part of a page's name.
+  const normalized = title.replace(/_/g, ' ').trim().replace(/^:/, '').trim()
   return normalized.charAt(0).toUpperCase() + normalized.slice(1)
 }
 export interface WikiKnownPages { items: Set<string>; mobs: Set<string>; quests: Set<string> }

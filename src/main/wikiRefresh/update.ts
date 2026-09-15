@@ -5,7 +5,8 @@ import { createWikiQuery, type WikiNetworkOptions, type WikiQuery } from './fetc
 import { applyWikiPages, knownWikiPages, parseWikiPage, titleKey } from './parse'
 import type { WikiKnownPages, WikiParsedPage } from './parse'
 import { readWikiCheckpoint, validWikiTitle, type WikiRefreshCheckpoint } from './updateCheckpoint'
-import { appendTitles, indexWikiBatch, resultRows, startWikiCheckpoint } from './updateIndex'
+import { appendTitles, indexWikiBatch, startWikiCheckpoint } from './updateIndex'
+import { advanceWikiBatch, inheritNormalizedContext, matchWikiBatch } from './updateBatch'
 export type { WikiRefreshCheckpoint } from './updateCheckpoint'
 
 export interface WikiRefreshProgress {
@@ -35,24 +36,21 @@ async function downloadBatch(query: WikiQuery, checkpoint: WikiRefreshCheckpoint
   const requested = checkpoint.titles.slice(checkpoint.nextIndex, checkpoint.nextIndex + 50)
   const data = await query({ prop: 'revisions', rvprop: 'content', rvslots: 'main', titles: requested.join('|') })
   if (data.continue !== undefined) throw new Error('Wiki returned incomplete page content')
-  const parsed = resultRows(data, 'pages').map((page) => pageContent(page, known))
+  const batch = matchWikiBatch(data, requested)
+  inheritNormalizedContext(requested, batch, known)
+  const parsed = batch.rows.map((page) => pageContent(page, known))
   // A target may precede its redirect in the same API batch.
-  const rawByTitle = new Map(resultRows(data, 'pages').map((page) => [titleKey(String(page.title)), page]))
+  const rawByTitle = new Map(batch.rows.map((page) => [titleKey(String(page.title)), page]))
   for (let i = 0; i < parsed.length; i++) {
     const page = parsed[i]
     const raw = rawByTitle.get(titleKey(page.title))
     if (raw && known.quests.has(titleKey(page.title)) && !page.questText) parsed[i] = pageContent(raw, known)
   }
-  const byTitle = new Map(parsed.map((page) => [titleKey(page.title), page]))
-  for (const title of requested) {
-    if (!byTitle.has(titleKey(title))) throw new Error('Wiki omitted one or more requested pages')
-  }
-  if (parsed.length !== requested.length) throw new Error('Wiki returned an unexpected page batch')
   // No checkpoint mutation until every response and parse in the batch succeeded.
   const redirects = parsed.flatMap((page) => page.redirect ? [page.redirect] : [])
+  advanceWikiBatch(checkpoint, requested.length, batch)
   appendTitles(checkpoint, redirects)
   for (const page of parsed) checkpoint.pages[titleKey(page.title)] = page
-  checkpoint.nextIndex += requested.length
 }
 
 function dataDigest(pack: WikiCatalogPack): string {
