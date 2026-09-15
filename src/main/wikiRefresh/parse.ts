@@ -70,7 +70,11 @@ function assertKnownPage(page: WikiParsedPage, known: WikiKnownPages): void {
 
 function questEntry(page: string, text: string, isItem: (title: string) => boolean): QuestEntry | undefined {
   const parsed = parseQuestPage(page, text, isItem)
-  if (isEmptyParse(parsed) || (parsed.disambiguation && !parsed.hasTopTable)) return undefined
+  if (isEmptyParse(parsed)) return undefined
+  // Some grouped guides carry the disambiguation tag AND real hand-ins. A heading table
+  // is optional there; XP plus item references separates them from bare navigation hubs.
+  const groupedGuide = parsed.expReward && (parsed.requiredItems.length > 0 || parsed.rewards.length > 0)
+  if (parsed.disambiguation && !parsed.hasTopTable && !groupedGuide) return undefined
   if (!parsed.hasTopTable && parsed.requiredItems.length > 40) return undefined
   return {
     name: page, page, startZone: parsed.startZone, giver: parsed.giver,
