@@ -8,7 +8,9 @@ import type { TurnInEvent } from '../../shared/types'
 import { achievementCompletion, finalTrade, matchObserved, nameKey, observedTaskId, readyForTurnIn, rewardedFinalTrades, stepProgress } from './progress'
 import { allowsClass, compareRewards, recommend, type JournalWornItem } from './recommend'
 import { normalizedClass, sanitizeManual, sanitizeQuery } from './validate'
-import { recoveredLabel, recoveredState, usesRecovery } from './recovery/state'
+import { recoveredLabel, recoveredState, taskState, usesRecovery } from './recovery/state'
+import { historyTasks, lastTaskObservation, mergeTaskHistory, sanitizeHistory } from './history'
+import { savedHistoryEvidence } from './historyEvidence'
 
 export interface JournalModelInput {
   catalog: readonly QuestJournalCatalogEntry[]
@@ -22,10 +24,17 @@ export interface JournalModelInput {
   completedSky: Set<string>
 }
 
-interface JournalModel extends JournalModelInput { rewardedTrades: ReadonlyMap<string, TurnInEvent> }
+interface JournalModel extends JournalModelInput { rewardedTrades: ReadonlyMap<string, Pick<TurnInEvent, 'ts'>> }
 
 function withCompletionEvidence(input: JournalModelInput): JournalModel {
-  return { ...input, rewardedTrades: rewardedFinalTrades(input.catalog, input.turnins) }
+  const history = sanitizeHistory(input.progress.history)
+  mergeTaskHistory(history, input.observed)
+  const rewardedTrades = new Map<string, Pick<TurnInEvent, 'ts'>>(Object.entries(history.rewardedHandIns)
+    .map(([id, handIn]) => [id, { ts: handIn.completedAt }]))
+  for (const [id, trade] of rewardedFinalTrades(input.catalog, input.turnins)) {
+    if (trade.ts >= (rewardedTrades.get(id)?.ts ?? -Infinity)) rewardedTrades.set(id, trade)
+  }
+  return { ...input, observed: input.progress.history ? historyTasks(history) : input.observed, rewardedTrades }
 }
 
 function manualFor(input: JournalModel, id: string): QuestJournalManual {
@@ -54,11 +63,11 @@ function catalogRow(input: JournalModel, entry: QuestJournalCatalogEntry): Quest
 }
 
 /** A previous run's hand-in remains history; it cannot check off the current run's steps. */
-function currentHandIn(input: JournalModel, entry: QuestJournalCatalogEntry): TurnInEvent | undefined {
+function currentHandIn(input: JournalModel, entry: QuestJournalCatalogEntry): Pick<TurnInEvent, 'ts'> | undefined {
   if (manualFor(input, entry.id).status === 'active') return undefined
-  const assignedAt = matchObserved(entry, input.observed)?.assignedAt
-  const trade = finalTrade(entry, input.turnins)
-  if (trade && assignedAt !== undefined && trade.ts < assignedAt) return undefined
+  const task = matchObserved(entry, input.observed)
+  const trade = finalTrade(entry, input.turnins) ?? currentRewardedTrade(input, entry)
+  if (trade && taskSupersedesHandIn(task, trade.ts)) return undefined
   const recovered = input.progress.recovery?.[entry.id]
   if (trade && recovered?.state === 'active' && trade.ts < recovered.recoveredAt) return undefined
   return trade
@@ -77,20 +86,22 @@ function isCompleted(input: JournalModel, entry: QuestJournalCatalogEntry): bool
 }
 
 /** Newer task activity or a recovered active baseline starts a different run. */
-function currentRewardedTrade(input: JournalModel, entry: QuestJournalCatalogEntry): TurnInEvent | undefined {
+function currentRewardedTrade(input: JournalModel, entry: QuestJournalCatalogEntry): Pick<TurnInEvent, 'ts'> | undefined {
   if (manualFor(input, entry.id).status !== undefined) return undefined
   const trade = input.rewardedTrades.get(entry.id)
   if (!trade) return undefined
   const task = matchObserved(entry, input.observed)
-  if (lastTaskObservation(task) > trade.ts) return undefined
+  if (taskSupersedesHandIn(task, trade.ts)) return undefined
   const recovery = input.progress.recovery?.[entry.id]
   return recovery?.state === 'active' && recovery.recoveredAt > trade.ts ? undefined : trade
 }
 
-function lastTaskObservation(task: QuestJournalObservedTask | undefined): number {
-  if (!task) return 0
-  return task.lastObservedAt ?? Math.max(...[task.assignedAt, task.updatedAt, task.completedAt,
-    task.removedAt, task.failedAt].map(value => value ?? 0))
+/** The task fold preserves log order within a second. Without cross-module order,
+ * an explicit unfinished cycle at the same instant must not inherit an older reward. */
+function taskSupersedesHandIn(task: QuestJournalObservedTask | undefined, at: number): boolean {
+  if (!task) return false
+  const latest = lastTaskObservation(task)
+  return latest > at || (latest === at && taskState(task) !== 'completed')
 }
 
 function completionLabel(input: JournalModel, entry: QuestJournalCatalogEntry): string {
@@ -222,7 +233,8 @@ function evidenceFor(input: JournalModel, entry: QuestJournalCatalogEntry | unde
   if (entry && achievementCompletion(entry, input.claims)) evidence.push('The character’s achievements export records an earned quest reward; bypass class grants are excluded.')
   if (entry) evidence.push(...handInEvidence(input, entry))
   if (input.completedSky.has(id)) evidence.push('Completion was recorded in this character’s Plane of Sky journal.')
-  evidence.push('Task history includes only events present in this log. Absence of a completion line is not proof a quest is unfinished.')
+  evidence.push(...savedHistoryEvidence(input.progress.history, entry?.name, id))
+  evidence.push('Automatic history keeps task events and verified hand-ins observed by this app. Events never observed may be missing; absence of a completion line does not prove a quest is unfinished.')
   evidence.push('Collected items and owned rewards never mark a quest accepted or completed.')
   return evidence
 }

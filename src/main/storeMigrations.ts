@@ -85,7 +85,7 @@ export const SCHEMA_VERSION_KEY = 'schemaVersion'
  * The schema the code running right now expects. Bump by exactly one whenever a persisted
  * shape changes, and add the matching MIGRATIONS entry in the same commit.
  */
-export const CURRENT_SCHEMA_VERSION = 14
+export const CURRENT_SCHEMA_VERSION = 15
 
 export interface Migration {
   /** Version this step produces. Steps run in ascending `to` order, contiguously. */
@@ -644,6 +644,21 @@ const migrateToV14: Migration = {
   }
 }
 
+// 14 → 15: compact automatic quest evidence; existing manual and recovered records stay intact.
+const migrateToV15: Migration = {
+  to: 15,
+  describe: 'add separate automatic quest history alongside existing character journal progress',
+  migrate(data) {
+    if (!isPlainObject(data.byCharacter)) return data
+    for (const progress of Object.values(data.byCharacter)) {
+      if (!isPlainObject(progress) || !isPlainObject(progress.questJournal)) continue
+      const journal = progress.questJournal
+      if (journal.history === undefined) journal.history = { version: 1, tasks: {}, rewardedHandIns: {} }
+    }
+    return data
+  }
+}
+
 /**
  * The chain, ascending. APPEND ONLY — never renumber, never edit a shipped step (a store
  * out there was migrated by the old text and will never run it again), never delete one:
@@ -662,7 +677,8 @@ export const MIGRATIONS: readonly Migration[] = [
   migrateToV11,
   migrateToV12,
   migrateToV13,
-  migrateToV14
+  migrateToV14,
+  migrateToV15
 ]
 
 /** Version recorded in `data`; anything absent, non-integer or < 1 means "pre-framework" ⇒ 1. */

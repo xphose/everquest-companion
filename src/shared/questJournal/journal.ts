@@ -40,6 +40,7 @@ export interface QuestJournalContext {
   achievements: QuestJournalFileState
   refreshedAt: number
   tasksTruncated: boolean
+  historySaving?: 'automatic' | 'error'
 }
 
 export interface QuestJournalRecommendation {
@@ -124,12 +125,22 @@ export interface QuestJournalProfile {
   classes: string[]
 }
 
-/** User statements only. Observation and inventory never write completion flags. */
+export interface QuestJournalHistory {
+  version: 1
+  /** Latest observed cycle; the previous completion remains history during a repeat run. */
+  tasks: Record<string, { latest: QuestJournalObservedTask; completedAt?: number }>
+  /** Exact, uniquely identified final trades corroborated by an experience reward. */
+  rewardedHandIns: Record<string, { completedAt: number; experienceAt: number }>
+  capacityReached?: boolean
+}
+
+/** Manual statements, recovery and automatic evidence retain separate provenance. */
 export interface QuestJournalProgress {
   version: 1
   quests: Record<string, QuestJournalManual>
   profile?: QuestJournalProfile
   recovery?: Record<string, RecoveryRecord>
+  history?: QuestJournalHistory
 }
 
 export type QuestJournalMutation = { characterId: string } & (

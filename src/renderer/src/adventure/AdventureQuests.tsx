@@ -20,7 +20,9 @@ function QuestRows({ journal }: { journal: AdventureJournal }): JSX.Element {
 }
 
 function JournalNotice({ journal }: { journal: AdventureJournal }): JSX.Element | null {
-  return journal.error ? <Alert severity="warning" action={<Button size="small" onClick={journal.refresh}>Retry</Button>}>{journal.error}</Alert> : null
+  const context = journal.result?.context
+  const message = journal.error ?? (context?.historySaving === 'error' ? context.message : undefined)
+  return message ? <Alert severity="warning" action={<Button size="small" onClick={journal.refresh}>Retry</Button>}>{message}</Alert> : null
 }
 
 export function AdventureQuests({ journal, onMap }: { journal: AdventureJournal; onMap: (target: MapFocus) => void }): JSX.Element {

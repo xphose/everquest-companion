@@ -58,6 +58,7 @@ import { logInfo } from '../errorLog'
 import { setWorldRebuiltObserver } from '../worldRebuilt'
 import { getActiveCharacter } from '../session'
 import { journalSnapshots } from '../questJournal/snapshotCache'
+import { publishJournalObservations } from '../questJournal/historyEvents'
 import { createEngineClient, EngineError, type EngineClient } from '../../shared/dataServer/client'
 import { createNdjsonTransport, type ByteChannel } from '../../shared/dataServer/ndjson'
 import type {
@@ -394,6 +395,7 @@ async function openConnection(mine: number, info: ReadyEngine, client: EngineCli
     // cache with a timer, which is the thing ruling 5 forbids.
     noteMirrorChanged(changed.module, changed.seq)
     journalSnapshots.changed(changed.module, changed.seq)
+    publishJournalObservations(changed.module)
   })
   // THE WIKI MISSES (JOS-499 item 1, boundary verdict 5) — the engine saying it could not answer a
   // name, answered by the app's own lookup and pushed back as `knowledge.define`.
@@ -706,6 +708,7 @@ function sawHealth(l: LiveEngine, health: FoldHealth): void {
   engineLogMtime = health.logMtimeMs ?? null
   if (first) {
     pushWorldChanged()
+    publishJournalObservations()
     // THE MIRRORS ARE PRIMED ON THE SAME EDGE, and it has to be this one rather than the first
     // read: the engine publishes a cursor when a module MOVES, and a module that has finished
     // folding and gone quiet will not move again for minutes. A mirror waiting for a cursor that
