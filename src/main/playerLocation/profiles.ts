@@ -17,8 +17,25 @@ export const LEGENDS_20260908_PROFILE: LocationProfile = Object.freeze({
   level: 0x32c
 })
 
+// Reverified instructions and repeated live reads: native-client-2026-09-14.md.
+export const LEGENDS_20260914_PROFILE: LocationProfile = Object.freeze({
+  ...LEGENDS_20260908_PROFILE,
+  sha256: '8016b33fdf7546139f749db5f6790f777589f7b1ac35e504afd6c92d4f82f62a',
+  fileSize: 15_535_224,
+  timestamp: 0x6aa86299,
+  imageSize: 0x16c8000,
+  playerRva: 0xf0e360n,
+  worldRva: 0xf0de50n,
+  characterRva: 0xf0e4b0n,
+  spellManagerRva: 0xf94118n,
+  zoneId: 0x204,
+  level: 0x214
+})
+
 /** Exact verified builds only. A new patch must be independently checked before joining this list. */
-export const LOCATION_PROFILES: readonly LocationProfile[] = Object.freeze([LEGENDS_PROFILE, LEGENDS_20260908_PROFILE])
+export const LOCATION_PROFILES: readonly LocationProfile[] = Object.freeze([
+  LEGENDS_PROFILE, LEGENDS_20260908_PROFILE, LEGENDS_20260914_PROFILE
+])
 
 export function knownProfileSize(size: bigint): boolean {
   return LOCATION_PROFILES.some(profile => BigInt(profile.fileSize) === size)
