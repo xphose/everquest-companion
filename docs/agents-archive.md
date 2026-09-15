@@ -11,6 +11,30 @@ per-ticket history beyond even this.
 Do not edit these blocks; they are a record. New long-form history goes into
 a new entry here (with a pointer from AGENTS.md), or into the Linear ticket.
 
+## Feature catalog before quest persistence integration (2026-09-15)
+
+<!-- Moved verbatim from AGENTS.md, What this is. This is a dated catalog,
+not a change to the operating rules or current source contracts. -->
+
+Electron (electron-vite) + TS + React + MUI desktop app that tails the
+**EverQuest Legends** log in real time. Surfaces: an Overview landing tab
+(default view), Plane of Sky quest tracking, loot, inventory reconcile,
+leveling/AA analytics, a Maps tab, class-combo inference with user
+corrections, proc analytics, raid targets, buffs simulation, alerts with
+sounds + rank-upgrade intelligence, a Details-style DPS meter with
+drill-down/timeline, floating overlay meters, an EXALTATIONS tab (the
+Exaltation/BiS planner — labelled Exaltations since JOS-42; the `planner`
+view id, route, store keys and `planner-*` testids are unchanged —
+docs/plans/exaltation-planner.md), celebration toasts
+(docs/plans/celebration-toasts.md), and a TIMERS tab + overlay (JOS-194 —
+law 13 below). Committed knowledge DBs: mobs (7.9k), items (11.2k incl.
+dropsfrom + eraTag), spells (2.0k), classes, zones (era-annotated), wiki
+respawn floors (507 rows, 394 readable). First stable release v0.2.0
+(2026-08-03); per-release history lives in `shared/releaseNotes.ts` and the
+archive. Layout: `src/main` (Node), `src/preload`, `src/renderer`,
+`src/shared`, `tests/`, `scripts/`. Per-surface detail:
+docs/agents-archive.md.
+
 ## Preamble at the cut
 
 <!-- Moved verbatim from AGENTS.md (lines 3-4 at the JOS-252 cut). -->

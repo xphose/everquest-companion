@@ -10,24 +10,13 @@ never mechanical truncation, archive before cutting.
 
 ## What this is
 
-Electron (electron-vite) + TS + React + MUI desktop app that tails the
-**EverQuest Legends** log in real time. Surfaces: an Overview landing tab
-(default view), Plane of Sky quest tracking, loot, inventory reconcile,
-leveling/AA analytics, a Maps tab, class-combo inference with user
-corrections, proc analytics, raid targets, buffs simulation, alerts with
-sounds + rank-upgrade intelligence, a Details-style DPS meter with
-drill-down/timeline, floating overlay meters, an EXALTATIONS tab (the
-Exaltation/BiS planner — labelled Exaltations since JOS-42; the `planner`
-view id, route, store keys and `planner-*` testids are unchanged —
-docs/plans/exaltation-planner.md), celebration toasts
-(docs/plans/celebration-toasts.md), and a TIMERS tab + overlay (JOS-194 —
-law 13 below). Committed knowledge DBs: mobs (7.9k), items (11.2k incl.
-dropsfrom + eraTag), spells (2.0k), classes, zones (era-annotated), wiki
-respawn floors (507 rows, 394 readable). First stable release v0.2.0
-(2026-08-03); per-release history lives in `shared/releaseNotes.ts` and the
-archive. Layout: `src/main` (Node), `src/preload`, `src/renderer`,
-`src/shared`, `tests/`, `scripts/`. Per-surface detail:
-docs/agents-archive.md.
+Electron (electron-vite), TypeScript, React and MUI companion for
+**EverQuest Legends**, with game observations, reference data and floating overlays.
+Layout: `src/main`, `src/preload`, `src/renderer`, `src/shared`, `tests/`, `scripts/`.
+The dated feature catalog and release history are preserved in
+[docs/agents-archive.md](docs/agents-archive.md#feature-catalog-before-quest-persistence-integration-2026-09-15).
+The Exaltations view retains its `planner` id, routes, store keys and test ids
+(JOS-42; `docs/plans/exaltation-planner.md`).
 
 - Repository root: resolve the current checkout with Git or the script's location.
 - Game installation and logs: auto-discover or use Settings / `EQ_INSTALL_DIR`;
@@ -164,7 +153,8 @@ messages, and Git author/committer metadata.
     suspected, not proven. Watch; use a completed-plan predicate if it recurs.
   - Hidden-window E2E diagnostic screenshots · 3-second capture timeout in the
     parallel `macros`/`macro-preparation` run, the isolated `macros` rerun, and
-    the initial `quest-journal-persistence` run (2026-09-15);
+    the initial `quest-journal-persistence` run, and `quest-journal`'s
+    `journal-narrow` artifact (2026-09-15);
     nonfatal artifact capture failures, independent of assertions. Follow-up
     chip: investigate hidden-window capture timing and give artifact capture a
     bounded completion check; do not change product assertions to hide it.
