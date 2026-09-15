@@ -19,10 +19,14 @@ this choice survives tab changes and restarts.
 
 ## Compatibility and implementation
 
-This version supports the September 2, 2026 x64 client with SHA-256
-`f1c6ab2f07a5d08e62bb936061fd01049fa7b64ce8ddac50c57009162088a9f9`.
-An unknown executable needs a newly verified compatibility profile. Old offsets
-are never applied to a different version.
+The reader supports verified September 2, September 8, and September 14, 2026
+x64 clients. Each build requires its exact file size, SHA-256, and mapped PE
+identity. See the [September 8 profile](research/native-client-2026-09-08.md) and
+[September 14 profile](research/native-client-2026-09-14.md) for identities and
+verification. An unknown executable needs a newly verified compatibility profile.
+Old offsets are never applied to a different version. This shared reader also
+supplies current classes, level, spells, spell slots, and buffs to the app; an
+unsupported game patch can therefore leave Macros information unknown.
 
 The reader uses Windows query and read permissions only. It reads the local player
 and that player's zone entry, without enumerating other players or NPCs. A worker
