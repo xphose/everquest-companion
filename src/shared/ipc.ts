@@ -1,6 +1,9 @@
 // Central registry of IPC channel names so main/preload/renderer stay in sync.
 
 export const IPC = {
+  wikiCatalogStatus: 'wikiCatalog:status',
+  wikiCatalogRefresh: 'wikiCatalog:refresh',
+  wikiCatalogData: 'wikiCatalog:data',
   adventureShortcutGet: 'adventure:shortcutGet',
   adventureShortcutSet: 'adventure:shortcutSet',
   // ---- module transport (the one pattern for loot/turnins/kills/leveling/character) ----

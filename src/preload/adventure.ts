@@ -17,9 +17,10 @@ function on<T>(channel: string, cb: (value: T) => void): () => void {
 type ReadApi = Pick<EqApi, 'getCharacter' | 'getModuleSnapshot' | 'onCharacter' | 'onModuleChanged'
   | 'onInventoryReload' | 'onProgress' | 'onAppBack' | 'listMapPacks' | 'listMapZones'
   | 'getMapData' | 'searchMapPoints' | 'getPlayerLocation' | 'questJournalQuery'
-  | 'questJournalDetail' | 'questJournalMutate' | 'reportError'>
+  | 'questJournalDetail' | 'questJournalMutate' | 'reportError' | 'getWikiCatalogRendererData'>
 
 const api: ReadApi = {
+  getWikiCatalogRendererData: () => ipcRenderer.invoke(IPC.wikiCatalogData),
   getCharacter: () => ipcRenderer.invoke(IPC.getCharacter),
   getModuleSnapshot: (id) => ipcRenderer.invoke(IPC.getModuleSnapshot, id),
   onCharacter: (cb) => on(IPC.onCharacter, cb),

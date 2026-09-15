@@ -106,6 +106,7 @@ function stubReader(over: Partial<Record<keyof PrefsReader, unknown>> = {}): {
     getResistPrefs: answer('getResistPrefs', { includeNpcCasters: false }),
     getAppVersion: answer('getAppVersion', '9.9.9'),
     getUpdateStatus: answer('getUpdateStatus', { state: 'ready' }),
+    getWikiCatalogStatus: answer('getWikiCatalogStatus', { state: 'ready', activeUpdatedAt: '2026-08-22T12:00:00Z', pendingUpdatedAt: '2026-09-15T12:00:00Z', lastCheckedAt: null, nextCheckAt: null, autoCheckDays: 1 }),
     listAlerts: answer('listAlerts', [{ id: 'a' }, { id: 'b' }, { id: 'c' }])
   } as unknown as PrefsReader
   return { reader, calls: () => calls }
@@ -117,11 +118,11 @@ test('one read answers every card in the pane, and it snaps the text size to the
   const { reader, calls } = stubReader()
   const snap = await readPrefsSnapshot(reader)
 
-  // TWENTY-SIX reads, one batch (JOS-405 added the overlays' text size and its twelve per-kind
+  // TWENTY-SEVEN reads, one batch (JOS-405 added the overlays' text size and its twelve per-kind
   // values; JOS-407 the same pair for transparency). The number is not the claim; the claim is
   // that the gate asks each question exactly once, so a pane that mounts does not stampede the
   // store.
-  assert.equal(calls(), 26, 'every read fires exactly once')
+  assert.equal(calls(), 27, 'every read fires exactly once')
 
   // The overlays' size (JOS-405), which is TWO facts read together for the toast pair's reason:
   // the shared stepper and the twelve rows are one control group, and a frame where the size was
@@ -158,6 +159,7 @@ test('one read answers every card in the pane, and it snaps the text size to the
   assert.equal(snap.cursorRing.sizePx, 60)
   assert.equal(snap.alertCount, 3, 'a count, not the list - the Profiles caption is the only reader')
   assert.equal(snap.version, '9.9.9')
+  assert.equal(snap.wikiCatalog.pendingUpdatedAt, '2026-09-15T12:00:00Z', 'restart advice arrives before the card paints')
 
   // The toast's two facts come from two different reads and are one control pair.
   assert.deepEqual(snap.toast, { open: true, locked: false })
@@ -200,7 +202,7 @@ test('two mounts in one frame share ONE batch', async () => {
   resetPrefsSnapshotForTests()
   const { reader, calls } = stubReader()
   const [a, b] = await Promise.all([loadPrefsSnapshot(reader), loadPrefsSnapshot(reader)])
-  assert.equal(calls(), 26, 'not fifty-two')
+  assert.equal(calls(), 27, 'not fifty-four')
   assert.equal(a, b)
   resetPrefsSnapshotForTests()
 })

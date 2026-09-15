@@ -52,6 +52,7 @@ import { registerConCardIpc } from '../conCard'
 import { registerTrayIpc } from '../tray'
 import { registerWindowIpc } from './windowControls'
 import { registerWorldIpc } from './world'
+import { registerWikiCatalogIpc } from './wikiCatalog'
 // The data server's renderer brokerage (JOS-484). It lives beside the supervisor that owns the
 // launch it hands out (src/main/dataServer/), like the toast and con-card producer channels above,
 // rather than in a file here — everything it does is socket + port lifecycle.
@@ -75,6 +76,7 @@ import { registerEngineLaunchIpc } from './engine'
 // deleting the flag beside it leaves the gate strictly more honest rather than weaker.
 
 export function registerIpc(): void {
+  registerWikiCatalogIpc()
   registerCharacterIpc()
   // UNGATED SINCE JOS-327. This line read `if (UNRELEASED) …` from JOS-45 until the owner released
   // the Character tab as the gear area's last face; the channel is an ordinary one now. The flag

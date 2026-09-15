@@ -96,6 +96,7 @@ import { ClassComboSetting } from '../profiles/ClassComboPanel'
 import { UpdateSetting, VersionSetting, useUpdateStatus } from './UpdateSetting'
 import type { UpdateStatus } from '@shared/types'
 import { EqFolderSetting } from './EqFolderSetting'
+import { wikiCatalogItem } from './WikiCatalogSetting'
 // Combat: whose damage the meters show (JOS-115) + where the pet's sits. Its own file with its own
 // descriptor, same ceiling and same answer as PerfSetting and GraphicsSetting.
 import { combatSection } from './CombatSection'
@@ -384,7 +385,8 @@ function buildSections({ version, status, onSendFeedback, onWhatsNew }: SectionI
           label: 'App updates',
           keywords: 'update upgrade check relaunch restart install download automatic release',
           content: <UpdateSetting status={status} version={version} />
-        }
+        },
+        wikiCatalogItem()
       ]
     },
     // Directly under Updates, which is where a person who just read the version number is

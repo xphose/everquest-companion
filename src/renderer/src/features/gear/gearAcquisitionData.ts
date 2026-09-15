@@ -6,11 +6,10 @@ import {
   type GearAcquisitionIndex
 } from '../../../../shared/gearAcquisition'
 import { sourceIndex } from '../../lib/itemSources'
-import questsJson from '../../data/eqlegends/quests.json'
-import mobsJson from '../../data/eqlegends/mobs.json'
+import { referenceData } from '../../lib/referenceData'
 
-const quests = questsJson as unknown as QuestData
-const mobs = mobsJson as unknown as MobData
+const quests: QuestData = referenceData().quests
+const mobs: MobData = referenceData().mobs
 const CACHE = new WeakMap<readonly GearRow[], GearAcquisitionIndex>()
 let questRewards: GearAcquisitionIndex | undefined
 

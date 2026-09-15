@@ -67,6 +67,7 @@
     "src/preload/engine.ts",
     "src/preload/questJournal.ts",
     "src/preload/macros.ts",
-    "src/preload/activeBuffs.ts"
+    "src/preload/activeBuffs.ts",
+    "src/preload/wikiCatalog.ts"
   ]
 }

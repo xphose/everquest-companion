@@ -6,6 +6,7 @@ import { JournalContext } from './JournalContext'
 import { JournalFilters } from './JournalFilters'
 import { JournalList } from './JournalList'
 import { JournalDetail } from './JournalDetail'
+import { WikiCatalogNote } from '../../lib/WikiCatalogNote'
 import type { JournalNavigation } from './navigation'
 
 function JournalSession({ context, navigation }: { context: QuestJournalContext; navigation: JournalNavigation }): JSX.Element {
@@ -19,6 +20,7 @@ function JournalSession({ context, navigation }: { context: QuestJournalContext;
   return <Stack spacing={1.5} data-testid="quest-journal" data-character-id={context.characterId ?? 'catalog'} sx={{ minWidth: 0, p: 0.5 }}>
     <JournalContext context={journal.result?.context ?? context} refresh={journal.refresh} mutate={journal.mutate} />
     {journal.error && <Alert severity="error" action={<Button size="small" onClick={journal.refresh}>Retry</Button>}>{journal.error}</Alert>}
+    <WikiCatalogNote />
     <JournalFilters prefs={journal.prefs} result={journal.result} update={journal.update} />
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: '300px minmax(0, 1fr)' }, gap: 1.5, alignItems: 'start', minWidth: 0 }}>
       <JournalList result={journal.result} selectedId={journal.prefs.selectedId}
