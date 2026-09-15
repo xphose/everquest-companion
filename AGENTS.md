@@ -152,6 +152,16 @@ messages, and Git author/committer metadata.
   row (spec · signature · occurrences · disposition), integrators append on
   sighting, and a flake at 3+ occurrences must have a fix ticket or chip —
   "green on re-run" is a report line, never a resolution. Known rows:
+  - `macros.e2e.mts:93` background rank update · installed commands omit
+    `/cast Test Flare II` in a four-spec run · 1 sighting (2026-09-15),
+    isolated rerun green. The prerequisite counts read requests before their
+    replies and queued-plan updates complete; a fixture transition race is
+    suspected, not proven. Watch; use a completed-plan predicate if it recurs.
+  - Macros E2E diagnostic screenshots · 3-second capture timeout in the parallel
+    `macros`/`macro-preparation` run and the isolated `macros` rerun (2026-09-15);
+    nonfatal artifact capture failures, independent of assertions. Follow-up
+    chip: investigate hidden-window capture timing and give artifact capture a
+    bounded completion check; do not change product assertions to hide it.
   - `deploymentConfig.test.mts` Node runner transport · "Unable to deserialize
     cloned data due to invalid or unsupported version" in `internal/test_runner/runner`
     · 1 sighting (2026-09-14, Adventure overlay verification), no product assertion

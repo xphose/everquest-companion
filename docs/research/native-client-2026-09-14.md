@@ -73,6 +73,8 @@ The installed client spell table resolved all observed owned spells, and the
 Macros context supplied known, available, filled, and empty counts with generated
 suggestions. Observations retained the same player identity with advancing sample
 timestamps. These checks read game files and memory without changing settings.
+The bundled native worker then passed two fresh observations through the normal
+profile registry and completed cooperative shutdown with exit code zero.
 
 Synthetic regression fixtures cover this build and both predecessors, including
 misleading old level and zone values, changing levels and gems, exact fingerprint
