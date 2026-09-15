@@ -1,5 +1,5 @@
-import type { JSX } from 'react'
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, Divider, Paper, Stack, Typography } from '@mui/material'
+import { useId, useState, type JSX } from 'react'
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, Divider, Paper, Stack, Tab, Tabs, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import type { QuestJournalDetailResult } from '@shared/questJournal/journal'
 import { formatDateTime } from '../../lib/formatDate'
@@ -13,6 +13,7 @@ import type { JournalAction } from './useQuestJournal'
 import type { JournalNavigation } from './navigation'
 
 const FIT_LABELS = { suitable: 'Minimum level met', later: 'For a later level', 'other-class': 'Other class', unknown: 'Suitability not known' }
+const DETAIL_TABS = ['Next steps', 'Rewards', 'Walkthrough', 'History'] as const
 
 function TrackingDetails({ detail }: { detail: QuestJournalDetailResult }): JSX.Element {
   return <Accordion disableGutters elevation={0} slotProps={{ transition: { unmountOnExit: true } }}>
@@ -39,16 +40,42 @@ function EntryLocations({ detail, navigation }: { detail: QuestJournalDetailResu
   </Stack>
 }
 
+function NextSteps({ detail, navigation }: { detail: QuestJournalDetailResult; navigation: JournalNavigation }): JSX.Element {
+  return <Stack spacing={2}>
+    {detail.nextStep && <Alert severity="info" icon={false} data-testid="quest-journal-next-step"><Typography variant="subtitle2">Next action</Typography>{detail.nextStep}</Alert>}
+    <RecoveredProgress record={detail.recovered} />
+    {detail.row && <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
+      <Chip size="small" variant="outlined" label={FIT_LABELS[detail.row.recommendation.fit]} />
+      {detail.entry?.minLevel !== undefined && <Typography variant="caption" color="text.secondary">Source minimum: level {detail.entry.minLevel}</Typography>}
+    </Stack>}
+    <EntryLocations detail={detail} navigation={navigation} />
+    <JournalGuide detail={detail} navigation={navigation} />
+    {!detail.entry && <Typography variant="body2" color="text.secondary">This task was read from the game log. Check the in-game task instructions for its next steps.</Typography>}
+  </Stack>
+}
+
+function DetailTab({ tab, detail, navigation, mutate }: {
+  tab: number; detail: QuestJournalDetailResult; navigation: JournalNavigation; mutate: (action: JournalAction) => Promise<void>
+}): JSX.Element {
+  if (tab === 0) return <NextSteps detail={detail} navigation={navigation} />
+  if (tab === 1) return detail.entry ? <JournalRewards detail={detail} navigation={navigation} />
+    : <Typography variant="body2" color="text.secondary">Reward data for this task is not in the bundled catalog yet.</Typography>
+  if (tab === 2) return detail.entry ? <JournalReference entry={detail.entry} navigation={navigation} />
+    : <Typography variant="body2" color="text.secondary">A walkthrough for this task is not in the bundled catalog yet. Its recorded progress is in History.</Typography>
+  return <Stack spacing={2}><TrackingDetails detail={detail} /><ProgressCorrection detail={detail} mutate={mutate} /></Stack>
+}
+
 export function JournalDetail({ detail, selectedId, navigation, mutate }: {
   detail: QuestJournalDetailResult | null; selectedId: string | null; navigation: JournalNavigation; mutate: (action: JournalAction) => Promise<void>
 }): JSX.Element {
+  const [tab, setTab] = useState(0)
+  const tabId = useId()
   if (!detail) return <Paper variant="outlined" sx={{ p: 3 }}><Typography color="text.secondary">{selectedId ? 'Reading quest details…' : 'Choose a quest to see its next action, locations and rewards.'}</Typography></Paper>
   const row = detail.row
   if (!row) return <Alert severity="info">This quest is no longer available for the selected character. Choose another quest from the list.</Alert>
   return <Paper variant="outlined" data-testid="quest-journal-detail" data-quest-id={row.id}
-    sx={{ p: { xs: 1.5, lg: 2 }, minWidth: 0, maxHeight: 'calc(100vh - 220px)', minHeight: 420, overflow: 'auto' }}>
-    <Stack spacing={2}>
-      <Stack spacing={0.75}>
+    sx={{ minWidth: 0, height: 'max(320px, calc(100dvh - 220px))', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Stack spacing={0.75} data-testid="journal-detail-header" sx={{ p: { xs: 1.5, lg: 2 }, flexShrink: 0 }}>
         <Typography variant="caption" color="text.secondary">Selected quest · stays open while you browse filters and pages</Typography>
         <Typography variant="h5" data-testid="quest-journal-title" sx={{ overflowWrap: 'anywhere' }}>{row.name}</Typography>
         <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
@@ -59,21 +86,15 @@ export function JournalDetail({ detail, selectedId, navigation, mutate }: {
           </Button>
         </Stack>
       </Stack>
-      {detail.nextStep && <Alert severity="info" icon={false} data-testid="quest-journal-next-step"><Typography variant="subtitle2">Next action</Typography>{detail.nextStep}</Alert>}
-      <RecoveredProgress record={detail.recovered} />
-      <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
-        <Chip size="small" variant="outlined" label={FIT_LABELS[row.recommendation.fit]} />
-        {detail.entry?.minLevel !== undefined && <Typography variant="caption" color="text.secondary">Source minimum: level {detail.entry.minLevel}</Typography>}
-      </Stack>
+      <Tabs value={tab} onChange={(_, value: number) => setTab(value)} aria-label="Quest details" variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile
+        data-testid="journal-detail-tabs" sx={{ flexShrink: 0, minWidth: 0 }}>
+        {DETAIL_TABS.map((label, index) => <Tab key={label} label={label} id={`${tabId}-tab-${index}`} aria-controls={`${tabId}-panel-${index}`} />)}
+      </Tabs>
       <Divider />
-      <EntryLocations detail={detail} navigation={navigation} />
-      <JournalGuide detail={detail} navigation={navigation} />
-      <Divider />
-      {detail.entry && <JournalRewards detail={detail} navigation={navigation} />}
-      <TrackingDetails detail={detail} />
-      {detail.entry && <JournalReference entry={detail.entry} navigation={navigation} />}
-      {!detail.entry && <Typography variant="body2" color="text.secondary">This task was read from the game log. Its walkthrough and reward data are not in the bundled catalog yet.</Typography>}
-      <ProgressCorrection detail={detail} mutate={mutate} />
-    </Stack>
+      {DETAIL_TABS.map((label, index) => <Box key={label} role="tabpanel" hidden={tab !== index} id={`${tabId}-panel-${index}`}
+        aria-labelledby={`${tabId}-tab-${index}`} tabIndex={0} data-testid="journal-detail-panel"
+        sx={{ p: { xs: 1.5, lg: 2 }, flex: 1, minHeight: 0, minWidth: 0, overflowY: 'auto', overflowWrap: 'anywhere' }}>
+        {tab === index && <DetailTab tab={tab} detail={detail} navigation={navigation} mutate={mutate} />}
+      </Box>)}
   </Paper>
 }

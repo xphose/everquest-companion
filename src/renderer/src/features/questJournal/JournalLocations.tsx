@@ -31,7 +31,7 @@ function LocationRow({ location, navigation }: { location: QuestJournalLocation;
 export function JournalLocations({ locations, navigation, empty = 'Location not recorded in this source.' }: {
   locations: QuestJournalLocation[]; navigation: JournalNavigation; empty?: string
 }): JSX.Element {
-  return <Box sx={{ minWidth: 0, maxHeight: 320, overflow: 'auto' }}>
+  return <Box sx={{ minWidth: 0 }}>
     {locations.length ? locations.map((location, index) => <LocationRow key={`${location.page ?? location.name}:${index}`} location={location} navigation={navigation} />)
       : <Typography variant="body2" color="text.secondary">{empty}</Typography>}
   </Box>
