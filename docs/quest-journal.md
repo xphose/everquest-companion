@@ -10,6 +10,12 @@ sources, turn-in instructions, and rewards. Click a `/loc` button to open the
 native map at that point. The map's Back button returns to the journal with your
 search and selection preserved. Item and NPC links open the existing companion views.
 
+The selected quest has four tabs: **Next steps** for directions and objectives,
+**Rewards** for items and equipment comparisons, **Walkthrough** for the source
+guide, and **History** for saved evidence and progress corrections. The quest
+title, status, and tracking button stay above the tabs. Each tab has one scrolling
+area; locations and expanded source sections use that same area.
+
 ## Connect your character
 
 1. In EverQuest, type `/log on`. Select your character in the companion if needed.
