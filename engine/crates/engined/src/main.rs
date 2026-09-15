@@ -73,6 +73,11 @@ use crate::world::World;
 /// other one.
 const EXIT_REFUSED_TO_START: u8 = 1;
 
+fn open_listener() -> io::Result<TcpListener> {
+    fold::reference_catalog::initialize().map_err(io::Error::other)?;
+    TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+}
+
 fn main() -> ExitCode {
     // Step 1 of the contract. The lock is scoped so the stdin-EOF watch below can take it again;
     // both use the process-global stdin buffer, so nothing the supervisor wrote is lost between
@@ -91,10 +96,12 @@ fn main() -> ExitCode {
     // Step 2. Numeric 127.0.0.1, never the name `localhost` — a name is a resolver's opinion, and on
     // a misconfigured host it has been an IPv6 address, a second interface, or a slow lookup. Port 0
     // asks the kernel for an ephemeral port, so two engines coexist without a collision story.
-    let listener = match TcpListener::bind((Ipv4Addr::LOCALHOST, 0)) {
+    let listener = match open_listener() {
         Ok(listener) => listener,
         Err(e) => {
-            eprintln!("{DIAGNOSTIC_PREFIX} refusing to start: could not bind loopback: {e}");
+            eprintln!(
+                "{DIAGNOSTIC_PREFIX} refusing to start: could not prepare engine listener: {e}"
+            );
             return ExitCode::from(EXIT_REFUSED_TO_START);
         }
     };

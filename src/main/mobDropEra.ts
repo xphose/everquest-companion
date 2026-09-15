@@ -32,13 +32,12 @@
 // ELECTRON-FREE on purpose, the `mobLookupLocal.ts` precedent: `tests/mobDropEra.test.mts` drives
 // the real annotation over the real committed corpus under the node runner.
 
-import { itemKey, type ItemDbFile } from './itemsDb'
+import { itemKey } from './itemsDb'
 import type { MobDrop, MobKnowledge } from '../shared/types'
-// ES-imported so electron-vite INLINES it into the main bundle — a path-relative readFile would
-// miss in out/main/ (AGENTS.md toolchain note). Same module instance as itemLookup.ts's import.
-import itemsJson from './data/items.json'
+// Same process-pinned item generation as every other knowledge reader.
+import { itemsJson } from './referenceData'
 
-const items = (itemsJson as unknown as ItemDbFile).items
+const items = (itemsJson).items
 
 /**
  * ONE drop, annotated with what the ITEM PAGE says about its era. Returns the drop UNCHANGED when

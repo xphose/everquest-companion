@@ -29,6 +29,7 @@ pub mod knowledge;
 pub mod message_overlay;
 pub mod modules;
 pub mod overlay_file;
+pub mod reference_catalog;
 pub mod session;
 pub mod spell_facts;
 /// The client's spell table (`spells_us.txt`), parsed. Pure over a string; the file and the
@@ -38,8 +39,7 @@ pub mod spells_us;
 
 use event::Event;
 use serde_json::{json, Value};
-use std::collections::HashSet;
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 /// The extension contract — `src/main/modules/types.ts EqModule`.
 pub trait EqModule {

@@ -26,10 +26,10 @@ import { activeCharId, getActiveCharacter } from '../session'
 // The two planner documents' store accessors live in their own module since JOS-286 — store.ts
 // was at its 400-code-line ceiling, and this repo splits rather than ratchets.
 import { getExaltPlans, getGearSets, getWishlist, setExaltPlans, setGearSets, setWishlist } from '../storePlans'
-import { itemKey, type ItemDbFile } from '../itemsDb'
+import { itemKey } from '../itemsDb'
 // The COMMITTED wiki item database — the same module itemLookup.ts imports, so the JSON is
 // inlined into the main bundle exactly once.
-import itemsJson from '../data/items.json'
+import { itemsJson } from '../referenceData'
 // JOS-452 — the worn-focus resolution, memoized on the dump's identity in its own module because
 // the spell card's handler reads the same answer (src/main/planner/wornFocusCurrent.ts says why).
 import { currentWornFocus } from '../planner/wornFocusCurrent'
@@ -40,7 +40,7 @@ let gear: GearIndexPayload | null = null
 
 /** The donor + item indices, built on first use. */
 function plannerIndex(): PlannerIndex {
-  index ??= buildPlannerIndex(itemsJson as unknown as ItemDbFile)
+  index ??= buildPlannerIndex(itemsJson)
   return index
 }
 
@@ -50,7 +50,7 @@ function plannerIndex(): PlannerIndex {
  * committed corpus: two handler modules would each hold their own walk of the same 8.6 MB.
  */
 function gearIndex(): GearIndexPayload {
-  gear ??= buildGearIndex(itemsJson as unknown as ItemDbFile)
+  gear ??= buildGearIndex(itemsJson)
   return gear
 }
 

@@ -17,8 +17,7 @@ import { readActivePlayer } from '../playerLocation/active'
 import { startJournalHistoryRecorder } from '../questJournal/historyRecorder'
 import { subscribeJournalObservations } from '../questJournal/historyEvents'
 import { logInfo } from '../errorLog'
-import type { ItemDbFile } from '../itemsDb'
-import itemsJson from '../data/items.json'
+import { itemsJson } from '../referenceData'
 
 function world(): JournalWorld {
   const character = getActiveCharacter()
@@ -37,7 +36,7 @@ const journalDeps: JournalServiceDeps = {
     if (characterId === activeCharId()) sendToAdventureAndMain(IPC.onProgress, progress)
   },
   livePlayer: readActivePlayer,
-  files: (character) => journalFiles(effectiveEqRoot(), character, itemsJson as unknown as ItemDbFile),
+  files: (character) => journalFiles(effectiveEqRoot(), character, itemsJson),
   snapshot: (module) => journalSnapshots.read(module, engineWorldToken(), async () => {
     const result = await engineRequest('module.snapshot', { module })
     if (result.module !== module) throw new Error('The engine answered for a different module.')

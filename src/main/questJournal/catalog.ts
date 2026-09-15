@@ -1,10 +1,8 @@
 // Offline quest directory. The body-item index is deliberately distinct from curated steps:
 // a prose mention is not a prerequisite, and owning a reward is not proof of completion.
-import questsJson from '../../renderer/src/data/eqlegends/quests.json'
-import mobsJson from '../../renderer/src/data/eqlegends/mobs.json'
-import itemsJson from '../data/items.json'
+import { questsJson, mobsJson, itemsJson } from '../referenceData'
 import guidesJson from '../data/questJournalGuides.json'
-import metadataJson from '../data/questJournalMetadata.json'
+import { metadataJson } from '../referenceData'
 import skyJson from '../../renderer/src/data/eqlegends/posky.json'
 import type { PoskyData, QuestData, QuestEntry } from '../../shared/types'
 import type { MobData } from '../../shared/mobTypes'
@@ -72,7 +70,7 @@ function bundledInput(): QuestJournalCatalogInput {
   return {
     quests: questsJson,
     mobs: mobsJson,
-    items: itemsJson as unknown as ItemDbFile,
+    items: itemsJson,
     guides: guidesJson as Record<string, QuestJournalGuide>,
     levelNotes: metadataJson.levelNotes,
     sky: skyJson,

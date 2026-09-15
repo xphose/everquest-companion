@@ -44,7 +44,7 @@ import type { SpellDbFile, SpellEntry } from '../../shared/types'
 // next door in `wornFocusCurrent.ts` rather than here: the node runner drives the join below
 // against the committed dump (`tests/wornFocus.test.mts`), and one `import { app }` three modules
 // deep would take that away. Same split `shared/planner/inventorySlots.ts` already keeps.
-import itemsJson from '../data/items.json'
+import { itemsJson } from '../referenceData'
 import spellsJson from '../data/spells.json'
 
 /** The effect-name → its own spell page's slot lines lookup. Case-folded, first entry wins. */
@@ -119,5 +119,5 @@ export function committedFocusLines(): FocusLinesIndex {
   return lines
 }
 
-/** The committed item corpus, cast once, for the one caller that resolves a live dump against it. */
-export const COMMITTED_ITEMS = itemsJson as unknown as ItemDbFile
+/** Legacy export name; the values belong to this launch's pinned reference generation. */
+export const COMMITTED_ITEMS = itemsJson

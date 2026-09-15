@@ -29,6 +29,7 @@ import { CHANNEL, USER_DATA } from './channel'
 // module body below can throw. See crashGuards.ts.
 import './crashGuards'
 import { E2E } from './e2e'
+import { startWikiRefresh, stopWikiRefresh } from './wikiRefresh/service'
 import { OWNER_TOOLS } from './ownerTools'
 import { app, BrowserWindow, protocol, session } from 'electron'
 import { IPC } from '../shared/ipc'
@@ -226,6 +227,7 @@ if (!gotSingleInstanceLock) {
     logInfo(
       `[everquest-companion] Channel '${CHANNEL}' - userData ${USER_DATA}, error log ${errorLogPath()}`
     )
+    startWikiRefresh()
     registerIpc()
     registerAdventureIpc()
     startAdventureShortcut()
@@ -450,6 +452,7 @@ app.on('before-quit', () => {
   // exactly the hazard this feature reintroduces on purpose, so the teardown has to be on every
   // path that can end this process. Closing stdin is the whole shutdown (the dies-with-app law);
   // it does not block, and the escalation to `kill` rides an unref'd timer.
+  teardownStep('main:stopWikiRefresh', stopWikiRefresh)
   teardownStep('main:stopEngine', stopEngineSupervisor)
   flushStoreForQuit()
   // …and the analytics ring, for the same reason and on the same event (JOS-371). `sessionEnd` is
@@ -540,6 +543,7 @@ app.on('window-all-closed', () => {
   // Stop the engine child (JOS-467). Idempotent with the `before-quit` step above — one `end()` on
   // an already-closed pipe — and here for the same belt-and-braces reason every other teardown is
   // on both events.
+  teardownStep('main:stopWikiRefresh', stopWikiRefresh)
   teardownStep('main:stopEngine', stopEngineSupervisor)
   // Stop the feedback drain's timers. They are unref'd, so they cannot be the reason the
   // process lives on; this is about not starting an attempt into a process that is quitting.

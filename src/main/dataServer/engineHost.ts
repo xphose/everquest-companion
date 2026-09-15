@@ -1,3 +1,4 @@
+import { wikiCatalogEngineEnvironment } from '../referenceData'
 // ============================================================================
 // engineHost.ts — the composition root's half of the engine supervisor (JOS-467, phase 0).
 // ============================================================================
@@ -363,7 +364,7 @@ function describeErr(err: unknown): string {
  * Spawn the engine.
  *
  * NO SECRETS IN ARGV OR ENV (contract rule 1): no arguments at all, and the environment is
- * inherited untouched. The token goes down stdin, which is why all three streams are pipes.
+ * inherited except for the app-pinned public wiki catalog. The token goes down stdin, which is why all three streams are pipes.
  *
  * `windowsHide` so a console window never flashes over a full-screen game — the same courtesy every
  * other child this app has ever spawned was given. `cwd` is the binary's own directory, matching
@@ -374,7 +375,8 @@ function spawnEngine(binPath: string): SupervisedChild {
   return spawn(binPath, [], {
     stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true,
-    cwd: dirOf(binPath)
+    cwd: dirOf(binPath),
+    env: wikiCatalogEngineEnvironment(process.env)
   })
 }
 

@@ -10,7 +10,7 @@
 //!   * the wiki spell catalog (`eqlog::spelldb`) — three facts and no more: is the spell a song, is
 //!     a landing sentence known for it, is it a resist debuff.
 //!
-//! The `OnceLock`s memoize no fold answer: `include_str!` puts the catalog bytes in the binary and
+//! The `OnceLock`s memoize no fold answer: reference_catalog pins the selected wiki bytes and
 //! each table is a pure function of those bytes, so a second `Fold` in the process cannot observe
 //! one as different. The spell facts are projected out and the database handle dropped, which is
 //! what keeps a fold from borrowing anything the parser owns; `spelldb::shared()` is the same
@@ -54,7 +54,9 @@ struct MobFile {
 fn mob_levels() -> &'static HashMap<String, Option<String>> {
     static T: OnceLock<HashMap<String, Option<String>>> = OnceLock::new();
     T.get_or_init(|| {
-        let file: MobFile = serde_json::from_str(MOBS_JSON).expect("mobs.json is not readable");
+        let file: MobFile =
+            serde_json::from_value(crate::reference_catalog::json("mobs", MOBS_JSON))
+                .expect("selected mob catalog is readable");
         let mut by_name: HashMap<String, Option<String>> = HashMap::new();
         for m in &file.mobs {
             let key = mob_key(&m.name);

@@ -37,16 +37,15 @@ import {
 } from '../../shared/characterSheet'
 import { loadInventoryDump } from '../outputs'
 import { getActiveCharacter } from '../session'
-import { buildItemDbIndex, itemKey, type ItemDbEntry, type ItemDbFile } from '../itemsDb'
-// The COMMITTED wiki item database — the same module itemLookup.ts imports, so the JSON is
-// inlined into the main bundle exactly once.
-import itemsJson from '../data/items.json'
+import { buildItemDbIndex, itemKey, type ItemDbEntry } from '../itemsDb'
+// Same process-pinned item generation as itemLookup and the engine.
+import { itemsJson } from '../referenceData'
 
 let index: Map<string, ItemDbEntry> | null = null
 
 /** The name→record index, built on first use and kept for the process's life (planner precedent). */
 function itemIndex(): Map<string, ItemDbEntry> {
-  index ??= buildItemDbIndex(itemsJson as unknown as ItemDbFile)
+  index ??= buildItemDbIndex(itemsJson)
   return index
 }
 

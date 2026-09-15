@@ -1,4 +1,4 @@
-//! The committed corpora, engine-side: the item, mob, quest and Plane of Sky datasets the app ships,
+//! The process-pinned wiki corpora, engine-side, plus the bundled Plane of Sky dataset,
 //! indexed once and queried on demand behind `knowledge.item/mob/spell/search`.
 //!
 //! THE WIKI FETCH IS NOT HERE. The engine ships without a network stack, so resolution is:
@@ -12,8 +12,8 @@
 //! Each name is announced AT MOST ONCE per process: a stacked loot burst probes one name many times
 //! and the app must not be asked to fetch it many times.
 //!
-//! Every index is built on first use. `include_str!` puts the bytes in the binary and nothing is
-//! parsed until something asks, because an attach must not pay for a corpus no client has queried.
+//! The selected wiki pack is verified before startup; indexes remain lazy. Embedded bytes
+//! provide the offline fallback only when the app has not selected a cached generation.
 //!
 //! `knowledge.spell` answers off `eqlog`'s effective spell DB and states exactly the fields that DB
 //! carries. It deliberately does NOT carry the derived effect classes, the rank lineage or the
