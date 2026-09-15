@@ -111,6 +111,7 @@ test('partial response and malformed known pages cannot replace the previous cat
     { changes: ['Test Token'], pages: { 'Test Token': '{{Itempage}}' } },
     { changes: ['Test Keeper'], pages: { 'Test Keeper': 'unrecognized NPC template' } },
     { changes: ['Test Errand'], pages: { 'Test Errand': 'unrecognized quest format' } },
+    { changes: ['Test Errand'], pages: { 'Test Errand': '{{Disambiguation}}\nSee [[Test Token]].' } },
     { changes: ['Test Token'], onRequest: (p: URLSearchParams) => p.has('titles') ? Response.json({ query: { pages: [] } }) : undefined }
   ]) {
     const initial = base()
@@ -118,6 +119,19 @@ test('partial response and malformed known pages cannot replace the previous cat
     await assert.rejects(runWikiRefresh({ base: initial, fetch: wiki(options).fetch, sleep: noSleep }))
     assert.deepEqual(initial, snapshot)
   }
+})
+
+test('a grouped quest guide tagged disambiguation retains its stated hand-ins without inventing a header', async () => {
+  const text = '{{Disambiguation}}\n== Baked supplies ==\nBring [[Test Token]] to the keeper.\n{{YouGainExperience}}'
+  const source = wiki({ changes: ['Test Errand'], pages: { 'Test Errand': text } })
+  const result = await runWikiRefresh({ base: base(), fetch: source.fetch, sleep: noSleep })
+  const quest = result.quests.quests[0]
+  assert.equal(quest.page, 'Test Errand')
+  assert.deepEqual(quest.requiredItems, ['Test Token'])
+  assert.equal(quest.expReward, true)
+  assert.equal(quest.giver, undefined)
+  assert.equal(quest.minLevel, undefined)
+  assert.match(JSON.stringify(result.metadata.walkthroughs['Test Errand']), /Bring Test Token to the keeper/)
 })
 
 test('renamed item names shed stale aliases; redirects and explicit removals are resolved', async () => {
