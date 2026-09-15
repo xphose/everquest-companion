@@ -1,32 +1,19 @@
-// mobLookupLocal.ts — the COMMITTED-DATASET half of mob knowledge (Task #63).
-//
-// Split out from mobLookup.ts (which imports electron `app` for the userData cache) so the two
-// local-first indexes are importable in the node test runner, exactly the way itemLookupParse.ts
-// is split from itemLookup.ts. No network, no cache, no electron: just the two scraped JSON
-// datasets and the lookups over them.
-//
-//   LOCAL 1 — mobs.json  (scripts/scrape-mobs.ts): the DEFINITIVE drop table. The wiki states
-//             what a mob can drop; that is static content, so it is scraped once and committed
-//             rather than fetched per `/con`. This is why a consider answers instantly and
-//             offline, and why `mobLookup`'s live wiki call is only a fallback for mobs the
-//             catalog doesn't have yet.
-//   LOCAL 2 — quests.json (scripts/scrape-quests.ts): `relatedNpcs`, the quests that name a mob.
-//
-// Both JSONs are ES-imported so electron-vite INLINES them into the main bundle — a
-// path-relative readFile would miss in out/main/ (AGENTS.md toolchain note).
+// Offline mob and quest indexes over the process-pinned wiki generation. referenceData
+// chooses a validated saved pack before these indexes build, with bundled data as fallback.
+// The wiki describes possible drops; observed loot remains separate evidence. Unknown mobs
+// can still use mobLookup's per-page fallback. No Electron dependency lives in this module.
 
 import { type MobLootIndex, mobKey } from './mobLookupParse'
 import type { MobIdentity } from './mobAliases'
-import type { MobData, MobDrop, MobEntry, MobKnowledge, MobQuestUse, QuestData } from '../shared/types'
-import mobsJson from '../renderer/src/data/eqlegends/mobs.json'
-import questsJson from '../renderer/src/data/eqlegends/quests.json'
+import type { MobDrop, MobEntry, MobKnowledge, MobQuestUse } from '../shared/types'
+import { mobsJson, questsJson } from './referenceData'
 
-// ---- LOCAL 1: the scraped mob catalog (the definitive drop table) ---------------
+// ---- LOCAL 1: the scraped mob catalog (wiki-described drops) ---------------
 
-const mobData = mobsJson as unknown as MobData
+const mobData = mobsJson
 
 /**
- * Index the committed mob catalog by canonical name. Keyed BOTH ways a mob can be named:
+ * Index the process-pinned mob catalog by canonical name. Keyed BOTH ways a mob can be named:
  *   - the page's `|name` (the IN-GAME name, which is what a consider line prints), and
  *   - the wiki PAGE TITLE, which for most mobs is the same string title-cased ("A Froglok Gaz
  *     Knight" redirects to "A froglok gaz knight") but is occasionally the only spelling.
@@ -67,7 +54,7 @@ export function knowledgeFromCatalog(display: string, e: MobEntry): MobKnowledge
 
 // ---- LOCAL 2: quest catalog cross-ref (relatedNpcs) ----------------------------
 
-const questData = questsJson as unknown as QuestData
+const questData = questsJson
 
 /**
  * Index the scraped quest catalog by mob name → the quests that name it under "Related NPCs".

@@ -22,3 +22,6 @@ eqlog = { path = "../eqlog" }
 # and the one the parity binary uses) has no way to reach a corpus even by accident, and the
 # `parity` binary does not carry 12 MB of committed JSON in its text section.
 fold = { path = "../fold" }
+
+[dev-dependencies]
+sha2 = "0.10"

@@ -12,3 +12,4 @@ eqlog = { path = "../eqlog" }
 serde.workspace = true
 serde_json.workspace = true
 regex = "1"
+sha2 = "0.10"

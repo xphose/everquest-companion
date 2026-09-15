@@ -1,30 +1,12 @@
-//! "What's this lore/quest item for", minus the network.
-//!
-//! Three sources, in order:
-//!
-//! 0. THE COMMITTED ITEM DATABASE is primary. A DB hit short-circuits everything after it — no
-//!    overlay read, no miss, no announcement.
-//! 1. LOCAL CROSS-REFS, merged into whatever answers: the scraped Plane of Sky dataset, which
-//!    carries per-item island/giver detail no item page states, and the scraped wiki quest catalog,
-//!    which is built from the QUEST pages and is therefore the answer for every turn-in item whose
-//!    own page never listed a quest.
-//! 2. THE RUNTIME OVERLAY, where a `knowledge.define` lands after the app has fetched a miss.
-//!
-//! The JSON is `include_str!`d out of the app's own data directories — one copy of each file in the
-//! tree, so a re-scrape reaches every reader at once — and parsed behind a `OnceLock`, because an
-//! attach must not pay for a corpus no client has queried (the item corpus alone measured ~42 ms of
-//! parse and a ~20 MB retained graph).
-//!
-//! A record is LITERALLY the scraper's own fields: no projection, no renaming, no translation layer.
-//! Mirroring twenty-odd fields into Rust structs would only lose one the day the scraper grows it,
-//! so the entry stays a `serde_json::Value` and the sole thing done to it is restoring the compact
-//! form's omitted defaults.
+//! Offline item knowledge from the process-pinned wiki generation, with an embedded fallback.
+//! Item hits are primary; Sky and quest cross-references add context. Runtime miss answers
+//! remain a separate overlay. All lazy indexes share the selection verified at engine startup.
 
 use serde_json::{json, Map, Value};
 
 use crate::names::{item_key, normalize_item_name, quest_item_key};
 
-/// The committed wiki item database — the primary source.
+/// Bundled fallback; reference_catalog selects one app-pinned generation first.
 const ITEMS_JSON: &str = include_str!("../../../../src/main/data/items.json");
 /// The scraped Plane of Sky dataset — local source 1 for an item's quest uses.
 const POSKY_JSON: &str = include_str!("../../../../src/renderer/src/data/eqlegends/posky.json");
@@ -41,7 +23,7 @@ pub type ItemDb = Map<String, Value>;
 /// Parse `items.json` and hand back its `items` map.
 #[must_use]
 pub fn load_item_db() -> ItemDb {
-    let file: Value = serde_json::from_str(ITEMS_JSON).expect("items.json is not readable");
+    let file = fold::reference_catalog::json("items", ITEMS_JSON);
     match file {
         Value::Object(mut o) => match o.remove("items") {
             Some(Value::Object(items)) => items,
@@ -143,7 +125,7 @@ fn quests_by_item(quests: &[Value]) -> QuestUseIndex {
 /// side and the item side, because it is one parse.
 #[must_use]
 pub fn load_quests() -> Vec<Value> {
-    let file: Value = serde_json::from_str(QUESTS_JSON).expect("quests.json is not readable");
+    let file = fold::reference_catalog::json("quests", QUESTS_JSON);
     file["quests"].as_array().cloned().unwrap_or_default()
 }
 

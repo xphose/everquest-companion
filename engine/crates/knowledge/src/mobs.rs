@@ -1,7 +1,7 @@
 //! "What does this thing drop", minus the network. Four sources, the first three local:
 //!
-//!   1. THE SCRAPED MOB CATALOG — the definitive drop table. The wiki's drop list is what the mob
-//!      CAN drop and it is static content, so it is scraped once and committed, which is why a
+//!   1. THE PINNED WIKI MOB CATALOG — the wiki-described drop table. The wiki's drop list is what the mob
+//!      CAN drop and it is static content, so each process pins one validated generation, which is why a
 //!      `/con` answers instantly and offline.
 //!   2. YOUR OWN LOOT HISTORY, read through [`fold::knowledge::OwnLoot`]. Corroboration, not the
 //!      drop table: it annotates a listed drop with a count, and contributes names of its own only
@@ -26,7 +26,7 @@ use crate::names::item_key;
 use fold::knowledge::{OwnLoot, SeenDrop};
 use fold::modules::consider::mob_key;
 
-/// The scraped mob catalog — local source 1, the definitive drop table.
+/// Bundled fallback for the process-pinned wiki mob catalog.
 const MOBS_JSON: &str = include_str!("../../../../src/renderer/src/data/eqlegends/mobs.json");
 /// The raid roster — the one place two spellings are stated to be one creature.
 const BOSSES_JSON: &str = include_str!("../../../../src/renderer/src/data/eqlegends/bosses.json");
@@ -61,7 +61,7 @@ impl MobIndex {
     /// displaced by another page's title.
     #[must_use]
     pub fn build() -> Self {
-        let file: Value = serde_json::from_str(MOBS_JSON).expect("mobs.json is not readable");
+        let file = fold::reference_catalog::json("mobs", MOBS_JSON);
         let mobs = file["mobs"].as_array().cloned().unwrap_or_default();
         let mut by_name: std::collections::HashMap<String, Value> =
             std::collections::HashMap::with_capacity(mobs.len() * 2);

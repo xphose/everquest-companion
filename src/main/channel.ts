@@ -3,6 +3,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { E2E } from './e2e'
+import { initializeReferenceData } from './referenceData'
 // Console-only sinks. `logError` is deliberately NOT used in this module (it writes into the
 // userData dir this module is still deciding); these three just forward to `console.*`
 // verbatim, resolve nothing, and have no module-scope side effects — so importing them here
@@ -129,3 +130,6 @@ export const USER_DATA = resolveUserData()
 
 app.setPath('userData', USER_DATA)
 logInfo(`[everquest-companion] channel=${CHANNEL} userData=${USER_DATA}`)
+
+// Pin one validated catalog before any main-process consumer builds its indexes.
+initializeReferenceData(USER_DATA)

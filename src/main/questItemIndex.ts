@@ -1,5 +1,5 @@
 // questItemIndex — the item→quests index built from the scraped wiki quest catalog
-// (src/renderer/src/data/eqlegends/quests.json).
+// The caller supplies this launch's pinned wiki catalog or the bundled offline fallback.
 //
 // Lifted OUT of itemLookup.ts so it can be unit-tested: itemLookup imports `electron`, which
 // cannot load outside an Electron process, and tests/questCatalog.test.mts previously had to

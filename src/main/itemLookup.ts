@@ -7,14 +7,10 @@
 // item-into-inventory line the log carries.)
 //
 // DESIGN (per AGENTS.md "Data sources & scrapers" + the Task #34 spell-DB precedent):
-//   0. THE COMMITTED ITEM DATABASE IS THE PRIMARY SOURCE (`src/main/data/items.json`,
-//      scripts/scrape-items.ts — every item page on the wiki, 11,288 of them, parsed by the
-//      very same `parseItemWikitext` the live path below uses). It answers instantly,
-//      offline, identically for every user, and it is what makes the wiki fallback a
-//      fallback: the network is now touched only for an item whose page was created since
-//      the last `npm run scrape:items`. A DB hit short-circuits everything after it — no
-//      cache read, no request, and (see `lookupItem`) NO NEGATIVE CACHING, since negative
-//      caching only ever describes keys the committed DB does not have.
+//   0. The process-pinned wiki catalog is primary: a validated saved generation, or the
+//      bundled offline data when no compatible cache is available. Daily updates stage a
+//      complete pack for the next launch. A catalog hit needs neither a cache lookup nor
+//      a network request; per-item wiki fetches remain the fallback for missing records.
 //   1. LOCAL-FIRST. The scraped Plane of Sky dataset (posky.json) already knows every
 //      Sky class-Test quest item + its quests + giver. Check it BEFORE any network so
 //      a known Sky rune/claw/etc. answers INSTANTLY and offline. Its associations are
@@ -41,15 +37,13 @@ import { logError } from './errorLog'
 import { writeFileDurableAsync } from './telemetry/durableWrite'
 import { normalizeItemName, parseItemWikitext } from './itemLookupParse'
 import { buildQuestItemIndex } from './questItemIndex'
-import { buildItemDbIndex, itemKey, knowledgeFromDb, type ItemDbEntry, type ItemDbFile } from './itemsDb'
+import { buildItemDbIndex, itemKey, knowledgeFromDb, type ItemDbEntry } from './itemsDb'
 import { heldClickySpells as clickySpells } from './itemClickies'
-import type { HeldCounts, ItemKnowledge, ItemQuestUse, PoskyData, QuestData } from '../shared/types'
+import type { HeldCounts, ItemKnowledge, ItemQuestUse, PoskyData } from '../shared/types'
 
 export { normalizeItemName, parseItemWikitext }
-// The COMMITTED wiki item database — the PRIMARY source (see the design note above).
-// Imported directly, like posky/quests/spells, so electron-vite INLINES it into the main
-// bundle; a path-relative read would miss it in out/main/ in production.
-import itemsJson from './data/items.json'
+// Shared process-pinned catalog; referenceData retains the bundled offline fallback.
+import { itemsJson } from './referenceData'
 // The scraped Plane of Sky dataset is the local-first source. Imported directly so
 // electron-vite INLINES it into the main bundle (same reason spells.json is imported,
 // not readFileSync'd — a path-relative read misses it in out/main/ in production).
@@ -58,7 +52,7 @@ import poskyJson from '../renderer/src/data/eqlegends/posky.json'
 // source. Item pages only name a quest when their |relatedquests field was filled in, so
 // classic turn-in items (Dwarven Ale, Guard Bracelet, …) read as quest-less from the item
 // side; this catalog is built the other way round — from the quest pages themselves.
-import questsJson from '../renderer/src/data/eqlegends/quests.json'
+import { questsJson } from './referenceData'
 
 const API = 'https://eqlwiki.com/api.php'
 const UA = 'everquest-companion/0.1 (personal quest tracker)'
@@ -135,7 +129,7 @@ let itemDbIndex: Map<string, ItemDbEntry> | null = null
 
 /** The committed corpus keyed for lookup, built on first use. See the section header. */
 function itemDb(): Map<string, ItemDbEntry> {
-  itemDbIndex ??= buildItemDbIndex(itemsJson as unknown as ItemDbFile)
+  itemDbIndex ??= buildItemDbIndex(itemsJson)
   return itemDbIndex
 }
 
@@ -148,7 +142,7 @@ function itemDb(): Map<string, ItemDbEntry> {
  * binding and nothing else.
  */
 export function heldClickySpells(counts: HeldCounts): ReadonlySet<string> {
-  return clickySpells((itemsJson as unknown as ItemDbFile).items, counts)
+  return clickySpells((itemsJson).items, counts)
 }
 
 /**
@@ -197,7 +191,7 @@ function poskyByItem(): Map<string, ItemQuestUse[]> {
 
 // ---- local (wiki quest catalog) cross-ref --------------------------------------
 
-const questData = questsJson as unknown as QuestData
+const questData = questsJson
 
 /**
  * Index the scraped quest catalog by normalized item name → the quests that use it, from

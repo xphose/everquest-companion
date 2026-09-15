@@ -216,8 +216,7 @@ import {
   type EraDerivation,
   type EraDerivationBasis
 } from '../../shared/planner/era'
-import questsJson from '../../renderer/src/data/eqlegends/quests.json'
-import mobsJson from '../../renderer/src/data/eqlegends/mobs.json'
+import { questsJson, mobsJson } from '../referenceData'
 import pageEraJson from '../data/pageEra.json'
 import type { ItemCraftIngredient, MobData, QuestData, QuestEntry } from '../../shared/types'
 

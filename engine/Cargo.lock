@@ -175,6 +175,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "sha2",
 ]
 
 [[package]]
@@ -283,6 +284,7 @@ dependencies = [
  "fold",
  "serde",
  "serde_json",
+ "sha2",
 ]
 
 [[package]]
