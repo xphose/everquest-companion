@@ -154,7 +154,7 @@ messages, and Git author/committer metadata.
   - Hidden-window E2E diagnostic screenshots · 3-second capture timeout in the
     parallel `macros`/`macro-preparation` run, the isolated `macros` rerun, and
     the initial `quest-journal-persistence` run, and `quest-journal`'s
-    `journal-narrow` artifact three times, plus `wiki-catalog-refresh` once (2026-09-15);
+    `journal-narrow` artifact three times, plus `wiki-catalog-refresh` and `maps` once each (2026-09-15);
     nonfatal artifact capture failures, independent of assertions. Follow-up
     chip: investigate hidden-window capture timing and give artifact capture a
     bounded completion check; do not change product assertions to hide it.
