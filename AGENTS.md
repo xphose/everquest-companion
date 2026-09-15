@@ -162,8 +162,9 @@ messages, and Git author/committer metadata.
     isolated rerun green. The prerequisite counts read requests before their
     replies and queued-plan updates complete; a fixture transition race is
     suspected, not proven. Watch; use a completed-plan predicate if it recurs.
-  - Macros E2E diagnostic screenshots · 3-second capture timeout in the parallel
-    `macros`/`macro-preparation` run and the isolated `macros` rerun (2026-09-15);
+  - Hidden-window E2E diagnostic screenshots · 3-second capture timeout in the
+    parallel `macros`/`macro-preparation` run, the isolated `macros` rerun, and
+    the initial `quest-journal-persistence` run (2026-09-15);
     nonfatal artifact capture failures, independent of assertions. Follow-up
     chip: investigate hidden-window capture timing and give artifact capture a
     bounded completion check; do not change product assertions to hide it.
