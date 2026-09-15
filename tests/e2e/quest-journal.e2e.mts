@@ -86,8 +86,10 @@ async function filters(page: Page): Promise<void> {
 }
 
 async function references(page: Page): Promise<void> {
+  await page.getByRole('tab', { name: 'Walkthrough', exact: true }).click()
   await page.getByRole('button', { name: 'Source walkthrough', exact: true }).click()
   check('the source walkthrough is readable inside the app', (await shown(page, '[data-testid="quest-journal-walkthrough"]')).includes('Gnasher'))
+  await page.getByRole('tab', { name: 'Rewards', exact: true }).click()
   await page.getByRole('button', { name: 'Cloak of Jaggedpine', exact: true }).click()
   await page.getByRole('button', { name: 'Open item details', exact: true }).click()
   await page.waitForSelector('[data-testid="loot-detail"]')
@@ -113,6 +115,7 @@ async function profileAndComparison(page: Page): Promise<void> {
   await page.getByLabel('Character level', { exact: true }).fill('30')
   await page.getByLabel('Classes, separated by commas', { exact: true }).fill('Druid')
   await page.getByRole('button', { name: 'Save correction', exact: true }).click()
+  await page.getByRole('tab', { name: 'Rewards', exact: true }).click()
   const compared = await settle(() => shown(page, '[data-testid="quest-journal-comparison"]'), (v) => v.includes('Cloak of Flames'), { timeoutMs: 15_000 })
   check('optional profile correction enables an actual equipped-item stat comparison', compared.includes('Cloak of Flames') && compared.includes('Change') && compared.includes('AC'), compared)
   await page.click('[data-testid="quest-journal-profile-toggle"]')

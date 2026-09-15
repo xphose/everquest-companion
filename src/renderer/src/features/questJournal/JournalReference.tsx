@@ -10,7 +10,7 @@ export function JournalReference({ entry, navigation }: { entry: QuestJournalCat
   return <Stack spacing={1}>
     <Accordion disableGutters elevation={0} defaultExpanded={!entry.guide} slotProps={{ transition: { unmountOnExit: true } }} data-testid="quest-journal-walkthrough">
       <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Source walkthrough</Typography></AccordionSummary>
-      <AccordionDetails sx={{ maxHeight: 520, overflow: 'auto' }}>
+      <AccordionDetails>
         <Stack spacing={2}>
           <Typography variant="caption" color="text.secondary">eqlwiki.com snapshot · {formatDate(Date.parse(entry.source.snapshotAt))}. Source descriptions may include older game mechanics.</Typography>
           {entry.walkthrough?.map((section, index) => <Box key={index}>
@@ -25,7 +25,7 @@ export function JournalReference({ entry, navigation }: { entry: QuestJournalCat
     </Accordion>
     <Accordion disableGutters elevation={0} slotProps={{ transition: { unmountOnExit: true } }} data-testid="quest-journal-item-sources">
       <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="body2">Items mentioned in the source · {entry.referencedItems.length}</Typography></AccordionSummary>
-      <AccordionDetails sx={{ maxHeight: 460, overflow: 'auto' }}>
+      <AccordionDetails>
         <Typography variant="caption" color="text.secondary">These are source references. Use the walkthrough for the exact requirements and quantities.</Typography>
         {entry.referencedItems.map((item) => <Accordion key={item.name} disableGutters elevation={0} slotProps={{ transition: { unmountOnExit: true } }}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="body2">{item.name}</Typography></AccordionSummary>
