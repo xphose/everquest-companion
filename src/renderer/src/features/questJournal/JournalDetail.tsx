@@ -1,4 +1,4 @@
-import { useId, useState, type JSX } from 'react'
+import { useId, useRef, useState, type JSX } from 'react'
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, Divider, Paper, Stack, Tab, Tabs, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import type { QuestJournalDetailResult } from '@shared/questJournal/journal'
@@ -54,13 +54,13 @@ function NextSteps({ detail, navigation }: { detail: QuestJournalDetailResult; n
   </Stack>
 }
 
-function DetailTab({ tab, detail, navigation, mutate }: {
-  tab: number; detail: QuestJournalDetailResult; navigation: JournalNavigation; mutate: (action: JournalAction) => Promise<void>
+function DetailTab({ tab, detail, navigation, mutate, resetScroll }: {
+  tab: number; detail: QuestJournalDetailResult; navigation: JournalNavigation; mutate: (action: JournalAction) => Promise<void>; resetScroll: () => void
 }): JSX.Element {
   if (tab === 0) return <NextSteps detail={detail} navigation={navigation} />
   if (tab === 1) return detail.entry ? <JournalRewards detail={detail} navigation={navigation} />
     : <Typography variant="body2" color="text.secondary">Reward data for this task is not in the bundled catalog yet.</Typography>
-  if (tab === 2) return detail.entry ? <JournalReference entry={detail.entry} navigation={navigation} />
+  if (tab === 2) return detail.entry ? <JournalReference entry={detail.entry} navigation={navigation} resetScroll={resetScroll} />
     : <Typography variant="body2" color="text.secondary">A walkthrough for this task is not in the bundled catalog yet. Its recorded progress is in History.</Typography>
   return <Stack spacing={2}><TrackingDetails detail={detail} /><ProgressCorrection detail={detail} mutate={mutate} /></Stack>
 }
@@ -70,6 +70,7 @@ export function JournalDetail({ detail, selectedId, navigation, mutate }: {
 }): JSX.Element {
   const [tab, setTab] = useState(0)
   const tabId = useId()
+  const activePanel = useRef<HTMLDivElement>(null)
   if (!detail) return <Paper variant="outlined" sx={{ p: 3 }}><Typography color="text.secondary">{selectedId ? 'Reading quest details…' : 'Choose a quest to see its next action, locations and rewards.'}</Typography></Paper>
   const row = detail.row
   if (!row) return <Alert severity="info">This quest is no longer available for the selected character. Choose another quest from the list.</Alert>
@@ -92,9 +93,10 @@ export function JournalDetail({ detail, selectedId, navigation, mutate }: {
       </Tabs>
       <Divider />
       {DETAIL_TABS.map((label, index) => <Box key={label} role="tabpanel" hidden={tab !== index} id={`${tabId}-panel-${index}`}
+        ref={tab === index ? activePanel : undefined}
         aria-labelledby={`${tabId}-tab-${index}`} tabIndex={0} data-testid="journal-detail-panel"
         sx={{ p: { xs: 1.5, lg: 2 }, flex: 1, minHeight: 0, minWidth: 0, overflowY: 'auto', overflowWrap: 'anywhere' }}>
-        {tab === index && <DetailTab tab={tab} detail={detail} navigation={navigation} mutate={mutate} />}
+        {tab === index && <DetailTab tab={tab} detail={detail} navigation={navigation} mutate={mutate} resetScroll={() => activePanel.current?.scrollTo({ top: 0 })} />}
       </Box>)}
   </Paper>
 }

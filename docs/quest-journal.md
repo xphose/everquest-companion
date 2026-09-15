@@ -14,7 +14,15 @@ The selected quest has four tabs: **Next steps** for directions and objectives,
 **Rewards** for items and equipment comparisons, **Walkthrough** for the source
 guide, and **History** for saved evidence and progress corrections. The quest
 title, status, and tracking button stay above the tabs. Each tab has one scrolling
-area; locations and expanded source sections use that same area.
+area; locations and source sections use that same area.
+
+Inside **Walkthrough**, use **Guide**, **People**, and **Items** to switch directly
+between the readable instructions, named NPCs, and referenced items. The guide
+opens immediately. Choose an item to see its locations or open its details;
+there are no dropdowns to expand first. Source mentions alone do not establish
+required items or quantities; follow the guide's instructions.
+The section tabs stay visible while scrolling. Switching sections starts at the
+top, while automatic updates preserve the current section and selected item.
 
 ## Connect your character
 
