@@ -1,5 +1,6 @@
 import { useState, type JSX } from 'react'
 import { Box, Button, Stack, Typography } from '@mui/material'
+import { WikiCatalogNote } from '../../lib/WikiCatalogNote'
 
 function checked(at: number | null): string {
   return at === null ? 'waiting for first check' : `checked ${new Date(at).toLocaleTimeString()}`
@@ -18,6 +19,7 @@ export function GearRefreshStatus({ characterAt, inventoryAt, error, refresh }: 
         data-character-checked={characterAt ?? ''} data-inventory-checked={inventoryAt ?? ''}>
         Character {checked(characterAt)} · Equipment {checked(inventoryAt)}. New exports update immediately.
       </Typography>
+      <WikiCatalogNote />
       {requested !== null && <Typography variant="caption" display="block" role="status" color={error ? 'warning.main' : 'text.secondary'} data-testid="gear-refresh-feedback">
         {complete ? 'Refresh complete.' : error ? 'Could not finish refreshing. Retrying automatically.' : 'Refreshing your character and equipment…'}
       </Typography>}

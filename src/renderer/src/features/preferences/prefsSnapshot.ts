@@ -27,6 +27,7 @@ import { normalizeOverlayTextSize } from '../../../../shared/overlayTextScale'
 import { normalizeOverlayBgAlpha } from '../../../../shared/overlayBgAlpha'
 import type { AlertBannerOverlayConfig } from '@shared/alertBanner'
 import type { ConCardOverlayConfig } from '@shared/conCard'
+import type { WikiRefreshStatus } from '@shared/wikiCatalog'
 import type { BuffTrustPrefs } from '@shared/buffTrust'
 import type { GraphicsPrefs } from '@shared/graphicsPrefs'
 import type { GraphicsEnvironment } from '@shared/wineDetect'
@@ -168,6 +169,7 @@ export interface PrefsSnapshot {
   /** Updates — the version row and the status chip's starting value (pushes follow). */
   version: string
   updateStatus: UpdateStatus
+  wikiCatalog: WikiRefreshStatus
   /** Profiles — how many alerts an export would carry. */
   alertCount: number
 }
@@ -206,6 +208,7 @@ export interface PrefsReader {
   getResistPrefs: () => Promise<ResistPrefs>
   getAppVersion: () => Promise<string>
   getUpdateStatus: () => Promise<UpdateStatus>
+  getWikiCatalogStatus: () => Promise<WikiRefreshStatus>
   listAlerts: () => Promise<AlertDef[]>
 }
 
@@ -244,6 +247,7 @@ export async function readPrefsSnapshot(eq: PrefsReader): Promise<PrefsSnapshot>
     resists,
     version,
     updateStatus,
+    wikiCatalog,
     alerts
   ] = await Promise.all([
     eq.getEqConfig(),
@@ -271,6 +275,7 @@ export async function readPrefsSnapshot(eq: PrefsReader): Promise<PrefsSnapshot>
     eq.getResistPrefs(),
     eq.getAppVersion(),
     eq.getUpdateStatus(),
+    eq.getWikiCatalogStatus(),
     eq.listAlerts()
   ])
   return {
@@ -314,6 +319,7 @@ export async function readPrefsSnapshot(eq: PrefsReader): Promise<PrefsSnapshot>
     resists,
     version,
     updateStatus,
+    wikiCatalog,
     alertCount: alerts.length
   }
 }

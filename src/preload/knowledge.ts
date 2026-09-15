@@ -6,12 +6,12 @@
 // sounds.ts and perf.ts are the same pattern). This object is spread into that bridge, so every
 // method below is an ordinary member of the one `window.eq` surface and no call site moved.
 //
-// THEY SHARE ONE PROPERTY AND IT IS WHY THEY ARE ONE FILE: none of them ever rejects. Main
-// degrades an unknown spell to a `found:false` record and a failed item/mob fetch to a cached
-// negative or offline one, so a card body can render the answer instead of a spinner that never
-// resolves. A renderer that has to handle a rejection here is a renderer reading a bug.
+// Individual lookups degrade unknown spells and failed item/mob fetches to honest records.
+// The whole-catalog bootstrap is stricter: a failed read rejects so startup can offer Retry
+// instead of silently mixing bundled reference rows with another active snapshot.
 
 import { ipcRenderer } from 'electron'
+import { wikiCatalogBridge } from './wikiCatalog'
 import { IPC } from '../shared/ipc'
 import type { ItemKnowledge, MobKnowledge, SpellCatalog } from '../shared/types'
 import type { MobResistCell, MobResistProfile, ResistAxis } from '../shared/resistTypes'
@@ -21,6 +21,7 @@ import type { LevelUnlockData } from '../shared/levelUnlocks'
 import type { SpellDetail } from '../shared/spellDetail'
 
 export const knowledgeBridge = {
+  ...wikiCatalogBridge,
   /** Suggested-alerts wizard (Task #38): the searchable spell catalog + live usage. */
   getSpellCatalog: (): Promise<SpellCatalog> => ipcRenderer.invoke(IPC.spellsCatalog),
   /**

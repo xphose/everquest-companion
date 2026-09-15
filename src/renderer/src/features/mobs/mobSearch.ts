@@ -1,9 +1,8 @@
-// mobSearch.ts — fuzzy search over the COMMITTED mob catalog, in the renderer (Task #64).
+// mobSearch.ts — fuzzy search over this launch's mob catalog, in the renderer (Task #64).
 //
-// The catalog (`data/eqlegends/mobs.json`, 7,866 pages) is already bundled for main's
-// `mobLookup`, and the renderer can ES-import the very same file. So "search every mob the game
-// has" costs no IPC, no index build at startup, and works offline — the same local-first
-// posture posky.json and quests.json set.
+// Bootstrap installs main's active snapshot before this module loads. Downloaded updates wait
+// for the next app launch, so search, map pins, drop sources and engine lookups share one set
+// of facts throughout the session. Individual searches need no IPC and work offline.
 //
 // SAME SCORER AS FIGHT SEARCH, deliberately: `shared/fuzzy.ts` is the extracted core of
 // `main/combat/fightSearch.ts` (Task #61), so a typo'd query behaves identically in both boxes
@@ -31,7 +30,7 @@ import type { MobEntry, MobKnowledge } from '@shared/types'
 // mobLookupLocal.ts is split out of mobLookup.ts. Type-only imports are erased, so they keep
 // the alias. If a fourth file needs this, teach tsx the paths instead of spreading this.
 import { scoreQuery, tokenize } from '../../../../shared/fuzzy'
-import mobsJson from '../../data/eqlegends/mobs.json'
+import { referenceData } from '../../lib/referenceData'
 
 interface MobCatalog {
   scrapedAt: string
@@ -39,9 +38,9 @@ interface MobCatalog {
   mobs: MobEntry[]
 }
 
-const catalog = mobsJson as unknown as MobCatalog
+const catalog: MobCatalog = referenceData().mobs
 
-/** Every mob the committed catalog knows, in scrape order. */
+/** Every mob the active catalog knows, in scrape order. */
 export const MOB_CATALOG: MobEntry[] = catalog.mobs ?? []
 
 /** One scored search hit. `entry` is the catalog row itself — the caller drills straight into it. */

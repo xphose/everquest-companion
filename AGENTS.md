@@ -154,7 +154,7 @@ messages, and Git author/committer metadata.
   - Hidden-window E2E diagnostic screenshots · 3-second capture timeout in the
     parallel `macros`/`macro-preparation` run, the isolated `macros` rerun, and
     the initial `quest-journal-persistence` run, and `quest-journal`'s
-    `journal-narrow` artifact three times (2026-09-15);
+    `journal-narrow` artifact three times, plus `wiki-catalog-refresh` once (2026-09-15);
     nonfatal artifact capture failures, independent of assertions. Follow-up
     chip: investigate hidden-window capture timing and give artifact capture a
     bounded completion check; do not change product assertions to hide it.
@@ -163,6 +163,8 @@ messages, and Git author/committer metadata.
   - `quest-journal-level.e2e` setup · debugger promise garbage-collected, three
     attempts (2026-09-15) · **RESOLVED ff4fd9dd**: await main-window readiness
     before fixture injection; complete level sequence passed twice.
+  - `wiki-catalog-refresh.e2e` fixture release · debugger promise garbage-collected
+    ×1 (2026-09-15); HARDENED with concrete boolean result; rerun cleared it.
   - `deploymentConfig.test.mts` Node transport deserialization error ×1 (2026-09-14); standalone 7/7 and next full suite green; watch. Details: docs/agents-archive.md.
   - `sky-filters.e2e` remount race RESOLVED 9816cd34; distinct guarded-remount failure ×1 (2026-08-13); watch. Details: docs/agents-archive.md.
   - `live_surfaces.rs` timer hydration ×1; **RESOLVED 9dbf7ab**. Details: docs/agents-archive.md.

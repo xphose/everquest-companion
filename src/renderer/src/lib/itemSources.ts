@@ -1,4 +1,4 @@
-// lib/itemSources.ts — "where does this item come from?", answered locally from the committed
+// lib/itemSources.ts — "where does this item come from?", answered locally from this launch
 // mob catalog, for EVERY surface that asks.
 //
 // It began life as the planner's own `features/planner/sourceIndex.ts` and was promoted here the
@@ -10,9 +10,9 @@
 // The planner keeps `features/planner/sourceIndex.ts` as a re-export so its own vocabulary
 // (`PlannerSource`) and its node test's import path both still resolve to this file.
 //
-// WHY THIS DATA IS ALREADY HERE. `data/eqlegends/mobs.json` is bundled into the renderer for the
-// Mobs tab (mobSearch.ts), and every mob page states its `|known_loot`. Inverting that list gives
-// an item → mobs index for free — no IPC, no network, works offline.
+// The bootstrap installs the same snapshot main and the engine use before importing views.
+// Inverting its mob loot lists gives an item → mobs index with no per-item IPC or network.
+// Downloaded updates wait until the next app launch, so the indexes remain coherent and offline.
 //
 // LAZY, NEVER AT MODULE LOAD — the mobSearch precedent. Neither the Planner nor an item
 // drill-down may ever be opened this session, and the catalog is immutable, so the index is built
@@ -36,7 +36,7 @@ import type { ItemDropSource, MobEntry, MobLoc } from '@shared/types'
 // inside the vite build, and `tests/plannerSourceIndex.test.mts` reaches this module under the
 // node runner. Type-only imports are erased, so they keep the alias.
 import { itemBaseName } from '../../../shared/itemStats'
-import mobsJson from '../data/eqlegends/mobs.json'
+import { referenceData } from './referenceData'
 
 /** One place an item is known to come from. Exactly what the mob page stated, nothing more. */
 export interface ItemSource {
@@ -60,7 +60,7 @@ interface MobCatalog {
   mobs: MobEntry[]
 }
 
-const catalog = mobsJson as unknown as MobCatalog
+const catalog: MobCatalog = referenceData().mobs
 
 /**
  * The index key for an item NAME — main's `itemsDb.ts itemKey`, re-applied renderer-side.
