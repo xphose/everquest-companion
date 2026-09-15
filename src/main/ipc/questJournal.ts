@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { app, ipcMain } from 'electron'
 import { IPC } from '../../shared/ipc'
 import { sendToAdventureAndMain } from '../worldRebuilt'
 import { activeCharId, getActiveCharacter } from '../session'
@@ -14,6 +14,9 @@ import { registerQuestRecoveryIpc } from './questRecovery'
 import { record, safeId } from '../questJournal/validate'
 import { journalSnapshots } from '../questJournal/snapshotCache'
 import { readActivePlayer } from '../playerLocation/active'
+import { startJournalHistoryRecorder } from '../questJournal/historyRecorder'
+import { subscribeJournalObservations } from '../questJournal/historyEvents'
+import { logInfo } from '../errorLog'
 import type { ItemDbFile } from '../itemsDb'
 import itemsJson from '../data/items.json'
 
@@ -28,6 +31,7 @@ function world(): JournalWorld {
 
 const journalDeps: JournalServiceDeps = {
   world, catalog: getQuestJournalCatalog, now: Date.now, getProgress,
+  observationRevision: journalSnapshots.observationRevision,
   setProgress: (characterId, progress) => {
     setProgress(characterId, progress)
     if (characterId === activeCharId()) sendToAdventureAndMain(IPC.onProgress, progress)
@@ -44,6 +48,9 @@ const journal = createQuestJournalService(journalDeps)
 const recovery = createRecoveryService({ ...journalDeps, root: effectiveEqRoot })
 
 export function registerQuestJournalIpc(): void {
+  const stopRecording = startJournalHistoryRecorder(journal.observeHistory, subscribeJournalObservations,
+    () => logInfo('Quest history could not be refreshed; saved history remains available.'))
+  app.once('before-quit', () => { stopRecording(); journal.stopHistory() })
   installJournalImageReader((pngBase64) => engineRequest('recovery.ocr', { pngBase64 }))
   registerQuestRecoveryIpc(journalDeps, recovery)
   ipcMain.handle(IPC.questJournalQuery, (_event, query: unknown) => journal.query(query))

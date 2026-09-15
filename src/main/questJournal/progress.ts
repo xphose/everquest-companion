@@ -7,15 +7,8 @@ import type { LootEvent, TurnInEvent } from '../../shared/types'
 import { isDestroyed } from '../../shared/lootDisposition'
 import { itemBaseName } from '../../shared/itemStats'
 import { normalizedClass } from './validate'
-
-/** Case and spaces only: punctuation and item variants remain distinct. */
-export function nameKey(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/gu, ' ')
-}
-
-export function observedTaskId(name: string): string {
-  return `task:${nameKey(name)}`
-}
+import { nameKey } from './identity'
+export { nameKey, observedTaskId } from './identity'
 
 interface ItemCounts { held: number; required: number; complete: boolean }
 

@@ -73,12 +73,13 @@ export function JournalContext({ context, refresh, mutate }: {
       </Stack>
       <Typography variant="body2" color="text.secondary">
         {context.characterId ? 'Progress updates from your game log and character exports.' : 'Explore quests now. Select a character log to see your progress and equipment comparisons.'}
+        {context.historySaving === 'automatic' ? ' Quest history saves automatically on this computer, even when this panel is closed.' : ''}
         {context.zone ? ` Current zone: ${context.zone}.` : ''}
       </Typography>
       {Boolean(context.inferredClasses?.length) && <Typography variant="caption" color="text.secondary">
         Inferred classes come from your spells and abilities. Use /who in game to confirm your current classes.
       </Typography>}
-      {context.message && <Alert severity="info" sx={{ py: 0 }}>{context.message}</Alert>}
+      {context.message && <Alert severity={context.historySaving === 'error' ? 'warning' : 'info'} sx={{ py: 0 }}>{context.message}</Alert>}
       {context.tasksTruncated && <Alert severity="info" sx={{ py: 0 }}>The log contains more task names than this journal can retain; some tasks are missing.</Alert>}
       <ProfileCorrection context={context} mutate={mutate} />
     </Stack>

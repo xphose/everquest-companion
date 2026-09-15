@@ -12,8 +12,10 @@ import { isClassAbbr } from '../../shared/classCombo'
 import type { JournalFiles } from './files'
 import { detailJournal, queryJournal, type JournalModelInput } from './model'
 import { observedTaskId, supplementInventory } from './progress'
-import { applyMutation, record, safeId, sanitizeProgress, validateMutation } from './validate'
+import { applyMutation, safeId, sanitizeProgress, validateMutation } from './validate'
 import { journalLevel, liveJournalLevel } from './liveLevel'
+import { createJournalHistory, taskRows, validJournalTrades, type JournalHistoryService } from './historyService'
+import { JournalObservationChanged } from './observationChanged'
 
 export interface JournalWorld {
   characterId: string | null
@@ -27,6 +29,8 @@ export interface JournalServiceDeps {
   catalog: () => readonly QuestJournalCatalogEntry[]
   files: (character: CharacterRef | null) => JournalFiles
   snapshot: (module: string) => Promise<unknown>
+  /** Changes when task/trade publications invalidate any observation captured before an await. */
+  observationRevision?: () => number
   livePlayer?: () => Promise<PlayerLocationResult>
   getProgress: (characterId: string) => ProgressState
   setProgress: (characterId: string, progress: ProgressState) => void
@@ -34,39 +38,12 @@ export interface JournalServiceDeps {
 }
 
 export function sameJournalWorld(a: JournalWorld, b: JournalWorld): boolean {
-  return a.characterId === b.characterId && a.character?.logPath === b.character?.logPath && a.token === b.token
+  return a.characterId === b.characterId && a.character?.logPath === b.character?.logPath && a.token === b.token &&
+    a.character?.name === b.character?.name && a.character?.server === b.character?.server
 }
 
 function assertCurrent(deps: JournalServiceDeps, world: JournalWorld): void {
   if (!sameJournalWorld(world, deps.world())) throw new Error('The active character or engine changed. Refresh the journal.')
-}
-
-function taskRows(value: unknown): { rows: QuestJournalObservedTask[]; truncated: boolean } {
-  const state = record(value)
-  if (state?.v !== 1 || !Array.isArray(state.tasks)) throw new Error('Task observations are unavailable from this engine.')
-  const rows: QuestJournalObservedTask[] = []
-  for (const raw of state.tasks.slice(0, 4096)) {
-    const row = record(raw)
-    if (!row || typeof row.name !== 'string' || !safeId(observedTaskId(row.name))) continue
-    rows.push({ name: row.name,
-      assignedAt: typeof row.assignedAt === 'number' ? row.assignedAt : undefined,
-      updatedAt: typeof row.updatedAt === 'number' ? row.updatedAt : undefined,
-      ...terminalFields(row) })
-  }
-  return { rows, truncated: state.truncated === true }
-}
-
-function terminalFields(row: Record<string, unknown>): Partial<QuestJournalObservedTask> {
-  return {
-    completedAt: typeof row.completedAt === 'number' ? row.completedAt : undefined,
-    removedAt: typeof row.removedAt === 'number' ? row.removedAt : undefined,
-    failedAt: typeof row.failedAt === 'number' ? row.failedAt : undefined,
-    lastObservedAt: typeof row.lastObservedAt === 'number' ? row.lastObservedAt : undefined,
-    lastChange: ['assigned', 'updated', 'completed', 'removed', 'failed'].includes(String(row.lastChange))
-      ? row.lastChange as QuestJournalObservedTask['lastChange'] : undefined,
-    cycleStatus: ['observed', 'assigned', 'completed', 'removed', 'failed'].includes(String(row.cycleStatus))
-      ? row.cycleStatus as QuestJournalObservedTask['cycleStatus'] : undefined
-  }
 }
 
 function detectedClasses(value: unknown): { classes: string[]; inferredClasses: string[] } {
@@ -111,7 +88,7 @@ async function observations(deps: JournalServiceDeps, world: JournalWorld): Prom
     } catch (error) { out.error = error instanceof Error ? error.message : 'Task observations unavailable.' }
   } else out.error = 'Task observations are unavailable. Quest guides and saved progress remain available.'
   if (arrayResult(loot)) out.loot = loot.value as LootEvent[]
-  if (arrayResult(turnins)) out.turnins = turnins.value as TurnInEvent[]
+  if (arrayResult(turnins)) out.turnins = validJournalTrades(turnins.value)
   out.inventoryUpdatesAvailable = [loot, turnins].every(arrayResult)
   return out
 }
@@ -151,15 +128,18 @@ function applyLiveProfile(observed: ObservationSet, player: PlayerLocationResult
   }
 }
 
-async function readModel(deps: JournalServiceDeps): Promise<{ input: JournalModelInput; world: JournalWorld }> {
+async function readModel(deps: JournalServiceDeps, history: JournalHistoryService): Promise<{ input: JournalModelInput; world: JournalWorld }> {
   const world = deps.world()
+  const revision = deps.observationRevision?.()
   const [observed, player] = await Promise.all([
     observations(deps, world),
     world.characterId ? deps.livePlayer?.().catch(() => undefined) : undefined
   ])
   assertCurrent(deps, world)
+  assertJournalRevision(deps, revision)
   applyLiveProfile(observed, player, world.character?.name, deps.now())
-  const stored = world.characterId ? deps.getProgress(world.characterId) : { inventory: {}, completedQuests: [] }
+  const catalog = deps.catalog()
+  const stored = history.reconcile(world, observed.tasks, observed.turnins, catalog)
   const files = deps.files(world.character)
   const context: QuestJournalContext = {
     characterId: world.characterId, characterName: world.character?.name, characterServer: world.character?.server,
@@ -169,13 +149,34 @@ async function readModel(deps: JournalServiceDeps): Promise<{ input: JournalMode
     achievements: files.achievementsStatus, refreshedAt: deps.now(), tasksTruncated: observed.truncated
   }
   const exportedAt = Date.parse(files.inventoryStatus.updatedAt ?? '')
+  annotateHistory(context, stored, history.error(world))
   annotateInventory(context, observed, exportedAt)
   assertCurrent(deps, world)
   return { world, input: {
-    catalog: deps.catalog(), context, progress: sanitizeProgress(stored.questJournal), observed: observed.tasks,
+    catalog, context, progress: sanitizeProgress(stored.questJournal), observed: observed.tasks,
     inventory: supplementInventory(files.inventory, exportedAt, observed.loot, observed.turnins),
     claims: files.claims, worn: files.worn, turnins: observed.turnins, completedSky: completedSky(stored)
   } }
+}
+
+export function assertJournalRevision(deps: JournalServiceDeps, revision: number | undefined): void {
+  if (deps.observationRevision?.() !== revision) throw new JournalObservationChanged()
+}
+
+function annotateHistory(context: QuestJournalContext, stored: ProgressState, error: string | undefined): void {
+  const note = error ?? (stored.questJournal?.history?.capacityReached
+    ? 'Saved quest history is full. Existing history is safe, but new quest names cannot be saved.' : undefined)
+  context.historySaving = note ? 'error' : context.characterId ? 'automatic' : undefined
+  if (note) context.message = [context.message, note].filter(Boolean).join(' ')
+}
+
+async function readCurrentModel(deps: JournalServiceDeps, history: JournalHistoryService): ReturnType<typeof readModel> {
+  const world = deps.world()
+  try { return await readModel(deps, history) }
+  catch (error) {
+    if (!(error instanceof JournalObservationChanged) || !sameJournalWorld(world, deps.world())) throw error
+    return readModel(deps, history)
+  }
 }
 
 function annotateInventory(context: QuestJournalContext, observed: ObservationSet, exportedAt: number): void {
@@ -203,24 +204,31 @@ function readinessMessage(world: JournalWorld): string | undefined {
 function validateQuestMutation(input: JournalModelInput, mutation: ReturnType<typeof validateMutation>): string | null {
   if (!mutation || mutation.action === 'profile') return null
   const entry = input.catalog.find((candidate) => candidate.id === mutation.id)
-  const knownTask = input.observed.some((task) => observedTaskId(task.name) === mutation.id) ||
-    Object.prototype.hasOwnProperty.call(input.progress.quests, mutation.id) ||
-    Object.prototype.hasOwnProperty.call(input.progress.recovery ?? {}, mutation.id)
-  if (!entry && !knownTask) return 'Unknown quest.'
+  if (!entry && !knownTask(input, mutation.id)) return 'Unknown quest.'
   if (mutation.action === 'step' && !entry?.guide?.steps.some((step) => step.id === mutation.stepId)) return 'Unknown quest step.'
   return null
+}
+
+function knownTask(input: JournalModelInput, id: string): boolean {
+  return input.observed.some((task) => observedTaskId(task.name) === id) ||
+    [input.progress.quests, input.progress.history?.tasks, input.progress.recovery].some(rows =>
+      rows && Object.prototype.hasOwnProperty.call(rows, id))
 }
 
 export function createQuestJournalService(deps: JournalServiceDeps): {
   query: (raw: unknown) => Promise<QuestJournalQueryResult>
   detail: (request: QuestJournalDetailRequest) => Promise<QuestJournalDetailResult>
   mutate: (raw: unknown) => Promise<QuestJournalMutationResult>
+  observeHistory: () => Promise<void>
+  stopHistory: () => void
 } {
+  const history = createJournalHistory(deps)
   return {
-    query: async (raw) => queryJournal((await readModel(deps)).input, raw),
+    observeHistory: history.observe, stopHistory: history.stop,
+    query: async (raw) => queryJournal((await readCurrentModel(deps, history)).input, raw),
     detail: async (request) => {
       if (!safeId(request.id)) throw new Error('Invalid quest.')
-      const { input } = await readModel(deps)
+      const { input } = await readCurrentModel(deps, history)
       if (request.characterId !== input.context.characterId) throw new Error('The active character changed. Refresh the journal.')
       return detailJournal(input, request.id)
     },
@@ -228,7 +236,7 @@ export function createQuestJournalService(deps: JournalServiceDeps): {
       const mutation = validateMutation(raw)
       if (!mutation) return { ok: false, error: 'Invalid journal change.' }
       try {
-        const { input, world } = await readModel(deps)
+        const { input, world } = await readCurrentModel(deps, history)
         if (mutation.characterId !== world.characterId) return { ok: false, error: 'The active character changed. Refresh the journal.' }
         const error = validateQuestMutation(input, mutation)
         if (error) return { ok: false, error }

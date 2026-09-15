@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { QuestJournalCatalogEntry } from '../src/shared/questJournal/catalog'
-import type { TurnInEvent } from '../src/shared/types'
+import type { ProgressState, TurnInEvent } from '../src/shared/types'
 import { getQuestJournalCatalog } from '../src/main/questJournal/catalog'
 import { detailJournal, queryJournal, type JournalModelInput } from '../src/main/questJournal/model'
 import { createQuestJournalService } from '../src/main/questJournal/service'
@@ -90,19 +90,22 @@ test('recovered active baselines preserve repeat runs until a subsequent rewarde
   assert.equal(detailJournal(model, entry.id).row?.state, 'completed')
 })
 
-test('service startup and a new service reconstruct completion from snapshots without tracking or saved flags', async () => {
+test('service startup archives automatic completion separately and restores it after the log is gone', async () => {
   const model = input()
+  let progress: ProgressState = { inventory: {}, completedQuests: [] }
   const start = () => createQuestJournalService({
     world: () => ({ characterId: 'test_fixture', character: null, readiness: 'ready', token: 'test' }), catalog: () => model.catalog,
     snapshot: async module => module === 'tasks' ? { v: 1, tasks: [], truncated: false } : module === 'turnins' ? model.turnins : [],
     files: () => ({ inventory: null, claims: [], worn: [], inventoryStatus: { state: 'missing' }, achievementsStatus: { state: 'missing' } }),
-    now: () => 20000, getProgress: () => ({ inventory: {}, completedQuests: [] }),
-    setProgress: () => assert.fail('Observation must not write manual completion')
+    now: () => 20000, getProgress: () => progress,
+    setProgress: (_id, next) => { progress = next }
   })
   for (const service of [start(), start()]) {
     const result = await service.query({ state: 'completed' })
     assert.equal(result.rows[0]?.id, entry.id)
     assert.equal(result.rows[0]?.tracked, false)
+    assert.deepEqual(progress.questJournal?.quests, {}, 'Observation must not write manual completion')
+    model.turnins = []
   }
 })
 
