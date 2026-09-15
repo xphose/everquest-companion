@@ -163,27 +163,14 @@ messages, and Git author/committer metadata.
   - `quest-journal-level.e2e` setup · debugger promise garbage-collected, three
     attempts (2026-09-15) · **RESOLVED ff4fd9dd**: await main-window readiness
     before fixture injection; complete level sequence passed twice.
-  - `deploymentConfig.test.mts` Node runner transport · "Unable to deserialize
-    cloned data due to invalid or unsupported version" in `internal/test_runner/runner`
-    · 1 sighting (2026-09-14, Adventure overlay verification), no product assertion
-    failure · standalone 7/7 and subsequent full suite 4,691/3 passed; watch.
-  - `sky-filters.e2e` · remount race · **RESOLVED 9816cd34 (JOS-279)**
-    (`tests/e2e/viewRemount.mts` holds the precondition); a SECOND distinct
-    cause with the guard holding · 1 sighting 2026-08-13 · watch. Both rows
-    at full length: docs/agents-archive.md.
+  - `deploymentConfig.test.mts` Node transport deserialization error ×1 (2026-09-14); standalone 7/7 and next full suite green; watch. Details: docs/agents-archive.md.
+  - `sky-filters.e2e` remount race RESOLVED 9816cd34; distinct guarded-remount failure ×1 (2026-08-13); watch. Details: docs/agents-archive.md.
   - `live_surfaces.rs` timer hydration ×1; **RESOLVED 9dbf7ab**. Details: docs/agents-archive.md.
   - `engined tests/perf_snapshot.rs` · catalog startup refusal under CI load · 1 sighting (2026-09-04) · HARDENED: `until` retries that refusal through `PATIENCE`; every other refusal still panics. Details: docs/agents-archive.md.
   - `engined tests/combat.rs` · live fixture predates go-live; fight idles before hit; connect timeout · 1 sighting (2026-09-04) · chip: anchor live stamps to go-live. Details: docs/agents-archive.md.
-  - `combat-dashboard.e2e` · narrow-window resize never lands, settleStable
-    settles on stale geometry · 6 sightings 2026-08-10→26, including
-    STANDALONE (the full-sweep-only pattern is broken) · fix shape diagnosed
-    (wait for bounds to differ before settling); ticket JOS-232 filed —
-    priority raised.
+  - `combat-dashboard.e2e` stale resize geometry ×6 (2026-08-10–26), including standalone; JOS-232: await changed bounds before settling. Details: docs/agents-archive.md.
   - `window-bounds.e2e` · close-time bounds persistence under sweep load · 2 sightings (2026-08-12/13, JOS-260/279), green standalone · report line. Details: docs/agents-archive.md.
-  - `respawn-timers.e2e` · two clock reads made the learned gap 181 s where
-    four assertions spell `3m 00s` (1 sighting) · **RESOLVED 0572c77f** —
-    both deaths stamp off ONE captured `now`; the assertions were never
-    widened. Full history: docs/agents-archive.md.
+  - `respawn-timers.e2e` double-clock fixture ×1; RESOLVED 0572c77f: capture one timestamp. Details: docs/agents-archive.md.
   - MULTI-SPEC SWEEP · six specs die at once mid-click, "Target page … has
     been closed" · 1 sighting (2026-08-13 sweep, JOS-279; six green serially
     after, none in the next sweep) · a host/load event, not one spec's race —
@@ -195,10 +182,7 @@ messages, and Git author/committer metadata.
     **RESOLVED a65586c**: await progress within the original deadline.
     Details: docs/agents-archive.md.
   - `presenceWorker.test` first-tick dedup · real game/keyboard dependency · 3 sightings (2026-08-10/12, JOS-239) · chip filed: hermetic input without weakening once-then-heartbeat. Details: docs/agents-archive.md.
-  - `perf.e2e` heartbeat boundary · the probe asked about the WRONG window
-    (5 sightings, full-sweep only) · **RESOLVED 0523dd90 (JOS-279)** — now
-    `probeWindowMs`, plus a three-valued verdict so the naive fix's mirror
-    flake cannot appear. Full history: docs/agents-archive.md.
+  - `perf.e2e` heartbeat-window mismatch ×5 (sweep only); RESOLVED 0523dd90: probeWindowMs plus three-valued verdict. Details: docs/agents-archive.md.
 - **Fixtures are COMMITTED and SCRUBBED.** `tests/fixtures/*.log` is tracked
   (a `!tests/fixtures/*.log` negation under the blanket `*.log`), so CI's
   `npm test` runs the FULL suite. The repo is PUBLIC, so every extractor
@@ -1290,6 +1274,16 @@ the full per-lane evidence lives in docs/agents-archive.md.
   in NO log line (law 2) — `mobKey` strips it.
 
 ## Data sources
+
+- **Daily reference updates:** items, mobs, quests and source walkthroughs form
+  one validated catalog pack in userData. Check daily and when overdue on launch;
+  coalesce manual checks. Stage downloads for the next launch, then pin the same
+  immutable generation across main, renderer, overlays and Rust engine respawns.
+  Keep bundled/offline fallback; failed or incomplete fetches never replace good
+  data or advance a successful checkpoint. Verify recent-change history coverage
+  before incremental refresh; reconcile fully across retention gaps. Preserve
+  quest identities and personal progress. Distinguish active data, successful
+  checks and pending updates in UI. Details: `docs/wiki-data-updates.md`.
 
 - **Scraper etiquette (LAW)**: every scraping script must run at a
   respectful rate limit — **1 request per second minimum** (owner ruling

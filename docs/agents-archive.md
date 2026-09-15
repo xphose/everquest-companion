@@ -3897,3 +3897,33 @@ The active ledger remains in AGENTS.md with signatures, occurrence counts and di
     (2026-08-10 ×2, 2026-08-12 JOS-239 worker mid-session, green on final
     run) · needs hermetics without weakening the once-then-heartbeat pin;
     chip filed — satisfies the 3+ rule via the chip.
+
+## Additional flake incident details archived 2026-09-15
+
+Signatures, counts and dispositions remain in AGENTS.md. These original incident narratives are preserved verbatim.
+
+  - `deploymentConfig.test.mts` Node runner transport · "Unable to deserialize
+    cloned data due to invalid or unsupported version" in `internal/test_runner/runner`
+    · 1 sighting (2026-09-14, Adventure overlay verification), no product assertion
+    failure · standalone 7/7 and subsequent full suite 4,691/3 passed; watch.
+
+  - `sky-filters.e2e` · remount race · **RESOLVED 9816cd34 (JOS-279)**
+    (`tests/e2e/viewRemount.mts` holds the precondition); a SECOND distinct
+    cause with the guard holding · 1 sighting 2026-08-13 · watch. Both rows
+    at full length: docs/agents-archive.md.
+
+  - `combat-dashboard.e2e` · narrow-window resize never lands, settleStable
+    settles on stale geometry · 6 sightings 2026-08-10→26, including
+    STANDALONE (the full-sweep-only pattern is broken) · fix shape diagnosed
+    (wait for bounds to differ before settling); ticket JOS-232 filed —
+    priority raised.
+
+  - `respawn-timers.e2e` · two clock reads made the learned gap 181 s where
+    four assertions spell `3m 00s` (1 sighting) · **RESOLVED 0572c77f** —
+    both deaths stamp off ONE captured `now`; the assertions were never
+    widened. Full history: docs/agents-archive.md.
+
+  - `perf.e2e` heartbeat boundary · the probe asked about the WRONG window
+    (5 sightings, full-sweep only) · **RESOLVED 0523dd90 (JOS-279)** — now
+    `probeWindowMs`, plus a three-valued verdict so the naive fix's mirror
+    flake cannot appear. Full history: docs/agents-archive.md.

@@ -22,6 +22,10 @@ Equipment observations come from the character's existing inventory export. New
 `/outputfile inventory` exports are picked up automatically. The check timestamp
 describes local observations; catalog scrape dates describe the item and source data.
 
+Wiki reference data has a separate daily update cadence. Downloaded updates apply
+on the next companion launch so item stats, acquisition sources, and the other
+views use the same version. See [Wiki data updates](wiki-data-updates.md).
+
 ## Recommendation contract
 
 - Follow the active character's classes and exact level. Five-level bands are a

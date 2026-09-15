@@ -24,6 +24,10 @@ required items or quantities; follow the guide's instructions.
 The section tabs stay visible while scrolling. Switching sections starts at the
 top, while automatic updates preserve the current section and selected item.
 
+Quest references and source walkthroughs participate in the companion's daily
+[wiki data updates](wiki-data-updates.md). New reference data applies on the next
+launch and leaves saved quest progress intact.
+
 ## Connect your character
 
 1. In EverQuest, type `/log on`. Select your character in the companion if needed.

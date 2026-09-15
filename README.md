@@ -76,6 +76,11 @@ The app updates itself in the background from GitHub Releases. When a new versio
 downloaded, an **"Update ready"** notice appears with a **Restart** button — click it to
 apply now, or it installs the next time you quit.
 
+Wiki reference data is checked daily while the companion is running. Visit
+**Preferences → Updates → Game data** to check now or see when data was last
+updated. Downloaded reference updates apply together on the next launch. See
+[Wiki data updates](docs/wiki-data-updates.md) for coverage and offline behavior.
+
 ## Make it yours
 
 - **Sound & voice packs.** Alert sounds come from packs. One voice pack ships with the
