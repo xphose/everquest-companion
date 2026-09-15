@@ -104,8 +104,8 @@ async function session(log: FixtureLog, userData: string): Promise<void> {
   const launched = await launchOnFixture(log, { userData })
   let page: Page | null = null
   try {
-    await controlWorker(launched.app, log.installDir)
     page = await mainWindow(launched.app)
+    await controlWorker(launched.app, log.installDir)
     await automaticLevels(launched.app, page)
     await manualOverride(launched.app, page)
     await invalidSamples(launched.app, page)

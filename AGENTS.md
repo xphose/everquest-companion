@@ -154,10 +154,15 @@ messages, and Git author/committer metadata.
   - Hidden-window E2E diagnostic screenshots · 3-second capture timeout in the
     parallel `macros`/`macro-preparation` run, the isolated `macros` rerun, and
     the initial `quest-journal-persistence` run, and `quest-journal`'s
-    `journal-narrow` artifact (2026-09-15);
+    `journal-narrow` artifact twice (2026-09-15);
     nonfatal artifact capture failures, independent of assertions. Follow-up
     chip: investigate hidden-window capture timing and give artifact capture a
     bounded completion check; do not change product assertions to hide it.
+  - `presenceNative.test.mts` cursor timing · 61.05µs/50µs under concurrent E2E
+    load · once (2026-09-15); isolated/full reruns passed. Watch.
+  - `quest-journal-level.e2e` setup · debugger promise garbage-collected, three
+    attempts (2026-09-15) · **RESOLVED ff4fd9dd**: await main-window readiness
+    before fixture injection; complete level sequence passed twice.
   - `deploymentConfig.test.mts` Node runner transport · "Unable to deserialize
     cloned data due to invalid or unsupported version" in `internal/test_runner/runner`
     · 1 sighting (2026-09-14, Adventure overlay verification), no product assertion
