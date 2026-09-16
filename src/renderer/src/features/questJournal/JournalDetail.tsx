@@ -95,7 +95,7 @@ export function JournalDetail({ detail, selectedId, navigation, mutate }: {
       {DETAIL_TABS.map((label, index) => <Box key={label} role="tabpanel" hidden={tab !== index} id={`${tabId}-panel-${index}`}
         ref={tab === index ? activePanel : undefined}
         aria-labelledby={`${tabId}-tab-${index}`} tabIndex={0} data-testid="journal-detail-panel"
-        sx={{ p: { xs: 1.5, lg: 2 }, flex: 1, minHeight: 0, minWidth: 0, overflowY: 'auto', overflowWrap: 'anywhere' }}>
+        sx={{ p: index === 2 && detail.entry ? 0 : { xs: 1.5, lg: 2 }, flex: 1, minHeight: 0, minWidth: 0, overflowY: 'auto', overflowWrap: 'anywhere' }}>
         {tab === index && <DetailTab tab={tab} detail={detail} navigation={navigation} mutate={mutate} resetScroll={() => activePanel.current?.scrollTo({ top: 0 })} />}
       </Box>)}
   </Paper>
