@@ -47,12 +47,12 @@ export function JournalReference({ entry, navigation, resetScroll }: {
   const [tab, setTab] = useState(0)
   const [selectedName, setSelectedName] = useState(entry.referencedItems[0]?.name)
   const id = useId()
-  return <Stack spacing={2}>
+  return <Stack>
     <Tabs value={tab} onChange={(_, value: number) => { setTab(value); resetScroll() }} aria-label="Walkthrough sections" variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile
-      data-testid="journal-reference-tabs" sx={{ position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1, minWidth: 0, borderBottom: 1, borderColor: 'divider' }}>
+      data-testid="journal-reference-tabs" sx={{ position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1, minWidth: 0, borderBottom: 1, borderColor: 'divider', px: { xs: 1.5, lg: 2 }, pt: { xs: 1.5, lg: 2 } }}>
       {REFERENCE_TABS.map((label, index) => <Tab key={label} label={label} id={`${id}-tab-${index}`} aria-controls={`${id}-panel-${index}`} />)}
     </Tabs>
-    {REFERENCE_TABS.map((label, index) => <Box key={label} role="tabpanel" hidden={tab !== index} id={`${id}-panel-${index}`} aria-labelledby={`${id}-tab-${index}`} tabIndex={0}>
+    {REFERENCE_TABS.map((label, index) => <Box key={label} role="tabpanel" hidden={tab !== index} id={`${id}-panel-${index}`} aria-labelledby={`${id}-tab-${index}`} tabIndex={0} sx={{ p: { xs: 1.5, lg: 2 } }}>
       {tab === index && index === 0 && <ReferenceGuide entry={entry} />}
       {tab === index && index === 1 && <Stack spacing={1}>
         <Typography variant="h6">People named in the source</Typography>

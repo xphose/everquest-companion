@@ -104,6 +104,7 @@ function geometry(page: Page) {
       scrollTop: panel.scrollTop, scrollHeight: panel.scrollHeight,
       headerTop: head.top - box.top, tabsTop: nav.top - box.top,
       headerPageTop: head.top, innerTabsVisible: inner.top >= content.top && inner.bottom <= content.bottom,
+      innerTabsCoverTop: Math.abs(inner.top - content.top) < 1 && Math.abs(inner.left - content.left) < 1 && Math.abs(inner.width - panel.clientWidth) < 1,
       visibleChrome: head.top >= 0 && nav.bottom <= innerHeight,
       horizontalOverflow: panel.scrollWidth > panel.clientWidth + 1,
       width: box.width, height: box.height
@@ -135,6 +136,8 @@ async function layout(app: ElectronApplication, page: Page, width: number, heigh
   check(`${width}px title and tabs stay visible after scrolling the long content`, after.scrollTop > 100 && after.visibleChrome &&
     Math.abs(before.headerTop - after.headerTop) < 1 && Math.abs(before.tabsTop - after.tabsTop) < 1, JSON.stringify(after))
   check(`${width}px the inner section tabs remain visible at the end of the locations`, after.innerTabsVisible)
+  check(`${width}px scrolled content has no gap above or beside the section tabs`, after.innerTabsCoverTop, JSON.stringify(after))
+  await capture(app, page, `journal-tabs-scrolled-${width}x${height}`)
   await tab(page, 'Guide').click()
   const guide = await settle(() => geometry(page), shape => shape.scrollTop === 0)
   check(`${width}px switching to Guide starts at the top without moving the page header`, guide.scrollTop === 0 && Math.abs(guide.headerPageTop - after.headerPageTop) < 1)
